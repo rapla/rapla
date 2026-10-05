@@ -675,7 +675,7 @@ input ReservationFilter {
   resourceIdsIn:    [ID!]              # PRD 055 — uses ANY of these ids
   resourceMatching: ResourceFilter  # PRD 066 — uses ANY resource matching this filter
   nameContains:        String
-  limit:               Int                # default 500, hard cap 5000
+  limit:               Int                # default 1000; appointmentBlocks max 2500 per request
 }
 ```
 
@@ -741,7 +741,9 @@ way — it is reachable through `ownerIn` only (Swing: the user branch).
 
 Window cap is configurable via Spring Boot property
 `rapla.graphql.max-query-window-days` (default null = no cap). Result
-size caps at 5000 entries (default 500).
+size defaults to 1000 entries; `appointmentBlocks` caps `limit` at 2500 per
+request and pages on with the cursor (`after` = `extensions.view.page.endCursor`,
+PRD 074 Phase 5 — the cursor is bound to the sort order; no total cap).
 
 **Execution deadline.** A single GraphQL query's wall-clock is bounded by
 `rapla.graphql.execution-budget-millis` (default 30000; set 0 to disable) so
@@ -1249,9 +1251,9 @@ deployment-spezifischen Typ-Keys im Query-Text; die kommen nur als Variablen-Dat
 query Wochenansicht(
   $filter: ReservationFilter!,                     # Event-Fenster (+ optional resourceMatching)
   $sort:   [BlockSort!] = [{ field: START, dir: ASC }],
-  $offset: Int = 0
+  $after:  String                                  # endCursor der Vorseite (PRD 074 Phase 5)
 ) @view(title: "Wochenansicht") {
-  appointmentBlocks(filter: $filter, sort: $sort, offset: $offset) {
+  appointmentBlocks(filter: $filter, sort: $sort, after: $after) {
     date   @column(header: "Datum", order: 1, group: true)  # Date (yyyy-MM-dd), Gruppen-Achse (PRD 073/074)
     times  @column(header: "Zeit",  order: 2)      # "10:00 - 11:30" (serverformatiert)
     name   @column(header: "Titel", order: 3)      # block-aware (ehrt appointment-note overrides)
@@ -1289,8 +1291,7 @@ Variablen (mit `ResourceFilter` in Aktion — schränkt die Termine auf passende
       "whereRoom": { "building": { "where": { "buildingName": { "startsWith": "MAIN" } } } }
     },
     "limit": 2000
-  },
-  "offset": 0
+  }
 }
 ```
 
@@ -1325,7 +1326,8 @@ Erläuterung:
   (`@hidden`) ist reine Wall-Clock-Differenz für die Block-Höhe — weglassbar, da aus `start`/`end`
   ableitbar. Wochentag pro Row: `tag: compute(expr: "format(\"%tA\", date(item))")`.
 - **Output:** `extensions.view.columns` enthält die nicht-`@hidden`-Felder (mit `header`, `order`, `type`,
-  `join`), `extensions.view.page` `{ offset, limit, returned, hasMore }`. `@hidden`-Felder liegen in
+  `join`), `extensions.view.page` `{ limit, returned, hasMore, endCursor }` — „Weitere laden“ schickt
+  `after: endCursor` (gleiche Sortierung). `@hidden`-Felder liegen in
   `data`, nicht in `columns`.
 
 ### Gruppieren nach Tag (`@column(group: true, format: …)` → `view.groupBy` / `view.groupFormat`)

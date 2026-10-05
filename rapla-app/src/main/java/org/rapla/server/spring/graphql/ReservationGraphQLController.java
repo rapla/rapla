@@ -287,7 +287,7 @@ public class ReservationGraphQLController
     public List<Reservation> reservations(@Argument("filter") java.util.Map<String, Object> filterMap,
             graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
-        return select(filterMap, env, false).visible();
+        return select(filterMap, env, false, null).visible();
     }
 
     /**
@@ -298,7 +298,7 @@ public class ReservationGraphQLController
             org.rapla.entities.domain.AppointmentMapping scope, Collection<Allocatable> scopeAllocatables) {}
 
     private Selection select(java.util.Map<String, Object> filterMap, graphql.schema.DataFetchingEnvironment env,
-            boolean collectHidden) throws RaplaException
+            boolean collectHidden, Integer reservationLimit) throws RaplaException
     {
         // PRD 059 Phase 6 — argument is the raw input map (not the record):
         // the record can't carry the GENERATED `where<EventTypeKey>` fields
@@ -325,9 +325,8 @@ public class ReservationGraphQLController
                                 + "(configured via rapla.graphql.max-query-window-days)");
             }
         }
-        int limit = filter.limit() != null && filter.limit() > 0
-                ? Math.min(filter.limit(), 5000)
-                : 500;                                // default 500, hard cap 5000
+        int limit = reservationLimit != null ? reservationLimit
+                : filter.limit() != null && filter.limit() > 0 ? filter.limit() : 1000;
 
         // Query via the storage operator's existing reservation query path.
         // rapla's queryAppointments expects the caller-visible target set
@@ -487,31 +486,27 @@ public class ReservationGraphQLController
     @QueryMapping
     public List<AppointmentBlockDto> appointmentBlocks(@Argument("filter") java.util.Map<String, Object> filterMap,
             @Argument("sort") List<BlockSort> sort,
-            @Argument("offset") Integer offsetArg,
+            @Argument("after") String after,
             graphql.schema.DataFetchingEnvironment env) throws RaplaException
     {
         ReservationFilter filter = fromMap(filterMap);
-        Selection selection = select(filterMap, env, true);
+        Selection selection = select(filterMap, env, true, Integer.MAX_VALUE);
         List<Reservation> visible = selection.visible();
         LocalDateTime from = filter.from();
         LocalDateTime to = filter.to();
-        int limit = filter.limit() != null && filter.limit() > 0
-                ? Math.min(filter.limit(), 5000)
-                : 500;
-        int offset = offsetArg != null && offsetArg > 0 ? offsetArg : 0;
+        int limit = Math.min(filter.limit() != null && filter.limit() > 0 ? filter.limit() : 1000, 2500);
 
-        // Bounded top-N over the SORT comparator (default START ASC). We keep the
-        // `offset + limit + 1` smallest-by-comparator blocks via a max-heap (so the
-        // root is the largest of the kept set, evicted when a smaller one arrives).
-        // Memory is O(offset+limit) even when recurrence expansion is huge. The +1
-        // lets us report `hasMore` without expanding/counting the full set — the
-        // window cap is opt-in, so a daily appointment over years is thousands of
-        // blocks. The heap generalises the old earliest-N: any sort order, paginated.
-        java.util.Comparator<AppointmentBlockDto> cmp = buildBlockComparator(sort);
-        long keepL = (long) offset + limit + 1;
-        int keep = (int) Math.min(keepL, 20_000);
-        java.util.PriorityQueue<AppointmentBlockDto> heap =
-                new java.util.PriorityQueue<>(cmp.reversed());   // max by cmp
+        // PRD 074 Phase 5 — cursor paging. Bounded top-N over the SORT key order (default START ASC):
+        // a max-heap keeps the `limit + 1` smallest keys strictly after the cursor, so memory is
+        // O(limit) however far the client pages; the +1 powers `hasMore`.
+        boolean byName = sort != null && sort.stream().anyMatch(s -> s != null && s.field() == BlockSortField.NAME);
+        java.util.Locale loc = StructuralTypeFetchers.serverLocale();
+        java.util.Comparator<BlockKey> cmp = buildBlockComparator(sort, loc);
+        String sortSpec = sortSpec(sort);
+        BlockKey cursor = after == null ? null : BlockKey.decode(after, sortSpec);
+        int keep = limit + 1;
+        java.util.PriorityQueue<KeyedBlock> heap = new java.util.PriorityQueue<>(
+                java.util.Comparator.comparing(KeyedBlock::key, cmp).reversed());   // max by cmp
         // PRD 097 Phase 5 — the rendered day set DROPS blocks touching none of its days
         // (a Saturday event in a Mo–Fr view disappears, it is not ghosted).
         java.util.Set<java.time.DayOfWeek> daySet =
@@ -541,31 +536,32 @@ public class ReservationGraphQLController
                     AppointmentBlockDto dto = masked
                             ? new AppointmentBlockDto(b.getStartDateTime(), b.getEndDateTime(), b.isException(), r, a, b, maskedName, scopeIds)
                             : new AppointmentBlockDto(b.getStartDateTime(), b.getEndDateTime(), b.isException(), r, a, b);
+                    BlockKey key = BlockKey.of(dto, byName ? blockNameKey(dto, loc) : "");
+                    if (cursor != null && cmp.compare(key, cursor) <= 0) continue;
                     if (heap.size() < keep)
                     {
-                        heap.offer(dto);
+                        heap.offer(new KeyedBlock(dto, key));
                     }
-                    else if (cmp.compare(dto, heap.peek()) < 0)
+                    else if (cmp.compare(key, heap.peek().key()) < 0)
                     {
                         heap.poll();
-                        heap.offer(dto);
+                        heap.offer(new KeyedBlock(dto, key));
                     }
                 }
             }
         }
-        List<AppointmentBlockDto> sorted = new ArrayList<>(heap);
-        sorted.sort(cmp);
-        boolean hasMore = sorted.size() > offset + limit;
-        int fromIdx = Math.min(offset, sorted.size());
-        int toIdx = Math.min(offset + limit, sorted.size());
-        List<AppointmentBlockDto> page = new ArrayList<>(sorted.subList(fromIdx, toIdx));
+        List<KeyedBlock> sorted = new ArrayList<>(heap);
+        sorted.sort(java.util.Comparator.comparing(KeyedBlock::key, cmp));
+        boolean hasMore = sorted.size() > limit;
+        List<KeyedBlock> kept = sorted.subList(0, Math.min(limit, sorted.size()));
+        List<AppointmentBlockDto> page = new ArrayList<>(kept.stream().map(KeyedBlock::dto).toList());
 
         // Pagination meta → extensions.view.page (render hint for the flat table; with @view).
         java.util.Map<String, Object> pageMeta = new java.util.LinkedHashMap<>();
-        pageMeta.put("offset", offset);
         pageMeta.put("limit", limit);
         pageMeta.put("returned", page.size());
         pageMeta.put("hasMore", hasMore);
+        pageMeta.put("endCursor", kept.isEmpty() ? null : kept.get(kept.size() - 1).key().encode(sortSpec));
         env.getGraphQlContext().put(ViewMetaInstrumentation.PAGE_CTX_KEY, pageMeta);
         // PRD 097 Phase 5 — stash the page + its window so the list-scoped geometry fields
         // (AppointmentBlock.segments/bars) can lay out THIS result lazily on first selection.
@@ -602,7 +598,7 @@ public class ReservationGraphQLController
             }
         }
         ReservationFilter filter = fromMap(filterMap);
-        List<Reservation> visible = reservations(filterMap, env);
+        List<Reservation> visible = select(filterMap, env, false, Integer.MAX_VALUE).visible();
         LocalDateTime from = filter.from();
         LocalDateTime to = filter.to();
         org.rapla.plugin.eventtimecalculator.EventTimeModel etm = resolveEventTimeModel(env);
@@ -813,7 +809,7 @@ public class ReservationGraphQLController
                         "reservationStats groupBy entry needs exactly one of type/expr/self (key=" + g.key() + ")");
             }
         }
-        List<Reservation> visible = reservations(filterMap, env);
+        List<Reservation> visible = select(filterMap, env, false, Integer.MAX_VALUE).visible();
         var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
         User caller = rc.caller();
         PermissionController pc = rc.permissionController() != null
@@ -1224,26 +1220,25 @@ public class ReservationGraphQLController
 
     /**
      * Builds the block sort comparator from the {@code sort} argument (default START ASC),
-     * always appending a stable reservation-id tiebreaker so pagination is deterministic.
+     * always appending a stable reservation id + appointment id + start + exception tiebreaker so the
+     * order is total and a cursor is unique.
      * NAME uses a locale {@link java.text.Collator}; DURATION is intentionally unsupported
      * (it's a formatted string, not numerically comparable).
      */
-    private static java.util.Comparator<AppointmentBlockDto> buildBlockComparator(List<BlockSort> sort)
+    private static java.util.Comparator<BlockKey> buildBlockComparator(List<BlockSort> sort, java.util.Locale loc)
     {
-        java.util.Locale loc = StructuralTypeFetchers.serverLocale();
         java.text.Collator collator = java.text.Collator.getInstance(loc);
-        java.util.Comparator<AppointmentBlockDto> cmp = null;
+        java.util.Comparator<BlockKey> cmp = null;
         if (sort != null)
         {
             for (BlockSort s : sort)
             {
                 if (s == null || s.field() == null) continue;
-                java.util.Comparator<AppointmentBlockDto> c = switch (s.field())
+                java.util.Comparator<BlockKey> c = switch (s.field())
                 {
-                    case START -> java.util.Comparator.comparing(AppointmentBlockDto::start);
-                    case END   -> java.util.Comparator.comparing(AppointmentBlockDto::end);
-                    case NAME  -> java.util.Comparator.comparing(
-                            (AppointmentBlockDto d) -> blockNameKey(d, loc), collator);
+                    case START -> java.util.Comparator.comparing(BlockKey::start);
+                    case END   -> java.util.Comparator.comparing(BlockKey::end);
+                    case NAME  -> java.util.Comparator.comparing(BlockKey::name, collator);
                 };
                 if (s.dir() == SortDir.DESC) c = c.reversed();
                 cmp = cmp == null ? c : cmp.thenComparing(c);
@@ -1251,11 +1246,60 @@ public class ReservationGraphQLController
         }
         if (cmp == null)
         {
-            cmp = java.util.Comparator.comparing(AppointmentBlockDto::start)
-                    .thenComparing(AppointmentBlockDto::end);
+            cmp = java.util.Comparator.comparing(BlockKey::start).thenComparing(BlockKey::end);
         }
-        return cmp.thenComparing(d -> d.reservation() == null ? ""
-                : String.valueOf(d.reservation().getId()));
+        return cmp.thenComparing(BlockKey::reservationId).thenComparing(BlockKey::appointmentId)
+                .thenComparing(BlockKey::start).thenComparing(BlockKey::exception);
+    }
+
+    /** PRD 074 Phase 5 — the sort key of a block; its encoding is the opaque `after`/`endCursor`. */
+    record BlockKey(LocalDateTime start, LocalDateTime end, String name, String reservationId,
+            String appointmentId, boolean exception)
+    {
+        static BlockKey of(AppointmentBlockDto d, String name)
+        {
+            return new BlockKey(d.start(), d.end(), name,
+                    d.reservation() == null ? "" : String.valueOf(d.reservation().getId()),
+                    d.appointment() == null ? "" : String.valueOf(d.appointment().getId()), d.isException());
+        }
+
+        String encode(String sortSpec)
+        {
+            String raw = String.join("\u0000", start.toString(), end.toString(), name, reservationId, appointmentId,
+                    exception ? "1" : "0", sortSpec);
+            return java.util.Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(raw.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+
+        static BlockKey decode(String cursor, String sortSpec)
+        {
+            String[] f;
+            BlockKey key;
+            try
+            {
+                f = new String(java.util.Base64.getUrlDecoder().decode(cursor),
+                        java.nio.charset.StandardCharsets.UTF_8).split("\u0000", -1);
+                if (f.length != 7) throw new IllegalArgumentException();
+                key = new BlockKey(LocalDateTime.parse(f[0]), LocalDateTime.parse(f[1]), f[2], f[3], f[4], "1".equals(f[5]));
+            }
+            catch (RuntimeException e)
+            {
+                throw new IllegalArgumentException("invalid cursor `after`");
+            }
+            if (!f[6].equals(sortSpec)) throw new IllegalArgumentException("cursor does not match sort");
+            return key;
+        }
+    }
+
+    private record KeyedBlock(AppointmentBlockDto dto, BlockKey key) {}
+
+    /** The effective sort as the cursor carries it, e.g. "NAME:ASC,START:DESC"; the default is "START:ASC,END:ASC". */
+    private static String sortSpec(List<BlockSort> sort)
+    {
+        String spec = sort == null ? "" : sort.stream().filter(s -> s != null && s.field() != null)
+                .map(s -> s.field() + ":" + (s.dir() == SortDir.DESC ? "DESC" : "ASC"))
+                .collect(Collectors.joining(","));
+        return spec.isEmpty() ? "START:ASC,END:ASC" : spec;
     }
 
     private static String blockNameKey(AppointmentBlockDto d, java.util.Locale loc)

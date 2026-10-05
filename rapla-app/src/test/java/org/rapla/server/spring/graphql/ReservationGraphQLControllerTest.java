@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
@@ -1867,33 +1868,151 @@ class ReservationGraphQLControllerTest
     }
 
     /**
-     * PRD 074 — offset pagination: page 0 (offset 0) and page 1 (offset 2), each
-     * limit 2, are disjoint and contiguous — page 1 continues exactly where page 0
-     * stopped against the full ascending list.
+     * PRD 074 Phase 5 — cursor pagination: page 0 (limit 2) and the page after its endCursor
+     * are disjoint and contiguous against the full ascending list.
      */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
-    void appointmentBlocksOffsetPaginates()
+    void appointmentBlocksCursorPaginates() throws Exception
     {
         String win = "from: \"2006-01-01T00:00:00\", to: \"2006-12-31T00:00:00\"";
-        List<Map<String, Object>> all = tester.document(
-                "query { appointmentBlocks(filter: { " + win + " }) { start } }")
-                .execute().path("appointmentBlocks")
-                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
+        List<Map<String, Object>> all = pageRows(win, null, null, BLOCK_ROW);
         assertTrue(all.size() >= 4, () -> "need ≥4 blocks; got " + all.size());
 
-        List<Map<String, Object>> page1 = tester.document(
-                "query { appointmentBlocks(filter: { " + win + ", limit: 2 }, offset: 2) { start } }")
-                .execute().path("appointmentBlocks")
-                .entity(new ParameterizedTypeReference<List<Map<String, Object>>>() {}).get();
-        assertEquals(2, page1.size(), "offset 2 limit 2 returns 2 rows");
-        assertEquals(all.get(2).get("start"), page1.get(0).get("start"), "page1[0] == all[2]");
-        assertEquals(all.get(3).get("start"), page1.get(1).get("start"), "page1[1] == all[3]");
+        Object page0 = viewQuery(win + ", limit: 2", null, null, BLOCK_ROW);
+        assertEquals(all.subList(0, 2), com.jayway.jsonpath.JsonPath.read(page0, "$.data.appointmentBlocks"));
+        String cursor = com.jayway.jsonpath.JsonPath.read(page0, "$.extensions.view.page.endCursor");
+        assertNotNull(cursor);
+        Object page1 = viewQuery(win + ", limit: 2", null, cursor, BLOCK_ROW);
+        assertEquals(all.subList(2, 4), com.jayway.jsonpath.JsonPath.read(page1, "$.data.appointmentBlocks"));
+    }
+
+    private static final String BLOCK_ROW = "start end name isException appointment { id }";
+
+    /** Runs a @view appointmentBlocks query over mockMvc and returns the parsed response document. */
+    private Object viewQuery(String filter, String sort, String after, String selection) throws Exception
+    {
+        String query = "query W @view { appointmentBlocks(filter: { " + filter + " }"
+                + (sort != null ? ", sort: " + sort : "")
+                + (after != null ? ", after: \"" + after + "\"" : "")
+                + ") { " + selection + " } }";
+        String body = mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                .andReturn().getResponse().getContentAsString();
+        Object doc = com.jayway.jsonpath.Configuration.defaultConfiguration().jsonProvider().parse(body);
+        List<Object> errors = com.jayway.jsonpath.JsonPath.read(doc, "$..errors");
+        assertTrue(errors.isEmpty(), () -> "errors: " + body);
+        return doc;
+    }
+
+    private List<Map<String, Object>> pageRows(String filter, String sort, String after, String selection) throws Exception
+    {
+        return com.jayway.jsonpath.JsonPath.read(viewQuery(filter, sort, after, selection), "$.data.appointmentBlocks");
+    }
+
+    /** Walks every page of `limit` rows via endCursor until hasMore=false. */
+    private List<Map<String, Object>> walk(String win, int limit, String sort) throws Exception
+    {
+        List<Map<String, Object>> walked = new ArrayList<>();
+        String cursor = null;
+        for (int guard = 0; guard < 500; guard++)
+        {
+            Object doc = viewQuery(win + ", limit: " + limit, sort, cursor, BLOCK_ROW);
+            List<Map<String, Object>> rows = com.jayway.jsonpath.JsonPath.read(doc, "$.data.appointmentBlocks");
+            walked.addAll(rows);
+            Boolean hasMore = com.jayway.jsonpath.JsonPath.read(doc, "$.extensions.view.page.hasMore");
+            if (!hasMore) return walked;
+            cursor = com.jayway.jsonpath.JsonPath.read(doc, "$.extensions.view.page.endCursor");
+        }
+        throw new AssertionError("walk did not end");
+    }
+
+    /** PRD 074 Phase 5 — the cursor is bound to the sort order: a NAME walk (ASC and DESC) reproduces the full sorted list. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void cursorWalkFollowsNameSort() throws Exception
+    {
+        String win = "from: \"2002-04-01T00:00:00\", to: \"2002-05-01T00:00:00\"";
+        for (String dir : List.of("ASC", "DESC"))
+        {
+            String sort = "[{ field: NAME, dir: " + dir + " }]";
+            List<Map<String, Object>> all = pageRows(win, sort, null, BLOCK_ROW);
+            assertTrue(all.stream().map(r -> r.get("name")).distinct().count() >= 2, () -> "need ≥2 names; got " + all);
+            assertEquals(all, walk(win, 1, sort), "NAME " + dir + " walk");
+        }
+    }
+
+    /** PRD 074 Phase 5 — a cursor carries its sort order; replayed under another sort it is rejected. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void cursorFromAnotherSortIsRejected() throws Exception
+    {
+        String win = "from: \"2002-04-01T00:00:00\", to: \"2002-05-01T00:00:00\"";
+        String cursor = com.jayway.jsonpath.JsonPath.read(viewQuery(win + ", limit: 1", null, null, BLOCK_ROW),
+                "$.extensions.view.page.endCursor");
+        String query = "query { appointmentBlocks(filter: { " + win + ", limit: 1 }, sort: [{ field: NAME, dir: ASC }], after: \""
+                + cursor + "\") { start } }";
+        String body = mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(body.contains("cursor does not match sort"), () -> "expected a sort-mismatch error; got " + body);
+    }
+
+    /** PRD 074 Phase 5 — two appointments of one reservation with equal start/end: no duplicate, no gap at a page boundary. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void cursorSeparatesEqualTimeAppointmentsOfOneReservation() throws Exception
+    {
+        tester.document("""
+                mutation {
+                  createReservation(input: {
+                    id: "e7777777-7777-4777-8777-777777777777",
+                    typeKey: "event",
+                    classification: { event: {} },
+                    appointments: [
+                      { id: "a7777777-7777-4777-8777-777777777771", start: "2032-05-04T09:00:00", end: "2032-05-04T10:00:00", allDay: false },
+                      { id: "a7777777-7777-4777-8777-777777777772", start: "2032-05-04T09:00:00", end: "2032-05-04T10:00:00", allDay: false } ],
+                    allocations: [ { resourceId: "rdd6b473-7c77-4344-a73d-1f27008341cb" } ]
+                  }) { id }
+                }
+                """).execute().path("createReservation.id").entity(String.class).get();
+        String win = "from: \"2032-05-01T00:00:00\", to: \"2032-05-31T00:00:00\"";
+        List<Map<String, Object>> walked = walk(win, 1, null);
+        assertEquals(java.util.Set.of("a7777777-7777-4777-8777-777777777771", "a7777777-7777-4777-8777-777777777772"),
+                walked.stream().map(r -> ((Map<?, ?>) r.get("appointment")).get("id")).collect(java.util.stream.Collectors.toSet()));
+        assertEquals(2, walked.size());
     }
 
     /**
-     * PRD 074 — @view + pagination emits extensions.view.page {offset,limit,returned,hasMore}.
-     * With limit 1 over a multi-block window, hasMore must be true.
+     * 2026-10-05 — `limit` on appointmentBlocks / appointmentBlockStats counts BLOCKS, not
+     * reservations: the reservation selection must not stop after `limit` reservations
+     * (scar: a 10-year table of a large deployment ended after the blocks of the first 500
+     * reservations, with hasMore=false). Walking the pages with limit 1 reaches every block,
+     * and the stats count ignores the page limit.
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void blockLimitDoesNotTruncateReservations() throws Exception
+    {
+        String win = "from: \"2002-04-01T00:00:00\", to: \"2002-05-01T00:00:00\"";
+        var ref = new ParameterizedTypeReference<List<Map<String, Object>>>() {};
+        List<Map<String, Object>> all = tester.document(
+                "query { appointmentBlocks(filter: { " + win + " }) { start reservation { id } } }")
+                .execute().path("appointmentBlocks").entity(ref).get();
+        java.util.Set<Object> reservations = new java.util.HashSet<>();
+        for (Map<String, Object> b : all) reservations.add(((Map<?, ?>) b.get("reservation")).get("id"));
+        assertTrue(reservations.size() >= 2, () -> "need blocks of ≥2 reservations; got " + reservations.size());
+
+        List<Map<String, Object>> full = pageRows(win, null, null, BLOCK_ROW);
+        assertEquals(full, walk(win, 1, null), "limit 1 pages walk every block");
+
+        Integer count = tester.document(
+                "query { appointmentBlockStats(filter: { " + win + ", limit: 1 }, aggregate: [{ key: \"n\", fn: COUNT }]) { count } }")
+                .execute().path("appointmentBlockStats[0].count").entity(Integer.class).get();
+        assertEquals(all.size(), count, "stats count over the full set, not the page");
+    }
+
+    /**
+     * PRD 074 — @view + pagination emits extensions.view.page {limit,returned,hasMore,endCursor}.
+     * With limit 1 over a multi-block window, hasMore must be true and endCursor set.
      */
     @Test
     @WithMockUser(username = "homer", roles = "ADMIN")
@@ -1901,16 +2020,45 @@ class ReservationGraphQLControllerTest
     {
         String query = """
                 query Paged @view(title: "P") {
-                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 1 }, offset: 0) {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 1 }) {
                     start @column(header: "Beginn")
                   }
                 }
                 """;
         mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
-                .andExpect(jsonPath("$.extensions.view.page.offset").value(0))
+                .andExpect(jsonPath("$.extensions.view.page.offset").doesNotExist())
                 .andExpect(jsonPath("$.extensions.view.page.limit").value(1))
                 .andExpect(jsonPath("$.extensions.view.page.returned").value(1))
-                .andExpect(jsonPath("$.extensions.view.page.hasMore").value(true));
+                .andExpect(jsonPath("$.extensions.view.page.hasMore").value(true))
+                .andExpect(jsonPath("$.extensions.view.page.endCursor").isString());
+    }
+
+    /**
+     * PRD 074 Phase 5 — no `limit` means 1000 rows; an explicit limit is capped at 2500 per
+     * request (the cursor pages beyond).
+     */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void viewPageDefaultLimit1000AndCap2500() throws Exception
+    {
+        String unlimited = """
+                query Paged @view(title: "P") {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00" }) {
+                    start @column(header: "Beginn")
+                  }
+                }
+                """;
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(unlimited)))
+                .andExpect(jsonPath("$.extensions.view.page.limit").value(1000));
+        String huge = """
+                query Paged @view(title: "P") {
+                  appointmentBlocks(filter: { from: "2006-01-01T00:00:00", to: "2006-12-31T00:00:00", limit: 60000 }) {
+                    start @column(header: "Beginn")
+                  }
+                }
+                """;
+        mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(huge)))
+                .andExpect(jsonPath("$.extensions.view.page.limit").value(2500));
     }
 
     /**
@@ -2339,6 +2487,23 @@ class ReservationGraphQLControllerTest
             assertEquals(((Number) bk.get("count")).intValue(),
                     ((Number) val0.get("number")).intValue(), "COUNT metric == bucket count");
         }
+    }
+
+    /** 2026-10-05 — the filter `limit` pages rows; reservationStats counts the full matched set. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void reservationStatsIgnoresFilterLimit()
+    {
+        Integer count = tester.document("""
+                query {
+                  reservationStats(
+                    filter:    { from: "2002-04-01T00:00:00", to: "2002-05-01T00:00:00", limit: 1 },
+                    aggregate: [ { key: "n", fn: COUNT } ]
+                  ) { count }
+                }
+                """)
+                .execute().path("reservationStats[0].count").entity(Integer.class).get();
+        assertEquals(2, count, "both reservations of the window, not the first `limit`");
     }
 
     /**

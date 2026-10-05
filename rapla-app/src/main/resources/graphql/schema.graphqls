@@ -91,7 +91,7 @@ type Query {
   # §12: anonymous → empty / null. Authenticated → canRead-filtered.
   # `reservations` requires a mandatory time window (from + to). The window
   # cap is configurable via rapla.graphql.max-query-window-days (default null
-  # = no cap). Result size caps at 5000 entries (default 500).
+  # = no cap). `limit` defaults to 1000 rows; no upper cap.
   reservation(id: ID!): Reservation
   reservations(filter: ReservationFilter!): [Reservation!]!
 
@@ -139,11 +139,12 @@ type Query {
   # block), sorted ascending by start. Same §12 + window/limit semantics as
   # `reservations`. Basis for the SPA table/calendar views.
   # PRD 074 — `sort` orders the flat block list server-side (locale Collator for
-  # NAME, stable reservation-id tiebreaker); `offset` paginates (skip N). The
-  # block count kept is bounded to `offset + limit + 1` (the +1 powers `hasMore`
-  # without a full count). Use `@view` to also receive `extensions.view.page`
-  # `{ offset, limit, returned, hasMore }`. Default sort = START ASC.
-  appointmentBlocks(filter: ReservationFilter!, sort: [BlockSort!], offset: Int): [AppointmentBlock!]!
+  # NAME, stable reservation id + appointment id + start + exception tiebreaker). PRD 074
+  # Phase 5 — cursor paging: `after` = the `endCursor` of the previous page (opaque,
+  # bound to the sort order); the page holds the next `limit` blocks strictly after
+  # it. Use `@view` to also receive `extensions.view.page`
+  # `{ limit, returned, hasMore, endCursor }`. Default sort = START ASC.
+  appointmentBlocks(filter: ReservationFilter!, sort: [BlockSort!], after: String): [AppointmentBlock!]!
 
   # PRD 097 Phase 5 — the day scaffold for 2D templates: the window snapped
   # OUTWARD to full Monday-first weeks (grid window ⊇ filter window), one strip
@@ -419,7 +420,7 @@ input PotentialConflictInput {
 PRD 055 — mandatory time window + optional narrowing predicates for
 `reservations(filter:)`. Window is mandatory because the un-windowed query
 is "scan every reservation in the deployment" — at admin scale that's many
-seconds of CPU per call. Default limit 500; hard cap 5000.
+seconds of CPU per call. Default limit 1000; no hard cap.
 
 PRD 028 power search: `searchText` + `matchKind` (on this filter) +
 ranking are documented at PRD 028 §"GraphQL substrate augmentations".
@@ -473,7 +474,7 @@ input ReservationFilter {
   accessibleByGroup:    [String!]
   "PRD 069 — minimum access level the target must hold (default READ = visible; EDIT = editable). Ignores time-window constraints in v1."
   accessLevel:          AccessLevel = READ
-  "Cap result size. Default 500, hard cap 5000."
+  "Cap result size. Default 1000. appointmentBlocks: max 2500 per request (page on with `after`)."
   limit:             Int
   """
   PRD 097 Phase 5 — the rendered day set (null = all seven). One declaration,
@@ -512,7 +513,7 @@ enum SortDir { ASC  DESC }
 "PRD 074 — sortable fields of the flat block list. NAME = locale-collated block name; DURATION omitted in v1 (formatted string, not numerically comparable)."
 enum BlockSortField { START  END  NAME }
 
-"PRD 074 — one sort key for `appointmentBlocks(sort:)`. Multiple keys chain left-to-right; a stable reservation-id tiebreaker is always appended."
+"PRD 074 — one sort key for `appointmentBlocks(sort:)`. Multiple keys chain left-to-right; a stable reservation id + appointment id + start + exception tiebreaker is always appended."
 input BlockSort {
   field: BlockSortField!
   dir:   SortDir = ASC
