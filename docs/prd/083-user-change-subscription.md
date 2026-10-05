@@ -1,6 +1,6 @@
 # PRD 083 — permission-scoped read index + user change-subscription
 
-**Status:** in progress — Part A first cut built (per-user cached readable set, `PermissionIndex`, live in every GraphQL request); `access_grant` inverted index not built; Part B (`changesSince`) not started. State checked 2026-10-05. (Absorbed [PRD 082](082-storage-memory-model.md) Workstream B — the permission read index — 2026-06-24.)
+**Status:** in progress — Part A first cut built (per-user cached readable set, `PermissionIndex`, live in every GraphQL request); `access_grant` inverted index not built; Part B (`changesSince`) not built; concept decided 2026-10-05 (B-D1–B-D4), open SQ1/SQ3/SQ4/SQ5. State checked 2026-10-05. (Absorbed [PRD 082](082-storage-memory-model.md) Workstream B — the permission read index — 2026-06-24.)
 **Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — foundation: H2 read-model + put/remove projection seam this index sits on), [PRD 086](086-appointment-block-index.md) (appointment index — dual-API sibling), [PRD 087](087-classification-type-indices.md) (classification indices — GraphQL-only sibling), [PRD 035](done/035-graphql-foundations.md) (GraphQL foundations), [PRD 026](026-angular-frontend.md) (Angular SPA), [`docs/authentication.md`](../authentication.md) (stateless JWT), AGENTS.md §12 (data-leak prevention)
 
 **This PRD both *owns* and *consumes* the permission index.** **Part A** builds the `access_grant`
@@ -131,7 +131,7 @@ sets; existing §12 MockMvc leak tests stay green. The flattening must reproduce
 **State (2026-10-05):** not started — no `changesSince` in schema, server or SPA. The SPA has no refresh path for changes by others at all (no polling, no visibility hook); concept round with the user pending.
 
 **Consumes Part A.** 083 Part A answers "what can this user read/allocate, fast"; Part B answers "what
-changed that is relevant to this user, so the UI can refresh" — the same `access_grant` index +
+changed that is relevant to this user, so the UI can refresh" — the same permission answers (since 2026-10-05: `PermissionController` + the PRD 129 group cache directly on the small delta, B-D1 — not the `access_grant` index) +
 caller-context cache, evaluated per-update instead of per-query.
 
 ## Problem
@@ -166,8 +166,9 @@ Three simplifications this buys 083, plus one constraint:
 changesSince(since: Timestamp) → {
   until: Timestamp                        # new watermark the client stores for next call
   resync: Boolean                         # true when `since` predates historyValidStart → client must full-reload
-  resourcesChanged:         [allocatableId]   # ANY change relevant to me on this resource
-  eventsChangedOnResources: [allocatableId]   # new/changed events on resources I can read
+  resourcesChanged:         [resourceId]      # ANY change relevant to me on this resource
+  eventsChangedOnResources: [resourceId]      # new/changed events on resources I can read
+  eventsChangedForOwners:   [userId]          # owners of new/changed events I can read (user chips, ownerIn — PRD 123 D10)
 }
 ```
 
@@ -197,9 +198,9 @@ The server never decides the client's view — it only names affected resource-i
 
 The delta is **window-bounded** (changes since the watermark), so it is small; relevance-filtering it is cheap. Per caller, since `T`:
 
-1. **Event changes** — changed reservations in `[T, now]` → their allocatable-ids → ∩ caller's readable resources (`access_grant ≥ READ` via the caller-context cache) → `eventsChangedOnResources`.
-2. **Resource changes** — changed allocatables in `[T, now]` whose **content or the caller's effective level** changed → `resourcesChanged`. The level-change is detectable because the entity's `access_grant` rows changed at the seam.
-3. **Caller's own membership / hierarchy change since `T`** — recompute the caller's principal set; resources whose level *for this caller* flipped → add to `resourcesChanged` (no per-entity change record exists for these — they are found via the `access_grant` lookup on the changed principals). A hierarchy change (rare) may degrade to a full-resync hint.
+1. **Event changes** — changed reservations in `[T, now]` → their allocatable-ids → ∩ caller's readable resources (`canRead` via `PermissionController` + PRD 129 group cache, B-D1) → `eventsChangedOnResources`.
+2. **Resource changes** — changed allocatables in `[T, now]` whose **content or the caller's effective level** changed → `resourcesChanged`. The level change is detectable because the delta carries old and new state of the allocatable: compare the caller's level on both (`PermissionController`, B-D1).
+3. ~~Caller's own membership / hierarchy change~~ — replaced by B-D1: answered with `resync: true`.
 
 All three are **id-set operations over [PRD 082](082-storage-memory-model.md)'s indices + the caller-context cache** — no entity hydration, no content serialization in the feed. The actual data flows only on the client's subsequent re-query, and only if it deems the change relevant.
 
@@ -219,8 +220,8 @@ All three are **id-set operations over [PRD 082](082-storage-memory-model.md)'s 
 
 ## Plan
 
-- **Phase 1** — `changesSince(since)` GraphQL query over the existing `UpdateResult` delta, with the read-time relevance filter (event-changes + resource-changes arms) using [PRD 082](082-storage-memory-model.md)'s `access_grant` + caller-context cache. Poll-only.
-- **Phase 2** — membership/hierarchy-change arm (caller principal-set delta → `resourcesChanged`); full-resync hint for hierarchy changes.
+- **Phase 1** — SPA side (B-D4) + `changesSince(since)` GraphQL query over the existing `UpdateResult` delta, with the read-time relevance filter (event-changes + resource-changes arms) using `PermissionController` + the PRD 129 group cache (B-D1). Poll-only.
+- **Phase 2** — ~~membership/hierarchy-change arm~~ replaced by B-D1: any change of the caller's groups or of the category hierarchy → `resync: true`.
 - **Phase 3** — optional server→client push (SSE/WebSocket) routed via the permission index; poll-backstopped.
 
 ## Tests
@@ -229,9 +230,18 @@ All three are **id-set operations over [PRD 082](082-storage-memory-model.md)'s 
 - Differential: relevance set == `PermissionController` evaluation over the delta, across many users.
 - Idempotency: re-sending the same `since` timestamp yields a delta the client applies without divergence.
 
+## Part B decisions (2026-10-05)
+
+- **B-D1 — Group or hierarchy change → `resync` (user, 2026-10-05).** A change of the caller's user entity (groups) or of any category since `since` answers `resync: true`; the SPA reloads its scope. Rare, and it avoids needing the inverted `access_grant` index for Part B: the delta is small, so the relevance filter runs `PermissionController` directly on it, with the [PRD 129](129-cached-permission-groups.md) group cache. SQ2 likewise: a changed dynamic type or the caller's preferences → `resync`.
+- **B-D2 — `eventsChangedForOwners` (user, 2026-10-05).** User chips scope by owner (`ownerIn`, PRD 123 D10); an owner's event on resources the view does not show would otherwise go unnoticed. Owner ids of new/changed/deleted events the caller can read; §12 as for the other arms.
+- **B-D3 — Wire names follow PRD 116:** `resourceId`, not `allocatableId`.
+- **B-D4 — SPA consumer (to be built, part of Phase 1).** One poller calls `changesSince`; on a hint it reloads what is affected: the lean resource list (`resourcesChanged`; then `FilterStore.reconcile` runs), the current view when a hint hits its scope (resource chips, `ownerIn`), and the PRD 128 conflict/request counts when the Prüfen context is loaded (any event hint). `resync` → reload everything in scope. Also on tab `visibilitychange` → visible.
+
 ## Open Questions
 
 - **SQ1** — Granularity: is resource-keyed (`allocatableId`) enough, or do some views need event-id-level hints (a single event changed without a resource-level signal)? The resource re-query covers it but may over-fetch.
-- **SQ2** — Non-resource entities the UI shows (dynamic types, categories, the user's preferences): do they need their own change arms, or is a coarse "metadata changed → resync" sufficient?
+- **SQ2** — *(resolved by B-D1: `resync`)* Non-resource entities the UI shows (dynamic types, categories, the user's preferences): do they need their own change arms, or is a coarse "metadata changed → resync" sufficient?
 - **SQ3** — Push timing (Phase 3): is server→client push justified by measured UX need, or is the watermark poll (tunable interval) sufficient? (Mirrors [PRD 082](082-storage-memory-model.md)'s "poll → push" deprioritization for the cross-pod path.)
 - **SQ4** — Swing client: does it consume the same `changesSince` contract, or keep its existing `refresh(lastValidated)` full-delta path? (The SPA is the primary driver.)
+- **SQ5** — Poll interval for the SPA: like Swing (~10 s), or slower (e.g. 60 s) plus an immediate poll when the tab becomes visible again? *Resolution:* pending (user, 2026-10-05).
+

@@ -1,6 +1,6 @@
 # PRD 119 — SPA: one search field, resource picker with type chips and group tree
 
-**Status:** draft — 2026-09-15. Direction decided by the user on 2026-09-15 after two rounds of clickable prototypes; data access revised the same day (user: load one lean resource list, not the full resource as Swing does; change notification later). Phases 1–3 implemented and committed on master in `d0395b700` (2026-09-15, rapla-impl); Phase 3b (D12 display caps, D5 row-order fix, two missing tests) committed in `2b14f6e6d`; Phase 4 waits for a group source.
+**Status:** draft — 2026-09-15. Direction decided by the user on 2026-09-15 after two rounds of clickable prototypes; data access revised the same day (user: load one lean resource list, not the full resource as Swing does; change notification later). Phases 1–3 implemented and committed on master in `d0395b700` (2026-09-15, rapla-impl); Phase 3b (D12 display caps, D5 row-order fix, two missing tests) committed in `2b14f6e6d`; Phase 4 waits for a group source. D13 (2026-10-05, user) supersedes D3: picker field back, top field hands its term over by click — Phase 2b open.
 **Related:** [PRD 081](081-graphql-omnibox-multisearch.md) (omnibox multisearch, "find / step / filter" split), [PRD 089](089-server-side-recents-favorites.md) (server-side recents + favorites), [PRD 099](099-spa-table-selection.md) (`TableSelection` click/Ctrl/Shift semantics), [PRD 104](104-spa-template-picker.md) (the "Neu" picker: flat list + recents instead of a menu tree), [PRD 116](done/116-graphql-allocatable-to-resource-rename.md) (`Resource` umbrella, `ResourceKind { RESOURCE, PERSON }`), [PRD 077](077-calendar-model-graphql.md) (groups as `ClassificationFilter[]`), [PRD 028](028-angular-power-search.md) (`searchText` / `matchKind`)
 
 ## Abstract
@@ -45,7 +45,13 @@ The SPA's resource picker opens empty: the left list only shows recents, favorit
 
 The list area scrolls (user, 2026-09-15: "und dann scrollbar"); the caps limit how many rows are rendered, not what can be reached. Filtering in the browser is unaffected (D8). No virtual scrolling for now; add it only if capped lists still feel slow.
 
-**D3 — One search field, at the top.** The picker loses its own input. Typing in the top field immediately narrows the picker:
+**D13 — Two fields, handoff by click (user, 2026-10-05; supersedes D3).** The open dropdown covered the list the count row pointed to, and on mobile the picker and the calendar are separate screens, so live narrowing showed into nothing.
+- The picker has its own search field again, in the rail's head row left of "+ Neu" (user: "fits the room left of the new button perfectly"; the head row now always renders, "+ Neu" only when a type is creatable — PRD 127 acceptance (1)), above the PRD 127 accordion; only it narrows the picker. Its query persists as before (PRD 123 D5).
+- The top field no longer narrows the picker. Its dropdown stays: the count row "n Ressourcen und Gruppen …" (counted with the picker's matcher for the top term) plus event hits (D4).
+- Clicking the count row copies the top term into the picker field (overwriting it), closes the dropdown and focuses the picker field; on mobile it switches to the resource screen. One-time copy, no binding afterwards.
+- Resources stay findable from the top field (D3's "the user rejected moving them out" holds) via the count row only. Rejected for now: top-5 resource hits with click = show / Ctrl = add in the dropdown — addable later above the count row without changing the rest.
+
+**D3 — ~~One search field, at the top.~~ Superseded 2026-10-05 by D13: the picker gets its own field again; the top field no longer narrows it.** The picker loses its own input. Typing in the top field immediately narrows the picker:
 - no minimum length, applied within the active chip;
 - tree branches with matches expand automatically, the rest disappears;
 - a node whose own name matches shows all its members;
@@ -55,7 +61,7 @@ The list area scrolls (user, 2026-09-15: "und dann scrollbar"); the caps limit h
 Resources stay part of the top search — the user rejected moving them out — but their hits live in the picker, not in the dropdown.
 
 **D4 — The dropdown shows events only.**
-- **Layout:** a first row "n Ressourcen und Gruppen in der Liste links"; clicking it focuses the picker (narrow screens: OQ 5). From three characters, the dropdown lists events.
+- **Layout:** a first row "n Ressourcen und Gruppen in der Liste links"; clicking it focuses the picker (narrow screens: OQ 5). **Amended 2026-10-05 (D13):** clicking it copies the top term into the picker field. From three characters, the dropdown lists events.
 - **Event hit:** sets the view window to the week of `firstOccurrenceStart` and opens the event sheet for that reservation (`EventSheetDialogData { id }`). The `navigate()` / `edit()` stubs go.
 - **Event outside the selection:** if none of the event's resources is selected, the sheet shows a hint with "Ressourcen des Termins auswählen", which replaces the selection with the event's resources.
 
@@ -140,6 +146,13 @@ Phases 1–3 were committed on master in `d0395b700` (2026-09-15). Checkboxes be
 - [x] S3: event search gate `canModify` → `canRead`; tier-3 test in `SearchGraphQLControllerTest`.
 - [x] Sheet opens read-only for events the caller can't edit — code: `event-sheet.component.ts` sets `canModify` from the loaded `canModify && !readOnly`, edit entry points return early (search hits pass no `readOnly`, so the server decides). Test landed with Phase 3b (`2b14f6e6d`).
 
+### Phase 2b — Two fields (D13, 2026-10-05)
+
+Implemented by rapla-impl 2026-10-05 (report: `ng test` 771/771, lint+build clean), uncommitted; event-sheet assign mode already had its own field. Open: omnibox Enter = hand-over, ↓ without function.
+- [x] Picker search field in the rail head row left of "+ Neu" (event-sheet assign mode: top of the picker), bound to the store query; the "Suchfilter … aktiv" row stays the picker's.
+- [x] Omnibox keeps its own term (not persisted, not written to the store); count row counts that term with the picker's matcher; click copies it into the store query, closes the dropdown, focuses the picker field.
+- [x] Tests: tier 5 count for a term without touching the store query; tier 6 typing at the top leaves the picker unchanged, count-row click fills and focuses the picker field; the "one search input in the shell" assertion becomes two.
+
 ### Phase 3 — Group tree
 - [x] S1 `groupPaths: [[String!]!]!` on `Resource` (`ResourceTreeRules`, `StructuralTypeFetchers`); tier-2 `ResourceTreeRulesTest`; tier-3 `ResourceTreeFieldsGraphQLTest`.
 - [x] Tree building in the store from the list (`state/resource-tree.ts`); rendering under type chips: expand/collapse, counts, "alle wählen", auto-expand on query.
@@ -176,7 +189,7 @@ Implemented by rapla-impl 2026-09-15 and in REVIEW 119-P3b (rapla-impl report: f
 Questions 4–7 carry a **default** (set 2026-09-15 by the concept session at the coordinator's request, not ruled by the user). Implementation follows the default; the user may overturn it.
 
 4. **Large deployments:** D8 loads every readable resource once. Up to low tens of thousands this is a few MB. Beyond that the picker would load per type chip and search server-side (throttled). No perf test for now (user, 2026-09-15). **Default:** load the full list for every deployment; no per-chip loading until a large deployment shows slow loading. Rendering is capped by D12. Proposed, not ruled: a load cap (e.g. 5,000, request cap + 1 to detect truncation) with a "zu viele Ressourcen — bitte suchen oder einen Typ wählen" hint, and a server-search mode only once a deployment hits the cap. JSON responses are already gzip-compressed (`server.compression.enabled` in `application.yml`). `resourceAvailability` by `ids` is capped at 200 ids per request (`INVALID_VALUE` on `input.candidates.ids` above that, counted before any lookup; review L6, 2026-10-01).
-5. **Narrow screens:** the shell's side panel is always open today (`app.html`: `mat-sidenav mode="side" opened`), with no collapse on narrow widths. **Default:** keep it that way in this PRD; the dropdown's count row only focuses the picker. A collapsible drawer is separate work.
+5. **Narrow screens:** the shell's side panel is always open today (`app.html`: `mat-sidenav mode="side" opened`), with no collapse on narrow widths. **Default:** keep it that way in this PRD; the dropdown's count row only focuses the picker. A collapsible drawer is separate work. *Direction (user, 2026-10-05):* on mobile the SPA switches between resource selection and calendar; the count row hands the term over (D13).
 6. **Keeping the list current (later, user 2026-09-15):** how does an open SPA learn that a resource was added, renamed or deleted? Candidates: reload when the picker gains focus after a pause, a lightweight "resources changed since" check against the update history the pods already poll, or a push channel. **Default:** the list loads on SPA start and after the SPA's own resource create/edit/delete (the resource edit dialog); nothing else.
 7. **Event search cost:** the event bucket scans all reservation names per request. **Default:** throttle only (`throttleTime`, from three characters); no name index (PRD 085) until measured slow.
 
