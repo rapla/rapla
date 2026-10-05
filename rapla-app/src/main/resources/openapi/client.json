@@ -4180,6 +4180,9 @@
             "items" : {
               "$ref" : "#/components/schemas/ProviderEntry"
             }
+          },
+          "language" : {
+            "type" : "string"
           }
         }
       },
