@@ -57,6 +57,48 @@ const SCALAR_TYPES: Record<string, AttributeValueType> = {
   Resource: 'ALLOCATABLE',
 };
 
+/** PRD 124 OQ3 — labels in the request language; keys are the SDL spellings. */
+export const ATTRIBUTE_NAMES_QUERY =
+  'query { types { key attributeNames { key name values { key name } } } }';
+
+export interface TypeAttributeNames {
+  key: string;
+  attributeNames: {
+    key: string;
+    name: string;
+    values?: { key: string; name: string }[] | null;
+  }[];
+}
+
+/** Overlay the query's labels on the SDL shape; whatever the query does not name keeps its SDL label. */
+export function applyAttributeNames(
+  types: Map<string, ClassificationType>,
+  names: TypeAttributeNames[],
+): Map<string, ClassificationType> {
+  const byType = new Map(
+    names.map((t) => [t.key, new Map(t.attributeNames.map((a) => [a.key, a]))]),
+  );
+  const out = new Map<string, ClassificationType>();
+  for (const [typeKey, type] of types) {
+    const attrs = byType.get(typeKey);
+    out.set(typeKey, {
+      ...type,
+      attributes: type.attributes.map((a) => {
+        const n = attrs?.get(a.key);
+        if (!n) return a;
+        const values = new Map((n.values ?? []).map((v) => [v.key, v.name]));
+        return {
+          ...a,
+          label: n.name,
+          enumValues:
+            a.enumValues?.map((e) => ({ ...e, label: values.get(e.key) ?? e.label })) ?? null,
+        };
+      }),
+    });
+  }
+  return out;
+}
+
 /** Interface fields present on every generated type — not attributes. */
 const NON_ATTRIBUTE_FIELDS = new Set(['type', 'typeKey']);
 

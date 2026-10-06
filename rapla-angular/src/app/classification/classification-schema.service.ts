@@ -1,9 +1,11 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, of, shareReplay, switchMap } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, shareReplay, switchMap } from 'rxjs';
 
 import { GraphqlService } from '../graphql/graphql.service';
 import {
+  ATTRIBUTE_NAMES_QUERY,
+  applyAttributeNames,
   categoryTreeSelection,
   flattenCategoryTree,
   normalizeClassificationValues,
@@ -12,6 +14,7 @@ import {
   type CategoryNode,
   type CategoryRow,
   type ClassificationType,
+  type TypeAttributeNames,
 } from './classification-schema';
 
 /**
@@ -38,8 +41,16 @@ export class ClassificationSchemaService {
 
   load(): Observable<Map<string, ClassificationType>> {
     if (!this.types$) {
-      this.types$ = this.http.get('/api/graphql/schema', { responseType: 'text' }).pipe(
-        map((sdl) => parseClassificationSdl(sdl)),
+      // PRD 124 OQ3 — the SDL gives the shape, the labels come in the request language.
+      const names$ = this.gql.query<{ types: TypeAttributeNames[] }>(ATTRIBUTE_NAMES_QUERY).pipe(
+        map((resp) => resp.data?.types ?? []),
+        catchError(() => of([])),
+      );
+      this.types$ = forkJoin([
+        this.http.get('/api/graphql/schema', { responseType: 'text' }),
+        names$,
+      ]).pipe(
+        map(([sdl, names]) => applyAttributeNames(parseClassificationSdl(sdl), names)),
         shareReplay(1),
       );
       this.types$.subscribe((m) => this.typeMap.set(m));

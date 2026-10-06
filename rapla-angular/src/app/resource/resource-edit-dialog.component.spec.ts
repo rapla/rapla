@@ -8,6 +8,7 @@ import {
   ResourceEditDialogComponent,
   type ResourceEditDialogData,
 } from './resource-edit-dialog.component';
+import { flushSchema } from '../classification/schema-testing';
 
 const SDL = `
 type kameraClassification implements ResourceClassification & Classification {
@@ -90,7 +91,7 @@ describe('ResourceEditDialogComponent (PRD 096 Phase 4)', () => {
     http.expectOne((r) => r.url === '/api/graphql').flush(shell);
     fixture.detectChanges();
     if (shell.data.resource) {
-      http.expectOne('/api/graphql/schema').flush(SDL);
+      flushSchema(http, SDL);
       fixture.detectChanges();
       http.expectOne((r) => r.url === '/api/graphql').flush(VALUES);
       fixture.detectChanges();
@@ -244,7 +245,7 @@ type dozentClassification implements PersonClassification & Classification {
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
     gql(http, 'newResourceOptions').flush(CREATABLE);
-    http.expectOne('/api/graphql/schema').flush(CREATE_SDL);
+    flushSchema(http, CREATE_SDL);
     fixture.detectChanges();
     beforePrototype(fixture.componentInstance);
     const proto = gql(http, 'resourcePrototype');

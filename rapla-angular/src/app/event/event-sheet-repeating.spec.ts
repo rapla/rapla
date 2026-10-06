@@ -6,6 +6,7 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { provideNativeDateAdapter } from '@angular/material/core';
 
 import { EventSheetComponent } from './event-sheet.component';
+import { flushSchema } from '../classification/schema-testing';
 
 /**
  * Tier-6 — PRD 091 Phase 4.3: the recurrence panel in the Termine section.
@@ -38,7 +39,7 @@ type eventClassification implements Classification & ReservationClassification {
     const fixture = TestBed.createComponent(EventSheetComponent);
     fixture.componentRef.setInput('id', 'e-test-rep-1');
     fixture.detectChanges();
-    TestBed.inject(HttpTestingController).expectOne('/api/graphql/schema').flush(SDL);
+    flushSchema(TestBed.inject(HttpTestingController), SDL);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();

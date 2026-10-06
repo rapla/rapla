@@ -5,6 +5,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 import { EventSheetComponent } from './event-sheet.component';
+import { flushSchema } from '../classification/schema-testing';
 
 /**
  * Tier-6 — PRD 091 plan 2c.3: the undo/redo savebar buttons and the
@@ -41,7 +42,7 @@ type meetingClassification implements Classification & ReservationClassification
     const fixture = TestBed.createComponent(EventSheetComponent);
     fixture.componentRef.setInput('id', 'e-test-undo-1');
     fixture.detectChanges();
-    TestBed.inject(HttpTestingController).expectOne('/api/graphql/schema').flush(sdl);
+    flushSchema(TestBed.inject(HttpTestingController), sdl);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();

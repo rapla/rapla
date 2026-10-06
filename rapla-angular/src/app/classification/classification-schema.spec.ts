@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyAttributeNames,
   categoryTreeSelection,
   flattenCategoryTree,
   parseClassificationSdl,
@@ -168,5 +169,47 @@ describe('category tree helpers (PRD 096 Phase 5)', () => {
         hasChildren: false,
       },
     ]);
+  });
+});
+
+describe('applyAttributeNames (PRD 124 OQ3 — labels in the request language)', () => {
+  const names = [
+    {
+      key: 'room',
+      attributeNames: [
+        { key: 'seats', name: 'Seats', values: null },
+        { key: 'gruppe', name: 'Group', values: [{ key: 'c1', name: 'HDMI cable' }] },
+        { key: 'ausstattung', name: 'Equipment', values: [{ key: 'c2', name: 'XLR cable' }] },
+      ],
+    },
+    { key: 'unknownType', attributeNames: [{ key: 'x', name: 'X', values: null }] },
+  ];
+
+  it('takes attribute and value labels from the query, not from @displayName', () => {
+    const room = new Map(
+      applyAttributeNames(parseClassificationSdl(SDL), names)
+        .get('room')!
+        .attributes.map((a) => [a.key, a]),
+    );
+    expect(room.get('seats')!.label).toBe('Seats');
+    expect(room.get('gruppe')!.label).toBe('Group');
+    expect(room.get('gruppe')!.enumValues).toEqual([
+      { key: 'c1', label: 'HDMI cable' },
+      { key: 'c2', label: 'XLR Kabel' },
+      { key: 'c4', label: 'c4' },
+    ]);
+    expect(room.get('ausstattung')!.enumValues![1]).toEqual({ key: 'c2', label: 'XLR cable' });
+  });
+
+  it('keeps the SDL label where the query names nothing, and the SDL shape untouched', () => {
+    const sdl = parseClassificationSdl(SDL);
+    const out = applyAttributeNames(sdl, names);
+    const room = new Map(out.get('room')!.attributes.map((a) => [a.key, a]));
+    expect(room.get('projector')!.label).toBe('Beamer');
+    expect(out.get('event')!.attributes[0].label).toBe('eventname');
+    expect([...out.keys()]).toEqual([...sdl.keys()]);
+    const strip = (t: Map<string, { attributes: { label?: string }[] }>) =>
+      JSON.stringify([...t.values()], (k, v) => (k === 'label' ? undefined : v));
+    expect(strip(out)).toBe(strip(sdl));
   });
 });

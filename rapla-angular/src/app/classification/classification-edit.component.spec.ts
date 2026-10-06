@@ -8,6 +8,7 @@ import {
   ClassificationEditComponent,
   type ClassificationPatch,
 } from './classification-edit.component';
+import { flushSchema } from './schema-testing';
 
 const SDL = `
 type meetingClassification implements Classification & ReservationClassification {
@@ -65,7 +66,7 @@ describe('ClassificationEditComponent (PRD 096 Phase 2)', () => {
   async function create() {
     const fixture = TestBed.createComponent(HostComponent);
     fixture.detectChanges();
-    TestBed.inject(HttpTestingController).expectOne('/api/graphql/schema').flush(SDL);
+    flushSchema(TestBed.inject(HttpTestingController), SDL);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -221,7 +222,7 @@ describe('ClassificationEditComponent tree category (PRD 096 Phase 5)', () => {
     const fixture = TestBed.createComponent(TreeHostComponent);
     fixture.detectChanges();
     const http = TestBed.inject(HttpTestingController);
-    http.expectOne('/api/graphql/schema').flush(TREE_SDL);
+    flushSchema(http, TREE_SDL);
     fixture.detectChanges();
     await fixture.whenStable();
     const req = http.expectOne('/api/graphql');
