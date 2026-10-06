@@ -327,7 +327,10 @@ the `raplaLocale` cookie with `Path=/` (since [PRD 124](prd/124-spa-i18n.md); it
 `/login` before, so the API never saw it — the old `/login` cookie is expired when a new
 choice is made). `RequestLanguage` (rapla-server) resolves a browser request's language
 as `raplaLocale` cookie (shipped languages only) → the user's `org.rapla.language`
-preference → the server language; `/api/locale` (the SPA's text catalogue) and
+preference → the configured server language (system `org.rapla.locale`, else `org.rapla.language`;
+only if set) → the browser's `Accept-Language` (first entry in q order that a shipped bundle
+covers; `RequestLanguage.browserLanguage`) → the JVM/bundle default. The login page uses the
+same chain (`?lang` → cookie → configured → browser → default; no user yet); `/api/locale` (the SPA's text catalogue) and
 `GET /api/auth/me` (field `language`) both use it. The choice is not written back into
 the user preference. Swing sends no cookie and is unaffected.
 

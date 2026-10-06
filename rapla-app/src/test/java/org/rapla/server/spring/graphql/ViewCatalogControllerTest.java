@@ -485,8 +485,8 @@ class ViewCatalogControllerTest
     @WithMockUser(username = "homer", roles = "ADMIN")
     void reviewViewsReturnBothRootFieldsAndTableColumns() throws Exception
     {
-        assertReviewView("rapla_conflicts", "conflicts", "CONFLICTS", "\"conflicts\":{}", "Konflikt mit");
-        assertReviewView("rapla_requests", "resourceRequests", "REQUESTS", "\"requests\":{}", "Veranstaltung");
+        assertReviewView("rapla_conflicts", "conflicts", "CONFLICTS", "\"conflicts\":{}", "Conflict with");
+        assertReviewView("rapla_requests", "resourceRequests", "REQUESTS", "\"requests\":{}", "Event");
     }
 
     private void assertReviewView(String name, String tableField, String selection, String reviewVariable, String header) throws Exception
@@ -505,7 +505,7 @@ class ViewCatalogControllerTest
         assertEquals("day", view.path("defaultRenderMode").asString(), "PRD 128 D7 — review views open in the day renderer: " + response);
         assertEquals("table", view.path("renderModes").get(0).asString(), "renderModes order unchanged: " + response);
         String columns = view.path("columns").toString();
-        assertTrue(columns.contains("\"" + header + "\"") && !columns.contains("\"Titel\""),
+        assertTrue(columns.contains("\"" + header + "\"") && !columns.contains("\"Title\""),
                 "the table columns come from the tableField root, not appointmentBlocks: " + columns);
     }
 }

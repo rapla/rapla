@@ -6,14 +6,15 @@ import org.rapla.components.util.LocaleTools;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.storage.StorageOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Resolves the server-configured display language — the admin "Server Sprache"
- * setting, stored as the SYSTEM preference {@link RaplaLocale#LANGUAGE_ENTRY}
- * (owner {@code null}). Everything that renders a localized name for ALL clients
+ * setting, stored as the SYSTEM preference {@link AbstractRaplaLocale#LOCALE} (the admin panel's key;
+ * {@link RaplaLocale#LANGUAGE_ENTRY} is the fallback for existing data) (owner {@code null}). Everything that renders a localized name for ALL clients
  * off a shared artifact (the generated GraphQL SDL {@code @displayName}s, the
  * {@code DynamicType.name} / {@code Allocatable.displayName} / {@code Category.name}
  * fetchers) must resolve names against this, NOT {@link Locale#getDefault()}
@@ -32,12 +33,31 @@ public final class ServerLocaleResolver
      */
     public static Locale resolve(StorageOperator operator, RaplaLocale raplaLocale)
     {
+        Locale configured = configured(operator);
+        if (configured != null)
+        {
+            return configured;
+        }
+        if (raplaLocale != null && raplaLocale.getLocale() != null)
+        {
+            return raplaLocale.getLocale();
+        }
+        return Locale.getDefault();
+    }
+
+    /** The language an admin configured ({@code org.rapla.locale}, else {@code org.rapla.language}, system preferences); null if neither is set. */
+    public static Locale configured(StorageOperator operator)
+    {
         try
         {
             Preferences sys = operator == null ? null : operator.getPreferences(null, false);
             if (sys != null)
             {
-                String lang = sys.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
+                String lang = sys.getEntryAsString(AbstractRaplaLocale.LOCALE, null);
+                if (lang == null || lang.isBlank())
+                {
+                    lang = sys.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
+                }
                 if (lang != null && !lang.isBlank())
                 {
                     return LocaleTools.getLocale(lang);
@@ -48,10 +68,6 @@ public final class ServerLocaleResolver
         {
             LOGGER.warn("Could not read the system-preference language; falling back to the configured default locale", ex);
         }
-        if (raplaLocale != null && raplaLocale.getLocale() != null)
-        {
-            return raplaLocale.getLocale();
-        }
-        return Locale.getDefault();
+        return null;
     }
 }

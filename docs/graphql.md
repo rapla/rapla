@@ -467,7 +467,7 @@ SDL directives carry the bits introspection alone doesn't expose:
 
 | Directive | When emitted | Read |
 |---|---|---|
-| `@displayName(value: "...")` | Always (locale-resolved at SDL-gen time) | Human-readable form label |
+| `@displayName(value: "...")` | Always (locale-resolved at SDL-gen time) | Human-readable form label in the server language — the SPA takes labels from `DynamicType.attributeNames` (request language) and falls back to this |
 | `@required` | Attribute is `!isOptional()` | Save-time required, read-time still nullable (legacy data may carry null) |
 | `@multiplicity(value: BELONGS_TO \| PACKAGE)` | ALLOCATABLE only, non-default multiplicity | Widget hint (vs plain LIST/SINGLE which is implied by the field type wrapper) |
 | `@expectedType(key: "...")` | ALLOCATABLE attrs with a DynamicType constraint | Filter the resource picker |
@@ -743,7 +743,7 @@ Window cap is configurable via Spring Boot property
 `rapla.graphql.max-query-window-days` (default null = no cap). Result
 size defaults to 1000 entries; `appointmentBlocks` caps `limit` at 2500 per
 request and pages on with the cursor (`after` = `extensions.view.page.endCursor`,
-PRD 074 Phase 5 — the cursor is bound to the sort order; no total cap).
+PRD 074 Phase 5 — the cursor is bound to the sort order (and, for a NAME sort, to the request language); no total cap).
 
 **Execution deadline.** A single GraphQL query's wall-clock is bounded by
 `rapla.graphql.execution-budget-millis` (default 30000; set 0 to disable) so
@@ -1080,8 +1080,8 @@ public class RequestContextInstrumentation extends SimplePerformantInstrumentati
         ctx.put(RequestCtx.KEY, new RequestCtx(
                 resolveCallerFromSecurityContext(),
                 operator.getPermissionController(),
-                LocaleContextHolder.getLocale()));
-        return SimpleInstrumentationContext.noOp();
+                requestLanguage.resolveCurrent(caller)));   // PRD 124 OQ3: cookie -> user pref -> server language
+        return SimpleInstrumentationContext.noOp();   // (the real one also mirrors the locale, see Pattern 4)
     }
 
     public record RequestCtx(User caller, PermissionController permissionController, Locale locale) {
@@ -1106,9 +1106,9 @@ Today `RequestCtx` carries two allocatable gates: `canReadAllocatable` (`canRead
 
 **Caveat — env materialization cost:** calling `envSupplier.get()` materializes the full `DataFetchingEnvironment`. For fields that always need it (ALLOCATABLE attrs needing §12), unavoidable. For fields that don't (locale-aware names), cache the value at wire time instead.
 
-### Pattern 4 — cache `RaplaLocale` at wire time, not per request
+### Pattern 4 — locale-aware names: ThreadLocal mirror of the request language
 
-For locale-aware field reads (`Resource.displayName`, `Category.name`, `DynamicType.name`), reading from `RequestCtx` requires `envSupplier.get()` — ~25 µs of env materialization that dominates if you have many locale-aware fields per row. Instead snapshot the configured locale at schema build:
+For locale-aware field reads (`Resource.displayName`, `Category.name`, `DynamicType.name`), reading from `RequestCtx` requires `envSupplier.get()` — ~25 µs of env materialization that dominates if you have many locale-aware fields per row. Since PRD 124 OQ3 (variant A: the schema is the same for everyone, names arrive in the **requesting user's** language) `RequestContextInstrumentation.beginExecution` mirrors the request language into a `ThreadLocal` that `StructuralTypeFetchers.locale()` / `localeFrom` read (~1 ns), and clears it in the execution's `onCompleted`; without it (a fetcher off the request thread, tests bypassing the instrumentation) they fall back to the env's `RequestCtx`, then to the server-language snapshot taken at schema build (the `@displayName` texts in the SDL always use that snapshot):
 
 ```java
 public final class StructuralTypeFetchers
@@ -1126,12 +1126,14 @@ public final class StructuralTypeFetchers
     }
 
     private static Locale localeFrom(Supplier<DataFetchingEnvironment> envSupplier) {
-        return serverLocale;  // single memory load; no env materialization
+        Locale l = REQUEST_LOCALE.get();   // set by RequestContextInstrumentation
+        if (l != null) return l;
+        ...                                // env RequestCtx, else serverLocale
     }
 }
 ```
 
-Per-request `Accept-Language` is sacrificed for ~25 µs/call × N per row × M rows. Single-locale deployments lose nothing; multi-locale deployments need a real design (ThreadLocal mirror, or a per-request invalidation path).
+Never cache a delivered name in a shared structure keyed without the locale. Built-in view texts (title, `rowLabel`, column headers, search group headings) are stored as `i18n:<key>` and resolved per delivery by `ViewTexts` (RaplaResources, then SpaResources; unknown key renders as the key; text without the prefix — stored user views — is untouched). `getViewQuery` returns the raw text with the raw `i18n:` keys — by design, for admins and GraphiQL (authoring surface). `DynamicType.attributeNames { key name values { key name } }` delivers attribute and value-list labels in the request language; `key` is the field name exactly as in `<TypeKey>Classification` (reserved words get a trailing `_`, otherwise = attribute key), `values[].key` the enum value from `ClassificationSdlGenerator.emittableEnumValues`; the SDL type name is `<DynamicType.key>Classification` (a key is never rewritten, non-spec keys fail the SDL build).
 
 ### Pattern 5 — graphql-java doesn't propagate interface fetchers — re-register on every implementation
 

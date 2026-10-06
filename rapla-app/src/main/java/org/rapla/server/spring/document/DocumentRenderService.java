@@ -53,13 +53,16 @@ public class DocumentRenderService
     private final org.springframework.beans.factory.ObjectProvider<
             org.rapla.plugin.timeslot.TimeslotProvider> timeslotProvider;
     private final org.rapla.server.spring.RaplaServerProperties properties;
+    private final org.rapla.server.spring.graphql.ViewTexts texts;
 
     public DocumentRenderService(DocumentCatalogService documents, ViewCatalogService views,
             HotSwappableGraphQlSource graphQlSource, DocumentRenderer renderer,
             org.springframework.beans.factory.ObjectProvider<
                     org.rapla.plugin.timeslot.TimeslotProvider> timeslotProvider,
-            org.rapla.server.spring.RaplaServerProperties properties)
+            org.rapla.server.spring.RaplaServerProperties properties,
+            org.rapla.server.spring.graphql.ViewTexts texts)
     {
+        this.texts = texts;
         this.documents = documents;
         this.views = views;
         this.graphQlSource = graphQlSource;
@@ -485,9 +488,9 @@ public class DocumentRenderService
         return locale == null ? "de" : locale.toLanguageTag();
     }
 
-    private static String title(ViewEntry view, String fallback)
+    private String title(ViewEntry view, String fallback)
     {
-        return view.title() != null ? view.title() : fallback;
+        return view.title() != null ? texts.resolveForRequest(view.title()) : fallback;
     }
 
     /** Execute the view in-process; the security context of the current request supplies the caller. */

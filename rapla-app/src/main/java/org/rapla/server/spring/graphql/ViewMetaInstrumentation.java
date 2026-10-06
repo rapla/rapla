@@ -59,6 +59,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
 {
+    private final ViewTexts texts;
+
+    public ViewMetaInstrumentation(ViewTexts texts)
+    {
+        this.texts = texts;
+    }
+
     private static final String CTX_KEY = "rapla.view.meta";
     /** Resolver-written pagination meta ({@code appointmentBlocks}), nested under {@code view.page}. */
     public static final String PAGE_CTX_KEY = "rapla.view.page";
@@ -199,7 +206,7 @@ public class ViewMetaInstrumentation extends SimplePerformantInstrumentation
         }
         Map<Object, Object> ext = new LinkedHashMap<>();
         if (executionResult.getExtensions() != null) ext.putAll(executionResult.getExtensions());
-        ext.put("view", meta);
+        ext.put("view", texts.resolveDeep(meta, RequestContextInstrumentation.from(ctx).locale()));
         return CompletableFuture.completedFuture(executionResult.transform(b -> b.extensions(ext)));
     }
 

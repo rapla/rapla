@@ -216,7 +216,7 @@ public class ReservationGraphQLController
         PermissionController pc = permissionController(rc);
         Allocatable template = readableTemplate(id, caller, pc);
         return template == null ? null
-                : EventTemplate.from(template, caller, pc, StructuralTypeFetchers.serverLocale(), operator);
+                : EventTemplate.from(template, caller, pc, StructuralTypeFetchers.locale(), operator);
     }
 
     private PermissionController permissionController(RequestContextInstrumentation.RequestCtx rc)
@@ -229,7 +229,7 @@ public class ReservationGraphQLController
     {
         org.rapla.entities.dynamictype.DynamicType templateType =
                 operator.getDynamicType(StorageOperator.RAPLA_TEMPLATE);
-        java.util.Locale locale = StructuralTypeFetchers.serverLocale();
+        java.util.Locale locale = StructuralTypeFetchers.locale();
         java.text.Collator collator = java.text.Collator.getInstance(locale);
         return operator
                 .getAllocatables(templateType.newClassificationFilter().toArray())
@@ -500,9 +500,9 @@ public class ReservationGraphQLController
         // a max-heap keeps the `limit + 1` smallest keys strictly after the cursor, so memory is
         // O(limit) however far the client pages; the +1 powers `hasMore`.
         boolean byName = sort != null && sort.stream().anyMatch(s -> s != null && s.field() == BlockSortField.NAME);
-        java.util.Locale loc = StructuralTypeFetchers.serverLocale();
+        java.util.Locale loc = StructuralTypeFetchers.locale();
         java.util.Comparator<BlockKey> cmp = buildBlockComparator(sort, loc);
-        String sortSpec = sortSpec(sort);
+        String sortSpec = sortSpec(sort, loc);
         BlockKey cursor = after == null ? null : BlockKey.decode(after, sortSpec);
         int keep = limit + 1;
         java.util.PriorityQueue<KeyedBlock> heap = new java.util.PriorityQueue<>(
@@ -884,7 +884,7 @@ public class ReservationGraphQLController
     {
         if (Boolean.TRUE.equals(g.self()))
         {
-            return List.of(new DimVal(alloc.getName(StructuralTypeFetchers.serverLocale()), alloc));
+            return List.of(new DimVal(alloc.getName(StructuralTypeFetchers.locale()), alloc));
         }
         if (g.expr() != null && !g.expr().isBlank())
         {
@@ -894,7 +894,7 @@ public class ReservationGraphQLController
         {
             var t = alloc.getClassification() == null ? null : alloc.getClassification().getType();
             if (t == null) return List.of();
-            return List.of(new DimVal(t.getName(StructuralTypeFetchers.serverLocale()), null));
+            return List.of(new DimVal(t.getName(StructuralTypeFetchers.locale()), null));
         }
         return List.of();
     }
@@ -905,7 +905,7 @@ public class ReservationGraphQLController
     {
         if (Boolean.TRUE.equals(g.self()))
         {
-            return List.of(new DimVal(r.getName(StructuralTypeFetchers.serverLocale()), r));
+            return List.of(new DimVal(r.getName(StructuralTypeFetchers.locale()), r));
         }
         if (g.expr() != null && !g.expr().isBlank())
         {
@@ -915,7 +915,7 @@ public class ReservationGraphQLController
         {
             var t = r.getClassification() == null ? null : r.getClassification().getType();
             if (t == null) return List.of();
-            return List.of(new DimVal(t.getName(StructuralTypeFetchers.serverLocale()), null));
+            return List.of(new DimVal(t.getName(StructuralTypeFetchers.locale()), null));
         }
         return List.of();
     }
@@ -1012,7 +1012,7 @@ public class ReservationGraphQLController
         {
             Reservation r = dto.reservation();
             if (r == null) return List.of();
-            return List.of(new DimVal(r.getName(StructuralTypeFetchers.serverLocale()), r));
+            return List.of(new DimVal(r.getName(StructuralTypeFetchers.locale()), r));
         }
         if (g.expr() != null && !g.expr().isBlank())
         {
@@ -1034,7 +1034,7 @@ public class ReservationGraphQLController
             for (Allocatable alloc : StructuralTypeFetchers.filterAllocatables(
                     dto.appointment(), caller, pc, g.resources(), operator))
             {
-                out.add(new DimVal(alloc.getName(StructuralTypeFetchers.serverLocale()), alloc));
+                out.add(new DimVal(alloc.getName(StructuralTypeFetchers.locale()), alloc));
             }
             return out;
         }
@@ -1082,7 +1082,7 @@ public class ReservationGraphQLController
             for (Object e : col) addEntityDimVals(e, caller, pc, out);
             return;
         }
-        java.util.Locale loc = StructuralTypeFetchers.serverLocale();
+        java.util.Locale loc = StructuralTypeFetchers.locale();
         if (o instanceof Allocatable a)
         {
             if (caller == null || pc == null || pc.canRead(a, caller)) out.add(new DimVal(a.getName(loc), a));
@@ -1293,11 +1293,13 @@ public class ReservationGraphQLController
 
     private record KeyedBlock(AppointmentBlockDto dto, BlockKey key) {}
 
-    /** The effective sort as the cursor carries it, e.g. "NAME:ASC,START:DESC"; the default is "START:ASC,END:ASC". */
-    private static String sortSpec(List<BlockSort> sort)
+    /** The effective sort as the cursor carries it, e.g. "NAME:ASC@de,START:DESC" (NAME carries the request
+     *  language: names and collator follow it); the default is "START:ASC,END:ASC". */
+    private static String sortSpec(List<BlockSort> sort, java.util.Locale loc)
     {
         String spec = sort == null ? "" : sort.stream().filter(s -> s != null && s.field() != null)
-                .map(s -> s.field() + ":" + (s.dir() == SortDir.DESC ? "DESC" : "ASC"))
+                .map(s -> s.field() + ":" + (s.dir() == SortDir.DESC ? "DESC" : "ASC")
+                        + (s.field() == BlockSortField.NAME ? "@" + loc.toLanguageTag() : ""))
                 .collect(Collectors.joining(","));
         return spec.isEmpty() ? "START:ASC,END:ASC" : spec;
     }

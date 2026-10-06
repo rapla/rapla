@@ -43,16 +43,16 @@ public class ViewCatalogService
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 
     static final List<ViewEntry> BUILTIN_VIEWS = List.of(
-            ViewEntry.builtin("rapla_appointments", "Termine",
+            ViewEntry.builtin("rapla_appointments", "i18n:appointments",
                     "query rapla_appointments(\n"
                     + "    $filter: ReservationFilter!,\n"
                     + "    $sort:   [BlockSort!] = [{ field: START, dir: ASC }],\n"
                     + "    $after:  String\n"
-                    + "  ) @view(title: \"Termine\", rowLabel: \"Termin|Termine\", renderModes: [table, day, week, month]) {\n"
+                    + "  ) @view(title: \"i18n:appointments\", rowLabel: \"i18n:view_row_appointment\", renderModes: [table, day, week, month]) {\n"
                     + "  appointmentBlocks(filter: $filter, sort: $sort, after: $after) {\n"
-                    + "    start @column(header: \"Von\",           order: 1)\n"
-                    + "    end   @column(header: \"Bis\",           order: 2)\n"
-                    + "    name  @column(header: \"Titel\",         order: 3)\n"
+                    + "    start @column(header: \"i18n:view_col_from\",           order: 1)\n"
+                    + "    end   @column(header: \"i18n:view_col_to\",           order: 2)\n"
+                    + "    name  @column(header: \"i18n:view_col_title\",         order: 3)\n"
                     + "    color @hidden\n"
                     + "    reservation @hidden { id  canModify  appointmentCount  classification { typeKey } }\n"
                     + "    appointment @hidden { id  repeating { type } }\n"
@@ -62,17 +62,17 @@ public class ViewCatalogService
                     + "    matchedBy @hidden { id }\n"
                     + "    isException @hidden\n"
                     + "    persons: resources(filter: { isPersonEq: true })\n"
-                    + "      @join(separator: \", \") @column(header: \"Personen\",   order: 4) {\n"
+                    + "      @join(separator: \", \") @column(header: \"i18n:persons\",   order: 4) {\n"
                     + "      id  name  isLocation\n"
                     + "    }\n"
                     + "    resources: resources(filter: { isPersonEq: false })\n"
-                    + "      @join(separator: \", \") @column(header: \"Ressourcen\", order: 5) {\n"
+                    + "      @join(separator: \", \") @column(header: \"i18n:resources\", order: 5) {\n"
                     + "      id  name  isLocation\n"
                     + "    }\n"
                     + "  }\n"
                     + "}"),
-            ViewEntry.builtin("rapla_reservations", "Veranstaltungen",
-                    "query rapla_reservations($filter: ReservationFilter!) @view(title: \"Veranstaltungen\", rowLabel: \"Veranstaltung|Veranstaltungen\") {\n"
+            ViewEntry.builtin("rapla_reservations", "i18n:events",
+                    "query rapla_reservations($filter: ReservationFilter!) @view(title: \"i18n:events\", rowLabel: \"i18n:view_row_event\") {\n"
                     + "  reservations(filter: $filter) {\n"
                     + "    name\n"
                     + "    start: firstDate\n"
@@ -86,15 +86,15 @@ public class ViewCatalogService
             // PRD 128 D7 — the review views: appointmentBlocks FIRST for the calendar renderers (focus
             // from the chips, D1), the review list second for the table (tableField). selection names the
             // left pane's source; $filter / $conflicts / $requests are bound by type from the scope.
-            ViewEntry.builtin("rapla_conflicts", "Konflikte", """
+            ViewEntry.builtin("rapla_conflicts", "i18n:conflicts", """
                     query rapla_conflicts($filter: ReservationFilter!, $conflicts: ConflictFilter)
-                      @view(title: "Konflikte", rowLabel: "Konflikt|Konflikte", renderModes: [table, day, week, month],
+                      @view(title: "i18n:conflicts", rowLabel: "i18n:view_row_conflict", renderModes: [table, day, week, month],
                             selection: CONFLICTS, tableField: "conflicts", defaultRenderMode: day)
                     {
                       appointmentBlocks(filter: $filter) {
-                        start @column(header: "Von", order: 1)
-                        end   @column(header: "Bis", order: 2)
-                        name  @column(header: "Titel", order: 3)
+                        start @column(header: "i18n:view_col_from", order: 1)
+                        end   @column(header: "i18n:view_col_to", order: 2)
+                        name  @column(header: "i18n:view_col_title", order: 3)
                         color @hidden
                         reservation @hidden { id  canModify  appointmentCount  classification { typeKey } }
                         appointment @hidden { id  repeating { type } }
@@ -104,10 +104,10 @@ public class ViewCatalogService
                         reservationId @hidden
                       }
                       conflicts(filter: $conflicts) {
-                        startDate    @column(header: "Datum", order: 1, format: "dd.MM.yyyy HH:mm")
-                        resource     @column(header: "Ressource", order: 2) { id name }
-                        reservation1 @column(header: "Veranstaltung", order: 3) { id name }
-                        description  @column(header: "Konflikt mit", order: 4)
+                        startDate    @column(header: "i18n:date", order: 1, format: "dd.MM.yyyy HH:mm")
+                        resource     @column(header: "i18n:resource", order: 2) { id name }
+                        reservation1 @column(header: "i18n:event", order: 3) { id name }
+                        description  @column(header: "i18n:view_col_conflict_with", order: 4)
                         id @hidden
                         disabled @hidden
                         reservation1Id @hidden
@@ -116,15 +116,15 @@ public class ViewCatalogService
                         appointment2Id @hidden
                       }
                     }"""),
-            ViewEntry.builtin("rapla_requests", "Ressourcenanfragen", """
+            ViewEntry.builtin("rapla_requests", "i18n:view_requests", """
                     query rapla_requests($filter: ReservationFilter!, $requests: ResourceRequestFilter)
-                      @view(title: "Ressourcenanfragen", rowLabel: "Anfrage|Anfragen", renderModes: [table, day, week, month],
+                      @view(title: "i18n:view_requests", rowLabel: "i18n:view_row_request", renderModes: [table, day, week, month],
                             selection: REQUESTS, tableField: "resourceRequests", defaultRenderMode: day)
                     {
                       appointmentBlocks(filter: $filter) {
-                        start @column(header: "Von", order: 1)
-                        end   @column(header: "Bis", order: 2)
-                        name  @column(header: "Titel", order: 3)
+                        start @column(header: "i18n:view_col_from", order: 1)
+                        end   @column(header: "i18n:view_col_to", order: 2)
+                        name  @column(header: "i18n:view_col_title", order: 3)
                         color @hidden
                         reservation @hidden { id  canModify  appointmentCount  classification { typeKey } }
                         appointment @hidden { id  repeating { type } }
@@ -134,8 +134,8 @@ public class ViewCatalogService
                         reservationId @hidden
                       }
                       resourceRequests(filter: $requests) {
-                        resource    @column(header: "Ressource", order: 1) { id name }
-                        reservation @column(header: "Veranstaltung", order: 2) { id name }
+                        resource    @column(header: "i18n:resource", order: 1) { id name }
+                        reservation @column(header: "i18n:event", order: 2) { id name }
                         reservationId @hidden
                         appointments @hidden { id }
                       }
@@ -149,15 +149,15 @@ public class ViewCatalogService
             // timeslot group column (one group column per view). Strip.index is aliased `s` so
             // the month template reaches the STRIP index from day/bar context (Mustache context-
             // stack shadowing).
-            ViewEntry.builtin("rapla_kalender", "Kalender", """
-                    query rapla_kalender($filter: ReservationFilter!) @view(title: "Kalender")
+            ViewEntry.builtin("rapla_kalender", "i18n:calendar", """
+                    query rapla_kalender($filter: ReservationFilter!) @view(title: "i18n:calendar")
                       @window(from: {anchor: WEEK_START}, to: {anchor: WEEK_START, offset: 7})
                       @param(name: "resource", into: "filter.resourceIdsIn", required: true)
                     {
                       appointmentBlocks(filter: $filter) {
                         tag: start @column(group: true, format: "EE dd.MM.")
-                        times @column(header: "Zeit", order: 1)
-                        name  @column(header: "Titel", order: 2)
+                        times @column(header: "i18n:view_col_time", order: 1)
+                        name  @column(header: "i18n:view_col_title", order: 2)
                         banner  color
                         segments { dayIndex startMin endMin lane laneCount clippedStart clippedEnd }
                         bars { strip startDay span row clippedStart clippedEnd }
@@ -168,9 +168,9 @@ public class ViewCatalogService
             // listed: false (2026-08-12) — parked out of the choosers (GraphiQL load dialog, SPA
             // dropdown) until it has a decent render view; the builtin DOCUMENT wochenprogramm
             // still resolves it by name and keeps rendering.
-            ViewEntry.builtin("rapla_wochenprogramm", "Wochenprogramm", """
+            ViewEntry.builtin("rapla_wochenprogramm", "i18n:week_timeslot", """
                     query rapla_wochenprogramm($filter: ReservationFilter!)
-                      @view(title: "Wochenprogramm", listed: false)
+                      @view(title: "i18n:week_timeslot", listed: false)
                       @window(from: {anchor: WEEK_START}, to: {anchor: WEEK_START, offset: 7})
                       @param(name: "resource", into: "filter.resourceIdsIn", required: true)
                     {

@@ -803,7 +803,7 @@ public final class ClassificationSdlGenerator
      * an empty/unsanitizable key or a colliding value are skipped (WARN). Shared by the collector
      * (a root with nothing to emit gets no enum at all) and the emitter.
      */
-    private static Map<String, Category> emittableEnumValues(Category root)
+    static Map<String, Category> emittableEnumValues(Category root)
     {
         Map<String, Category> values = new LinkedHashMap<>();
         Category[] children = root.getCategories();
@@ -825,6 +825,37 @@ public final class ClassificationSdlGenerator
             }
         }
         return values;
+    }
+
+    /** One attribute as the SDL spells it: the {@code <TypeKey>Classification} field name and, for an enum-typed attribute, its enum values. */
+    record AttributeLabelSource(String fieldName, Attribute attribute, Map<String, Category> values) { }
+
+    /**
+     * PRD 124 OQ3 — what {@code DynamicType.attributeNames} delivers: the same fields as
+     * {@link #appendClassificationType} (same collision skipping) and, for attributes emitted as a
+     * VALUE_LIST enum, the same {@link #emittableEnumValues} keys. Labels only, no descriptor surface.
+     */
+    static List<AttributeLabelSource> attributeLabelSources(DynamicType dt)
+    {
+        List<AttributeLabelSource> out = new ArrayList<>();
+        Set<String> emitted = new HashSet<>(Set.of("typeKey", "type"));
+        for (Attribute attr : dt.getAttributes())
+        {
+            if (attr == null || attr.getKey() == null || attr.getKey().isBlank()) continue;
+            String fieldName = checkGraphQlCompliantName(attr.getKey());
+            if (!emitted.add(fieldName)) continue;
+            Map<String, Category> values = null;
+            if (attr.getType() == AttributeType.CATEGORY
+                    && attr.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY) instanceof Category root
+                    && CategoryKindClassifier.kindOf(root, null) == CategoryKindClassifier.Kind.VALUE_LIST
+                    && !enumNameFor(root).isEmpty())
+            {
+                Map<String, Category> v = emittableEnumValues(root);
+                if (!v.isEmpty()) values = v;
+            }
+            out.add(new AttributeLabelSource(fieldName, attr, values));
+        }
+        return out;
     }
 
     private static void appendValueListEnum(StringBuilder sb, String enumName, Category root, Locale locale)

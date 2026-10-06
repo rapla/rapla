@@ -73,8 +73,20 @@ public final class StructuralTypeFetchers
      */
     private static volatile Locale serverLocale = Locale.getDefault();
 
-    /** The server-configured locale captured at schema-build time (see {@link #wire}). */
-    static Locale serverLocale() { return serverLocale; }
+    /** PRD 124 OQ3 — the requesting user's language, mirrored per request by {@link RequestContextInstrumentation}. */
+    private static final ThreadLocal<Locale> REQUEST_LOCALE = new ThreadLocal<>();
+
+    static void setRequestLocale(Locale l)
+    {
+        if (l == null) REQUEST_LOCALE.remove(); else REQUEST_LOCALE.set(l);
+    }
+
+    /** The language names are delivered in: the request's if set, else the server language. */
+    static Locale locale()
+    {
+        Locale l = REQUEST_LOCALE.get();
+        return l != null ? l : serverLocale;
+    }
 
     private StructuralTypeFetchers() {}
 
@@ -182,7 +194,7 @@ public final class StructuralTypeFetchers
                             if (key == null) continue;
                             org.rapla.entities.dynamictype.Attribute attribute = cls.getAttribute(key);
                             if (attribute == null) continue;   // not this type's spelling — try the next
-                            String value = cls.getValueAsString(attribute, serverLocale);
+                            String value = cls.getValueAsString(attribute, locale());
                             if (value != null && !value.isEmpty()) return value;
                         }
                     }
@@ -331,6 +343,34 @@ public final class StructuralTypeFetchers
                 @Override protected String read(DynamicType dt, Supplier<DataFetchingEnvironment> env)
                 {
                     return dt.getName(localeFrom(env));
+                }
+            };
+
+    static final LightDataFetcher<List<Map<String, Object>>> DYNAMIC_TYPE_ATTRIBUTE_NAMES =
+            new LightSourceFetcher<DynamicType, List<Map<String, Object>>>(DynamicType.class)
+            {
+                @Override protected List<Map<String, Object>> read(DynamicType dt, Supplier<DataFetchingEnvironment> env)
+                {
+                    Locale l = localeFrom(env);
+                    List<Map<String, Object>> out = new java.util.ArrayList<>();
+                    for (var src : ClassificationSdlGenerator.attributeLabelSources(dt))
+                    {
+                        Map<String, Object> m = new java.util.LinkedHashMap<>();
+                        m.put("key", src.fieldName());
+                        m.put("name", src.attribute().getName(l));
+                        List<Map<String, Object>> values = null;
+                        if (src.values() != null)
+                        {
+                            values = new java.util.ArrayList<>();
+                            for (var e : src.values().entrySet())
+                            {
+                                values.add(Map.of("key", e.getKey(), "name", e.getValue().getName(l)));
+                            }
+                        }
+                        m.put("values", values);
+                        out.add(m);
+                    }
+                    return out;
                 }
             };
 
@@ -701,20 +741,20 @@ public final class StructuralTypeFetchers
         switch (variant)
         {
             case "EXPORT":
-                return NameFormatUtil.getExportName(block, serverLocale);
+                return NameFormatUtil.getExportName(block, locale());
             case "PLANNING":
             {
                 org.rapla.entities.dynamictype.Classification cls = reservation.getClassification();
                 if (cls != null && cls.getType().getAnnotation(
                         org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING) != null)
                 {
-                    return reservation.formatAppointmentBlock(serverLocale,
+                    return reservation.formatAppointmentBlock(locale(),
                             org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING, block);
                 }
-                return NameFormatUtil.getName(block, serverLocale);
+                return NameFormatUtil.getName(block, locale());
             }
             default:
-                return NameFormatUtil.getName(block, serverLocale);
+                return NameFormatUtil.getName(block, locale());
         }
     }
 
@@ -726,14 +766,14 @@ public final class StructuralTypeFetchers
     {
         if (org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT.equals(annotationName))
         {
-            return named.getName(serverLocale);
+            return named.getName(locale());
         }
         org.rapla.entities.dynamictype.Classification cls = classifiable.getClassification();
         if (cls != null && cls.getType().getAnnotation(annotationName) != null)
         {
-            return cls.format(serverLocale, annotationName);
+            return cls.format(locale(), annotationName);
         }
-        return named.getName(serverLocale);
+        return named.getName(locale());
     }
 
     static final LightDataFetcher<LocalDateTime> RESERVATION_FIRST_DATE =
@@ -914,7 +954,7 @@ public final class StructuralTypeFetchers
                         Supplier<DataFetchingEnvironment> env)
                 {
                     var readable = readableResource(ctxFrom(env));
-                    return org.rapla.server.internal.ResourceTreeRules.groupPaths(a.getClassification(), serverLocale,
+                    return org.rapla.server.internal.ResourceTreeRules.groupPaths(a.getClassification(), locale(),
                             value -> !(value instanceof org.rapla.entities.domain.Allocatable) || readable.test(value));
                 }
             };
@@ -1016,20 +1056,20 @@ public final class StructuralTypeFetchers
                     switch (variant)
                     {
                         case "EXPORT":
-                            return NameFormatUtil.getExportName(a, serverLocale);
+                            return NameFormatUtil.getExportName(a, locale());
                         case "PLANNING":
                         {
                             org.rapla.entities.dynamictype.Classification cls = r.getClassification();
                             if (cls != null && cls.getType().getAnnotation(
                                     org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING) != null)
                             {
-                                return r.formatAppointment(serverLocale,
+                                return r.formatAppointment(locale(),
                                         org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING, a);
                             }
-                            return NameFormatUtil.getName(a, serverLocale);
+                            return NameFormatUtil.getName(a, locale());
                         }
                         default:
-                            return NameFormatUtil.getName(a, serverLocale);
+                            return NameFormatUtil.getName(a, locale());
                     }
                 }
             };
@@ -1355,7 +1395,7 @@ public final class StructuralTypeFetchers
                     new org.rapla.entities.dynamictype.internal.ParsedText(src);
             pt.init(type.getParseContext());
             org.rapla.entities.dynamictype.internal.EvalContext ctx = type.createEvalContext(
-                    user, serverLocale,
+                    user, locale(),
                     org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT,
                     java.util.Collections.singletonList(entity));
             return pt.formatName(ctx);
@@ -1421,7 +1461,7 @@ public final class StructuralTypeFetchers
                     new org.rapla.entities.dynamictype.internal.ParsedText(src);
             pt.init(type.getParseContext());
             org.rapla.entities.dynamictype.internal.EvalContext ctx = type.createEvalContext(
-                    user, serverLocale,
+                    user, locale(),
                     org.rapla.entities.dynamictype.DynamicTypeAnnotations.KEY_NAME_FORMAT,
                     java.util.Collections.singletonList(entity));
             return pt.evalToObject(ctx);
@@ -1465,7 +1505,7 @@ public final class StructuralTypeFetchers
                     ff.createFunction(fnName, java.util.List.of(identity));
             org.rapla.entities.dynamictype.internal.EvalContext ctx =
                     new org.rapla.entities.dynamictype.internal.EvalContext(
-                            serverLocale, null, pc, java.util.Map.of(), user,
+                            locale(), null, pc, java.util.Map.of(), user,
                             java.util.List.<Object>of(block));
             Object res = fn.eval(ctx);
             return res == null ? null : res.toString();
@@ -1542,6 +1582,7 @@ public final class StructuralTypeFetchers
                 .dataFetcher("owner",          allocatableOwner(operator)));
         b.type("DynamicType", t -> t
                 .dataFetcher("name",               DYNAMIC_TYPE_NAME)
+                .dataFetcher("attributeNames",     DYNAMIC_TYPE_ATTRIBUTE_NAMES)
                 .dataFetcher("classificationType", DYNAMIC_TYPE_CLASSIFICATION_TYPE)
                 .dataFetcher("typeAccess",         DYNAMIC_TYPE_TYPE_ACCESS)
                 .dataFetcher("instanceDefaults",   DYNAMIC_TYPE_INSTANCE_DEFAULTS));
@@ -1601,18 +1642,12 @@ public final class StructuralTypeFetchers
 
     private static Locale localeFrom(Supplier<DataFetchingEnvironment> envSupplier)
     {
-        // Read the server-configured locale captured at schema-build time.
-        // Sourcing it from rapla's RaplaLocale bean (not Locale.getDefault())
-        // keeps the GraphQL surface honoring the deployment config. Cached
-        // in a volatile static so the read is a regular memory load (~1 ns)
-        // vs the alternative — envSupplier.get() to read the per-request
-        // GraphQLContext — which materializes the full DataFetchingEnvironment
-        // (~25 µs / call; 108 leaf samples on the Person query before this fix).
-        //
-        // Per-request locale (Accept-Language) isn't honored here — a
-        // future enhancement can route it through the RequestContextInstrumentation
-        // + ThreadLocal mirror IF the cost is justified by real multi-locale demand.
-        return serverLocale;
+        // PRD 124 OQ3 — the ThreadLocal mirror (a plain read, ~1 ns; reading the env costs ~25 µs per call).
+        // A fetcher that runs off the request thread finds it empty and reads the request's locale from the env.
+        Locale l = REQUEST_LOCALE.get();
+        if (l != null) return l;
+        var rc = RequestContextInstrumentation.from(envSupplier.get().getGraphQlContext());
+        return rc != RequestContextInstrumentation.RequestCtx.EMPTY && rc.locale() != null ? rc.locale() : serverLocale;
     }
 
     private static RequestContextInstrumentation.RequestCtx ctxFrom(Supplier<DataFetchingEnvironment> envSupplier)

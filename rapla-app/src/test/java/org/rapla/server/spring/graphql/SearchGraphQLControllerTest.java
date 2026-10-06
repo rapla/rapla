@@ -179,7 +179,7 @@ class SearchGraphQLControllerTest
         List<Map<String, Object>> g = groups("room", null);
         Map<String, Object> resources = bucket(g, "RESOURCE");
         assertNotNull(resources, () -> "expected a RESOURCE bucket for 'room', got " + g);
-        assertEquals("Ressourcen", resources.get("heading"));
+        assertEquals("Resources", resources.get("heading"));
         List<Map<String, Object>> rHits = hits(g, "RESOURCE");
         assertFalse(rHits.isEmpty(), "RESOURCE bucket must have hits");
         rHits.forEach(h -> {

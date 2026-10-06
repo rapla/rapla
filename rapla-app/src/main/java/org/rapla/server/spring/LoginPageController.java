@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.LocaleTools;
-import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
@@ -70,14 +69,17 @@ public class LoginPageController
     private final RaplaFacade facade;
     private final RaplaResources i18n;
     private final BundleManager bundleManager;
+    private final org.rapla.server.spring.web.RequestLanguage requestLanguage;
 
     public LoginPageController(ExternalProvidersProperties externalProviders,
                               @Value("${rapla.oauth.web.password-login:true}") boolean passwordLoginEnabled,
                               RaplaFacade facade,
                               RaplaResources i18n,
                               BundleManager bundleManager,
-                              @Value("${rapla.demo.banner:}") String demoBanner)
+                              @Value("${rapla.demo.banner:}") String demoBanner,
+                              org.rapla.server.spring.web.RequestLanguage requestLanguage)
     {
+        this.requestLanguage = requestLanguage;
         this.externalProviders = externalProviders;
         this.passwordLoginEnabled = passwordLoginEnabled;
         this.facade = facade;
@@ -124,9 +126,9 @@ public class LoginPageController
      * {@value #LANG_COOKIE} cookie (both restricted to shipped bundle
      * languages), then the admin "Server Sprache" setting
      * ({@link AbstractRaplaLocale#LOCALE} system preference, e.g.
-     * {@code de_DE}), finally the browser's {@code Accept-Language}. NOT
-     * {@link RaplaLocale#LANGUAGE_ENTRY} — that key is the per-user language
-     * preference and never set on system prefs.
+     * {@code de_DE}, else {@link RaplaLocale#LANGUAGE_ENTRY}), then the browser's
+     * {@code Accept-Language}, finally the JVM default — {@link org.rapla.server.spring.web.RequestLanguage#resolve}
+     * (no user before login).
      */
     private Locale resolveLocale(HttpServletRequest request, String langParam)
     {
@@ -141,22 +143,13 @@ public class LoginPageController
         }
         try
         {
-            Preferences sys = facade.getOperator().getPreferences(null, false);
-            if (sys != null)
-            {
-                String localeId = sys.getEntryAsString(AbstractRaplaLocale.LOCALE, null);
-                if (localeId != null && !localeId.isBlank())
-                {
-                    return LocaleTools.getLocale(localeId);
-                }
-            }
+            return requestLanguage.resolve(request, null);
         }
         catch (Exception e)
         {
-            LOGGER.warn("Could not read the server language setting: {}", e.getMessage());
+            LOGGER.warn("Could not resolve the display language: {}", e.getMessage());
+            return Locale.ENGLISH;
         }
-        Locale browser = request.getLocale();
-        return browser != null ? browser : Locale.ENGLISH;
     }
 
     private String msg(String key, Locale locale)

@@ -956,6 +956,8 @@ type DynamicType {
   key:                String!
   "Locale-resolved name (e.g. \"Lecture room\")."
   name:               String!
+  "PRD 124 OQ3 — attribute labels in the REQUESTING user's language. `key` is the field name as emitted in `<TypeKey>Classification`; `values` = the enum values of a value-list attribute (SDL spelling), else null. Labels only."
+  attributeNames:     [AttributeName!]!
   classificationType: ClassificationType!
   """
   PRD 111 D3 — the stored documents offered on entities of this type, in the order the type's
@@ -974,6 +976,19 @@ type DynamicType {
   typeAccess:         [Permission!]
   "PRD 113 § 1b — every other stored row, copied onto new instances at create time. Null unless global admin."
   instanceDefaults:   [Permission!]
+}
+
+"PRD 124 OQ3 — an attribute's label; see `DynamicType.attributeNames`."
+type AttributeName {
+  key:    String!
+  name:   String!
+  values: [AttributeValueName!]
+}
+
+"PRD 124 OQ3 — one value of a value-list attribute: `key` is the SDL enum value, `name` the label."
+type AttributeValueName {
+  key:  String!
+  name: String!
 }
 
 "PRD 111 D3 — one document offered on a type: `name` is the reference, the menu label and the future i18n key; `param` is the URL parameter that carries the entity id (derived from the view's by-id root, D2)."

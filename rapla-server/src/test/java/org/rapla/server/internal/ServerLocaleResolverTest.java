@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.test.util.FacadeTestSupport;
 
@@ -32,6 +33,17 @@ class ServerLocaleResolverTest extends FacadeTestSupport
 
         Locale resolved = ServerLocaleResolver.resolve(operator, newRaplaLocale());
         assertEquals("de", resolved.getLanguage());
+    }
+
+    @Test
+    void adminPanelSettingOrgRaplaLocaleWinsOverTheLegacyLanguageEntry() throws Exception
+    {
+        Preferences edit = facade.edit(facade.getSystemPreferences());
+        edit.putEntry(AbstractRaplaLocale.LOCALE, "de_DE");
+        edit.putEntry(RaplaLocale.LANGUAGE_ENTRY, "fr");
+        facade.store(edit);
+
+        assertEquals("de", ServerLocaleResolver.resolve(operator, newRaplaLocale()).getLanguage());
     }
 
     @Test

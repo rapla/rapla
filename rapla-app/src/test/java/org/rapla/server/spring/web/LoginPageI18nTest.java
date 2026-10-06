@@ -64,6 +64,20 @@ class LoginPageI18nTest
     RaplaFacade facade;
 
     @Test
+    void firstCoveredAcceptLanguageEntryDecides() throws Exception
+    {
+        mockMvc.perform(get("/login").accept(MediaType.TEXT_HTML).header("Accept-Language", "xx,de;q=0.9"))
+                .andExpect(content().string(containsString("lang=\"de\"")));
+    }
+
+    @Test
+    void unknownBrowserLanguageFallsBackToTheDefault() throws Exception
+    {
+        mockMvc.perform(get("/login").accept(MediaType.TEXT_HTML).header("Accept-Language", "xx"))
+                .andExpect(content().string(containsString("lang=\"en\"")));
+    }
+
+    @Test
     void serverLanguageWinsElseBrowserLocale() throws Exception
     {
         // no server language set → browser Accept-Language decides

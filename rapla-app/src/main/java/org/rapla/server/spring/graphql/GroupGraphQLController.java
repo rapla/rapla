@@ -182,9 +182,10 @@ public class GroupGraphQLController
     /** Mirror of the {@code Group} GraphQL type; parent / children resolve via {@link #parent} / {@link #children}. */
     public record GroupDto(String id, String key, String name)
     {
+        // Request language via the request-thread ThreadLocal — moving these handlers to an async executor needs RequestCtx instead.
         static GroupDto from(Category c)
         {
-            return new GroupDto(c.getId(), c.getKey(), c.getName(java.util.Locale.getDefault()));
+            return new GroupDto(c.getId(), c.getKey(), c.getName(StructuralTypeFetchers.locale()));
         }
     }
 }

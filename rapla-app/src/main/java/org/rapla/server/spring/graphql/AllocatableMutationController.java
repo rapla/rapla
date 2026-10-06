@@ -251,7 +251,7 @@ public class AllocatableMutationController
         storeDraft(draft, caller);
         Allocatable stored = operator.tryResolve(new ReferenceInfo<>(id, Allocatable.class));
         return ReservationGraphQLController.EventTemplate.from(stored, caller, operator.getPermissionController(),
-                StructuralTypeFetchers.serverLocale(), operator);
+                StructuralTypeFetchers.locale(), operator);
     }
 
     /** PRD 113 § 1c — see Mutation.updatePeriod in the schema. */

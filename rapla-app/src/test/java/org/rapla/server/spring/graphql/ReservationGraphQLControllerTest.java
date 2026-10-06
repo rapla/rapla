@@ -1892,12 +1892,18 @@ class ReservationGraphQLControllerTest
     /** Runs a @view appointmentBlocks query over mockMvc and returns the parsed response document. */
     private Object viewQuery(String filter, String sort, String after, String selection) throws Exception
     {
+        return viewQuery(filter, sort, after, selection, null);
+    }
+
+    private Object viewQuery(String filter, String sort, String after, String selection, String lang) throws Exception
+    {
         String query = "query W @view { appointmentBlocks(filter: { " + filter + " }"
                 + (sort != null ? ", sort: " + sort : "")
                 + (after != null ? ", after: \"" + after + "\"" : "")
                 + ") { " + selection + " } }";
-        String body = mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
-                .andReturn().getResponse().getContentAsString();
+        var req = post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query));
+        if (lang != null) req.cookie(new jakarta.servlet.http.Cookie("raplaLocale", lang));
+        String body = mockMvc.perform(req).andReturn().getResponse().getContentAsString();
         Object doc = com.jayway.jsonpath.Configuration.defaultConfiguration().jsonProvider().parse(body);
         List<Object> errors = com.jayway.jsonpath.JsonPath.read(doc, "$..errors");
         assertTrue(errors.isEmpty(), () -> "errors: " + body);
@@ -1954,6 +1960,26 @@ class ReservationGraphQLControllerTest
         String body = mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query)))
                 .andReturn().getResponse().getContentAsString();
         assertTrue(body.contains("cursor does not match sort"), () -> "expected a sort-mismatch error; got " + body);
+    }
+
+    /** PRD 074 Phase 5 — a NAME cursor carries the request language (names + collator follow it); START does not. */
+    @Test
+    @WithMockUser(username = "homer", roles = "ADMIN")
+    void nameCursorIsBoundToRequestLanguage() throws Exception
+    {
+        String win = "from: \"2002-04-01T00:00:00\", to: \"2002-05-01T00:00:00\", limit: 1";
+        String byName = "[{ field: NAME, dir: ASC }]";
+        String nameCursor = com.jayway.jsonpath.JsonPath.read(viewQuery(win, byName, null, BLOCK_ROW, "de"),
+                "$.extensions.view.page.endCursor");
+        String query = "query { appointmentBlocks(filter: { " + win + " }, sort: " + byName + ", after: \"" + nameCursor + "\") { start } }";
+        String body = mockMvc.perform(post("/api/graphql").contentType(MediaType.APPLICATION_JSON).content(gqlBody(query))
+                .cookie(new jakarta.servlet.http.Cookie("raplaLocale", "en"))).andReturn().getResponse().getContentAsString();
+        assertTrue(body.contains("cursor does not match sort"), () -> "de NAME cursor replayed in en must fail; got " + body);
+        viewQuery(win, byName, nameCursor, BLOCK_ROW, "de");
+
+        String startCursor = com.jayway.jsonpath.JsonPath.read(viewQuery(win, null, null, BLOCK_ROW, "de"),
+                "$.extensions.view.page.endCursor");
+        viewQuery(win, null, startCursor, BLOCK_ROW, "en");
     }
 
     /** PRD 074 Phase 5 — two appointments of one reservation with equal start/end: no duplicate, no gap at a page boundary. */

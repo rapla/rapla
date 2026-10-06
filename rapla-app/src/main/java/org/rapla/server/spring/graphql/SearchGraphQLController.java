@@ -69,11 +69,13 @@ public class SearchGraphQLController
     private final StorageOperator operator;
     private final ClassificationGraphQLController classificationController;
     private final UserListsService userListsService;
+    private final ViewTexts texts;
 
     public SearchGraphQLController(StorageOperator operator,
             ClassificationGraphQLController classificationController,
-            UserListsService userListsService)
+            UserListsService userListsService, ViewTexts texts)
     {
+        this.texts = texts;
         this.operator = operator;
         this.classificationController = classificationController;
         this.userListsService = userListsService;
@@ -108,17 +110,17 @@ public class SearchGraphQLController
         if (wanted.contains(SearchKind.RESOURCE))
         {
             List<SearchHit> hits = searchResources(needle, cap, locale, favoriteIds, recentIds);
-            if (!hits.isEmpty()) groups.add(new SearchGroup(SearchKind.RESOURCE, "Ressourcen", hits));
+            if (!hits.isEmpty()) groups.add(new SearchGroup(SearchKind.RESOURCE, texts.resolve("i18n:resources", locale), hits));
         }
         if (wanted.contains(SearchKind.EVENT))
         {
             List<SearchHit> hits = searchEvents(needle, cap, caller, pc, locale, favoriteIds, recentIds);
-            if (!hits.isEmpty()) groups.add(new SearchGroup(SearchKind.EVENT, "Veranstaltungen", hits));
+            if (!hits.isEmpty()) groups.add(new SearchGroup(SearchKind.EVENT, texts.resolve("i18n:events", locale), hits));
         }
         if (wanted.contains(SearchKind.USER))
         {
             List<SearchHit> hits = searchUsers(needle, cap, caller, favoriteIds, recentIds);
-            if (!hits.isEmpty()) groups.add(new SearchGroup(SearchKind.USER, "Benutzer", hits));
+            if (!hits.isEmpty()) groups.add(new SearchGroup(SearchKind.USER, texts.resolve("i18n:users", locale), hits));
         }
         return new SearchResults(groups);
     }

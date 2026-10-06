@@ -22,10 +22,12 @@ import org.springframework.stereotype.Controller;
 public class ViewGraphQLController
 {
     private final ViewCatalogService catalog;
+    private final ViewTexts texts;
 
-    public ViewGraphQLController(ViewCatalogService catalog)
+    public ViewGraphQLController(ViewCatalogService catalog, ViewTexts texts)
     {
         this.catalog = catalog;
+        this.texts = texts;
     }
 
     @QueryMapping
@@ -39,7 +41,7 @@ public class ViewGraphQLController
         {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("name", v.name());
-            m.put("title", v.title());
+            m.put("title", texts.resolve(v.title(), rc.locale()));
             m.put("source", v.builtin() ? "BUILTIN" : "CUSTOM");
             m.put("valid", v.valid());
             m.put("invalidReason", v.invalidReason());

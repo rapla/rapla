@@ -13,6 +13,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+import org.rapla.server.spring.web.RequestLanguage;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 
@@ -38,14 +39,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class RequestContextInstrumentation extends SimplePerformantInstrumentation
 {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(RequestContextInstrumentation.class);
     private final StorageOperator operator;
     private final org.rapla.server.spring.JwtUserResolver jwtUserResolver;
+    private final RequestLanguage requestLanguage;
 
     public RequestContextInstrumentation(StorageOperator operator,
-            org.rapla.server.spring.JwtUserResolver jwtUserResolver)
+            org.rapla.server.spring.JwtUserResolver jwtUserResolver, RequestLanguage requestLanguage)
     {
         this.operator = operator;
         this.jwtUserResolver = jwtUserResolver;
+        this.requestLanguage = requestLanguage;
     }
 
     @Override
@@ -58,7 +62,7 @@ public class RequestContextInstrumentation extends SimplePerformantInstrumentati
         GraphQLContext ctx = parameters.getGraphQLContext();
         User caller = jwtUserResolver.resolveCurrentUserOrNull();
         PermissionController pc = operator.getPermissionController();
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = requestLocale(caller);
         // PRD 082 #8 — when the read-model is flipped authoritative, resolve the caller's readable
         // allocatable-id set ONCE per request (cached on the index across requests; the first query per
         // user pays one full scan). All allocatable §12 gates then become O(1) membership instead of a
@@ -71,7 +75,32 @@ public class RequestContextInstrumentation extends SimplePerformantInstrumentati
             informationOnlyAllocatableIds = lo.informationOnlyAllocatableIds(caller);
         }
         ctx.put(RequestCtx.KEY, new RequestCtx(caller, pc, locale, readableAllocatableIds, informationOnlyAllocatableIds));
-        return SimpleInstrumentationContext.noOp();
+        // PRD 124 OQ3 — per-request mirror for the name fetchers (a plain read instead of an env lookup per field);
+        // cleared when the execution completes, so a pooled request thread never carries it into the next request.
+        StructuralTypeFetchers.setRequestLocale(locale);
+        return new SimpleInstrumentationContext<>()
+        {
+            @Override
+            public void onCompleted(graphql.ExecutionResult result, Throwable t)
+            {
+                StructuralTypeFetchers.setRequestLocale(null);
+            }
+        };
+    }
+
+    /** PRD 124 OQ3 — cookie → user preference → server language; the old Spring locale outside a servlet request. */
+    private Locale requestLocale(User caller)
+    {
+        try
+        {
+            Locale l = requestLanguage.resolveCurrent(caller);
+            if (l != null) return l;
+        }
+        catch (org.rapla.framework.RaplaException e)
+        {
+            LOGGER.warn("Request language not resolvable, using the Spring locale", e);
+        }
+        return LocaleContextHolder.getLocale();
     }
 
     /**
