@@ -1,6 +1,6 @@
 # PRD index
 
-90 active PRDs in this directory, 34 done under `done/`, 6 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
+89 active PRDs in this directory, 34 done under `done/`, 7 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
 
 Each active PRD below carries a generated header (status, locked decisions, dependencies, governed code) plus a keyword line in German and English so that agents and search find it from either language. When a PRD's status or decisions change, update its header here in the same edit (wrap-up checklist).
 
@@ -138,7 +138,9 @@ PRD 073 (in-progress) is the reference equivalence map between rapla's server-si
 
 PRD 074 (draft, 2026-06-20) designs declarative, admin-authored GraphQL 'saved views' replacing legacy TableView (PRD 030, frozen/deprecated) with no client-side expression engine: composition columns (nameformats, duration, times) are server-evaluated via rapla's existing `ParsedText` engine and exposed as plain GraphQL fields; selection/filtering stays in GraphQL (PRD 059/066/069); presentation (column order, headers, joins, grouping) is convention-driven with optional directives (`@view`, `@column`, `@join`, `@group`, `@bucket`). Views are stored as persisted query text (no invented binding format, per ADR 0005) with revalidate-and-mark on schema change (no auto-migration). Three canonical views ship as immutable BUILTIN code constants (`Termine_events`, `Termine_appointments`, `Termine_perDay`); admins author/fork via GraphiQL with `saveView`/`listViews`/`deleteView` mutations. CEL and client transform pipelines were evaluated and dropped. Depends on PRD 073 (data-layer feeder, op-set catalog), PRD 059, PRD 066, PRD 069, PRD 028, PRD 077 (persistence mechanics), supersedes PRD 030.
 
-*Keywords:* saved view, GraphQL view, TableView, ParsedText, displayName, compute, saveView, listViews, GraphiQL, appointmentBlocks, Termine, Spalte, column, extensions.view, PRD 074, PRD 073, PRD 030, Vorlage, Kalenderansicht, Sortierung
+Phase 5 (2026-10-06, committed 94b5b0099/8e0e43e51): `appointmentBlocks(filter, sort, after:)` cursor paging replaces offset — `extensions.view.page { limit, returned, hasMore, endCursor }`, the cursor carries its sort spec (+ language for NAME), limit default 1000 / max 2500, no total cap; `select()` no longer stops after `limit` reservations for blocks/stats; SPA "Weitere laden" appends pages and a header click on Datum/Zeit/Bis/Titel sorts server-side (START/END/NAME) over the full set, other columns client-sorted with a hint. Residues: prev/next, sort by joined columns, `rapla_reservations` paging, failed load-more replaces the table.
+
+*Keywords:* saved view, GraphQL view, TableView, ParsedText, displayName, compute, saveView, listViews, GraphiQL, appointmentBlocks, Termine, Spalte, column, extensions.view, PRD 074, PRD 073, PRD 030, Vorlage, Kalenderansicht, Sortierung, Cursor, after, endCursor, hasMore, Weitere laden, load more, Paginierung, pagination, BlockSort, limit
 
 ### 075-expression-language-standardization.md
 
@@ -288,7 +290,9 @@ Implemented 2026-09-30/10-01: the rail's list, chips, group tree and "Weitere…
 
 Draft 2026-09-30, concept only: the SPA is hard-wired German (`LOCALE_ID de-DE`, ~285–350 literal strings in 47–66 files, hand-rolled weekday arrays, partly English strings). D1 locked: runtime catalogue from the server — the SPA loads all texts of the user's language in one `/api/locale` request (existing `RemoteLocaleController`, Swing properties keys, English fallback server-side) plus a new `SpaResources` bundle translated via the PRD 103 process; dates via `Intl`/`LOCALE_ID`. Rejected: build-time `@angular/localize` and runtime `$localize`. Open: language precedence without user preference, per-user GraphQL names, Angular locale data loading, the `org.rapla.language` vs `org.rapla.locale` system-preference mismatch in `ServerLocaleResolver`, key naming; caching of `/api/locale` moved to PRD 125. Estimate 4–6 days.
 
-*Keywords:* i18n, Internationalisierung, Übersetzung, translation, Sprache, language, locale, LOCALE_ID, Intl, DatePipe, @angular/localize, $localize, RemoteLocaleService, RemoteLocaleController, LocalePackage, ResourceBundleList, SpaResources, RaplaResources, org.rapla.language, org.rapla.locale, ServerLocaleResolver, MatPaginatorIntl, Wochentage, Caching, Cache-Control, PRD 103, PRD 026, PRD 072, PRD 124
+Implemented 2026-10-06 (uncommitted, live on demo + the customer test instance): OQ3 variant A — the server delivers entity names, attribute labels (`DynamicType.attributeNames { key name values { key name } }`, SDL spellings), built-in view titles and search headings in the request language (`RequestLanguage`, ThreadLocal per execution); the SPA overlays attribute labels from that query over the SDL shape; OQ5 — one language chain for API and login page: cookie → user preference → configured server language (`org.rapla.locale`, else `org.rapla.language`) → browser `Accept-Language` → JVM; stock categories get names in every shipped language at `createDefaultSystem`. Open: user-group names via `GroupGraphQLController` `Locale.getDefault()` (+ sibling sites A/B), OQ2.
+
+*Keywords:* i18n, Internationalisierung, Übersetzung, translation, Sprache, language, locale, LOCALE_ID, attributeNames, Accept-Language, browser language, RequestLanguage, ServerLocaleResolver.configured, ViewTexts, createDefaultSystem, Benutzergruppen, Intl, DatePipe, @angular/localize, $localize, RemoteLocaleService, RemoteLocaleController, LocalePackage, ResourceBundleList, SpaResources, RaplaResources, org.rapla.language, org.rapla.locale, ServerLocaleResolver, MatPaginatorIntl, Wochentage, Caching, Cache-Control, PRD 103, PRD 026, PRD 072, PRD 124
 
 ### 125-spa-caching-version-skew.md
 
@@ -518,12 +522,6 @@ PRD 052 designs a clean in-JVM restart of the Swing desktop client on logout/log
 
 *Keywords:* Swing Client, Neustart, Logout, Login, Speicherleck, RxJava, RaplaEventBus, ApplicationContext, SpringRaplaClient, RaplaClientServiceImpl, SwingSafe, AWT EventQueue, Benutzerwechsel, switch user, PRD 051, clean restart, heap leak, JVM
 
-### 054-standalone-windows-installer.md
-
-PRD 054 specifies a standalone, single-user, no-auth Windows 11 MSI trial installer for rapla (a Tauri Rust shell hosting a jlinked, stripped Spring Boot fat JAR, rendering the existing Angular SPA via WebView2), explicitly for evaluation only (not dhbwrapla or multi-user). Status: in-progress; Phase 1 (the -Pstandalone Maven profile, application-standalone.yml, StandaloneBootTest) landed 2026-05-25; Phases 2-5 (jlink, Tauri build, signing, MSI, e2e verification) are scaffolded but run/verified on the maintainer's Windows machine. Storage reuses the same XML FileOperator format as a file-backed server so a trial user can graduate without migration. Governs rapla-app's standalone profile, RaplaAuthentificationService.passwordCheckDisabled, and the new sibling tree rapla-standalone/ (outside the Maven reactor, like rapla-angular). Open question: whether to bundle a starter rapla-data.xml.
-
-*Keywords:* Standalone Installer, Windows MSI, Tauri, jlink, Trial, Testinstallation, passwordCheckDisabled, rapla-standalone, Spring Boot fat JAR, WebView2, Signierung, signtool, YubiKey, Auto-Update, Einzelbenutzer, FileOperator, rapla-data.xml
-
 ### 112-deployment-patch.md
 
 PRD 112 covers seeding deployment-specific stored views, documents and type annotations from files next to the JAR instead of manual template-editor pasting, so customer-specific content stays outside the JAR. Option A (declarative front-matter file patches in data/patch/, using YAML headers inside Mustache/GraphQL comments, timestamp-based update rule A2) was implemented on user instruction 2026-09-02: FrontMatter, ArtifactPatchLoader, RaplaServerProperties.patchDir, system-scoped save overloads. Option B (a patch JAR with a DataPatch interface, applied-list bookkeeping, Flyway-style once-only semantics) is a designed but not-yet-built later extension, compatible with and building on Option A's save path. Depends on PRD 098 (artifact store, builtins stay in JAR), PRD 097 (documents), PRD 111 (documents annotation), PRD 090 (migration marker protocol), docs/architecture/locking.md. Governs org.rapla.server.spring.patch package, ArtifactCatalogService, ViewCatalogService, DocumentCatalogService.
@@ -621,6 +619,7 @@ Active PRD (Phases 1–3 implemented 2026-09-14) for the GitHub Actions workflow
 - [021-client-resource-stubs.md](wont-fix/021-client-resource-stubs.md)
 - [024-server-side-edit-services.md](wont-fix/024-server-side-edit-services.md)
 - [037-native-saml-shibboleth.md](wont-fix/037-native-saml-shibboleth.md)
+- [054-standalone-windows-installer.md](wont-fix/054-standalone-windows-installer.md)
 - [065-graphql-declared-type-groups.md](wont-fix/065-graphql-declared-type-groups.md)
 - [084-replace-hsqldb-with-h2.md](wont-fix/084-replace-hsqldb-with-h2.md)
 

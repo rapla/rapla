@@ -1,6 +1,6 @@
 # PRD 074 — Declarative GraphQL View Definitions
 
-**Status:** draft — 2026-06-20. **Preferred design: GraphQL-native views with NO
+**Status:** in progress — Phases 1–4 landed (see § Implementation status); Phase 5 cursor paging + header sort built 2026-10-06 (committed 94b5b0099/8e0e43e51 offset→cursor form, NAME-cursor language token uncommitted). Originally drafted 2026-06-20. **Preferred design: GraphQL-native views with NO
 expression engine** (server-evaluated composition fields + GraphQL selection +
 presentation directives — see §"Preferred design"). **No expression engine:** complex
 compositions are evaluated **server-side by rapla's own `ParsedText` engine**; CEL / a
@@ -360,7 +360,10 @@ ASCII `String.CASE_INSENSITIVE_ORDER`.
 > reservation id + appointment id + START + exception flag (implemented 2026-10-05: without START the
 > repeats of one appointment tie on a NAME sort and the cursor skipped rows; also closes the
 > duplicate-at-page-boundary gap of equal-time appointments). Cursor = base64url of
-> start/end/name/reservation id/appointment id/exception, invalid cursor → IllegalArgumentException.
+> start/end/name/reservation id/appointment id/exception/sort spec (the effective BlockSort list, e.g.
+> "NAME:ASC@de,START:DESC", default "START:ASC,END:ASC"; a NAME token carries the request language because
+> names and collator follow it — review LOW 5, 2026-10-06); a cursor replayed under another sort or language →
+> "cursor does not match sort"; malformed → "invalid cursor `after`".
 > Stored custom views that still pass `offset:` fail validation (none known besides the builtin). Lost: random access to page N (not needed for
 > "Weitere laden"); won: constant memory per page, no drift (no duplicate/gap on concurrent
 > insert/delete). CPU per page unchanged — every page still expands every block of the window
@@ -373,7 +376,10 @@ ASCII `String.CASE_INSENSITIVE_ORDER`.
 > (Datum/Zeit → `START`, Bis → `END`, Titel → `NAME`, `ASC`/`DESC`), reloads page 0 and "Weitere laden"
 > follows the cursor in that order; Material's client sort is off for those columns. Columns the
 > server cannot sort (`@join`/`@column` over joined resources — Kurs, Dozenten, Raum) stay
-> client-sorted over the loaded rows, marked as such in the header. Server sort by column alias
+> client-sorted over the loaded rows, marked as such in the header. Parked (rapla-review 6, user
+> 2026-10-06): a failed load-more (invalid cursor, "cursor does not match sort") sets `error()` and the
+> template replaces the table with the error text until the next navigation — reload page 0 or keep the
+> rows and show the error at the button. Server sort by column alias
 > (value computed per block before the heap, cursor carrying the value) is a residue: 1–2 days,
 > CPU-heavy at 200k blocks per page.
 > Residue: the SPA maps column → sort field by alias (`start`/`date`/`times` → START, `end` → END,
