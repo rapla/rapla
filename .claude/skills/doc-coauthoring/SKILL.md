@@ -76,7 +76,7 @@ durable decision is **[ADR 0004](../../../docs/decisions/0004-ai-maintained-docs
 
 - [ADR 0004](../../../docs/decisions/0004-ai-maintained-docs-conversational-diff.md) — the durable decision + evidence.
 - `prd-management` skill — the PRD lifecycle that triggers this (its inline "which docs are affected?" prose points here).
-- [PRD 088](../../../docs/prd/088-spec-graph-formalization.md) D6/D7 — the rationale (rigidity, flexibility, three-modes-to-one).
+- [PRD 088](../../../docs/prd/done/088-spec-graph-formalization.md) D6/D7 — the rationale (rigidity, flexibility, three-modes-to-one).
 - `skill-authoring` skill — pressure-test this skill with a subagent before relying on it.
 
 ## Cross-reference links (moved from AGENTS.md §2a)

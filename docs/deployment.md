@@ -507,7 +507,7 @@ spring:
 systemd waits for the graceful stop instead of killing the process.
 
 > The in-app "restart" button (admin menu) is **not** a service restart — since
-> [PRD 048](prd/048-eliminate-server-container-context.md) it performs a logical
+> [PRD 048](prd/done/048-eliminate-server-container-context.md) it performs a logical
 > *reload* (re-reads the store, rebuilds caches) without bouncing the JVM. To
 > restart the OS service, use `systemctl restart rapla`.
 

@@ -12,7 +12,7 @@ UIs are out of scope for v1.
 
 ## Why
 
-Swing is the long-tail debt: WSL2/JNLP launch is fragile (gates new contributors — see PRD `done/jnlp-signing-pitfalls`); reservation-edit UI has ~1800 lines of edge-case glue in `AppointmentController` alone; REST surface is now hardened enough (PRDs [009](009-server-bulk-storage-rest-api.md), [020](020-server-driven-admin-panels.md), [024](wont-fix/024-server-side-edit-services.md), [025](025-headless-client-test-harness.md)) for a browser client.
+Swing is the long-tail debt: WSL2/JNLP launch is fragile (gates new contributors — see PRD `done/jnlp-signing-pitfalls`); reservation-edit UI has ~1800 lines of edge-case glue in `AppointmentController` alone; REST surface is now hardened enough (PRDs [009](done/009-server-bulk-storage-rest-api.md), [020](020-server-driven-admin-panels.md), [024](wont-fix/024-server-side-edit-services.md), [025](done/025-headless-client-test-harness.md)) for a browser client.
 
 ## Scope
 
@@ -49,7 +49,7 @@ domain and the wire model is in the architecture docs:
 - [`permissions.md`](../architecture/permissions.md) — what the
   server enforces on dispatch.
 
-### Calendar read substrate — GraphQL (PRDs [055](055-graphql-events-read-api.md)/[059](done/059-graphql-typed-where-predicates.md)/[066](066-graphql-reservation-allocatable-matching.md))
+### Calendar read substrate — GraphQL (PRDs [055](done/055-graphql-events-read-api.md)/[059](done/059-graphql-typed-where-predicates.md)/[066](done/066-graphql-reservation-allocatable-matching.md))
 
 The SPA calendar's main read query — "show me the events for the
 resources selected in the tree" — is GraphQL, not REST. Use
@@ -227,7 +227,7 @@ expected impact on the SPA team, not by dependency.
 
 9. **Pick one write path.** `/storage/dispatch` (transactional
    bundle, Swing's choice) vs. `/events`+`/resources` (resource-style
-   REST, [PRD 009](009-server-bulk-storage-rest-api.md)). Mixing them in the SPA risks optimistic-lock
+   REST, [PRD 009](done/009-server-bulk-storage-rest-api.md)). Mixing them in the SPA risks optimistic-lock
    surprises. Either deprecate the resource-style endpoints or
    thin the dispatch path.
 
@@ -506,7 +506,7 @@ template quirks, etc.) before Phase 1 starts.
 ## Post-prototype URL-layout decisions (2026-05-12)
 
 Discussed and documented here for traceability; **execution lives in
-[PRD 031 — API namespace redesign](031-api-namespace-redesign.md)**.
+[PRD 031 — API namespace redesign](done/031-api-namespace-redesign.md)**.
 **Phases 1+2+3+4 landed 2026-05-12.** URL layout is now:
 
 | Mode | SPA | REST |

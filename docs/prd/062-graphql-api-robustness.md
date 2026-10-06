@@ -1,10 +1,10 @@
 # PRD 062 — GraphQL API Robustness Patterns
 
-**Status:** draft (placeholder — not slated for implementation; renumbered from 058 → 062 on 2026-05-29 due to a number collision with [PRD 058 — GraphQL key-spec migration](058-graphql-key-spec-migration.md))
+**Status:** draft (placeholder — not slated for implementation; renumbered from 058 → 062 on 2026-05-29 due to a number collision with [PRD 058 — GraphQL key-spec migration](done/058-graphql-key-spec-migration.md))
 
-**Parent:** [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md). **Siblings:** [PRD 056 — events write API](056-graphql-events-write-api.md), [PRD 057 (done) — DynamicType mutations v1](done/057-graphql-dt-mutations-v1.md), [PRD 061 — DT mutations v2](061-graphql-dt-mutations-v2.md).
+**Parent:** [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md). **Siblings:** [PRD 056 — events write API](done/056-graphql-events-write-api.md), [PRD 057 (done) — DynamicType mutations v1](done/057-graphql-dt-mutations-v1.md), [PRD 061 — DT mutations v2](061-graphql-dt-mutations-v2.md).
 
-**Triggered by:** [PRD 056](056-graphql-events-write-api.md) OQ5 (idempotency on retry) — the basic
+**Triggered by:** [PRD 056](done/056-graphql-events-write-api.md) OQ5 (idempotency on retry) — the basic
 same-UUID-content-match semantic ships in 056 because it's a few lines
 of comparison logic and matches industry practice. The heavier
 infrastructure (lock acquisition for in-flight retries, TTL on
@@ -19,10 +19,10 @@ duplicate-create vectors / runaway clients / distributed-coordination
 issues become real, the design groundwork is here.
 
 **Explicitly not in scope:** any implementation. This PRD is a parking
-lot. Promote individual sections to their own PRDs (or fold into [PRD 056](056-graphql-events-write-api.md)
+lot. Promote individual sections to their own PRDs (or fold into [PRD 056](done/056-graphql-events-write-api.md)
 / 057 / future events) when there's real consumer demand.
 
-## Why this isn't in [PRD 056](056-graphql-events-write-api.md)
+## Why this isn't in [PRD 056](done/056-graphql-events-write-api.md)
 
 Rapla's `createReservation` traffic profile:
 - A few dozen creates per day in typical deployments
@@ -92,7 +92,7 @@ retries (mobile / shaky-network clients).
 
 ### 2. Idempotency TTL + cache eviction
 
-**Problem:** Long-lived UUIDs accumulate. [PRD 056](056-graphql-events-write-api.md) currently inspects
+**Problem:** Long-lived UUIDs accumulate. [PRD 056](done/056-graphql-events-write-api.md) currently inspects
 storage on every create for UUID collision — fine while UUIDs are
 unique-per-request, problematic if clients reuse old UUIDs by accident
 months later.
@@ -134,7 +134,7 @@ multi-tenant deployment.
 #### 3a. Per-user concurrency limit on read queries (design, 2026-08-12)
 
 Narrower and cheaper than general rate limiting, and the concrete variant
-[PRD 106](106-query-request-lifecycle.md) asks for: cap the number of GraphQL **read**
+[PRD 106](done/106-query-request-lifecycle.md) asks for: cap the number of GraphQL **read**
 queries a single principal may have executing at once.
 
 **Who it protects against.** Not the SPA — [PRD 078](078-spa-graphql-view-renderer.md)
@@ -149,7 +149,7 @@ tab, an older SPA version still in a user's cache.
 - **Keyed on the authenticated principal, not the session or transport.** Cookie session,
   bearer token and API key all share one slot; otherwise a script sidesteps the limit by
   minting a second key.
-- **Reads only** ([106 D1](106-query-request-lifecycle.md#decisions-locked)). A shared pool
+- **Reads only** ([106 D1](done/106-query-request-lifecycle.md#decisions-locked)). A shared pool
   would queue a save in the event sheet behind a slow view query.
 - **Reject, don't wait.** The MVC stack runs the interceptor's `Mono` on the servlet
   thread, so blocking on `acquire()` pins exactly the Tomcat thread the limit is meant to
@@ -184,11 +184,11 @@ service for others — or the first external integrator whose client we don't co
 `MaxQueryDepthInstrumentation` from graphql-java. Each field gets a
 complexity score; queries above threshold are rejected at parse time.
 
-**Rapla specifics:** [PRD 055](055-graphql-events-read-api.md) perf round (2026-05-27 profiling) already
+**Rapla specifics:** [PRD 055](done/055-graphql-events-read-api.md) perf round (2026-05-27 profiling) already
 identified the 14s admin query as graphql-java per-field overhead. A
 complexity cap would have rejected that query before it ran.
 
-**Existing leaning** (carry-over from [PRD 056](056-graphql-events-write-api.md) perf discussion):
+**Existing leaning** (carry-over from [PRD 056](done/056-graphql-events-write-api.md) perf discussion):
 - Cap at ~10000 complexity units
 - Per-field weight: 1 unit; list-typed field weighs `child_complexity ×
   expected_list_size`
@@ -216,7 +216,7 @@ responsiveness.
 
 #### 5a. Cancellation on client disconnect (design, 2026-08-12)
 
-The cancellation half of § 5, as scoped by [PRD 106](106-query-request-lifecycle.md):
+The cancellation half of § 5, as scoped by [PRD 106](done/106-query-request-lifecycle.md):
 when a client aborts an in-flight **read**, stop executing it.
 
 **The engine can already do it.** graphql-java **25.0** (the version resolved in the
@@ -229,7 +229,7 @@ reactor) exposes `ExecutionInput.cancel()` / `isCancelled()` and
    the client went away; it finds out when it writes the response and gets a broken pipe —
    i.e. after doing all the work. Learning earlier requires the request to run
    asynchronously so `AsyncListener.onError` fires. Whether Spring GraphQL's MVC handler
-   already does this in our configuration is [106 OQ1](106-query-request-lifecycle.md#open-questions),
+   already does this in our configuration is [106 OQ1](done/106-query-request-lifecycle.md#open-questions),
    and it is what separates "a day" from "a week".
 2. **Wiring the signal — small.** A `WebGraphQlInterceptor` parks the `ExecutionInput`
    (or a cancel handle) in the `GraphQLContext`; the listener calls `cancel()`. ~100 lines
@@ -242,14 +242,14 @@ the cost is per-row, per-field resolution (see [PRD 035](done/035-graphql-founda
 profiled hot spots — Micrometer context, `HandlerMethod`, `Classification.getType`), which
 *is* field-granular. Realistically a large share of a 4–7 s response is abortable.
 
-**Reads only** ([106 D1](106-query-request-lifecycle.md#decisions-locked)) — a mutation
+**Reads only** ([106 D1](done/106-query-request-lifecycle.md#decisions-locked)) — a mutation
 aborted part-way can leave partially applied writes.
 
 **Explicitly not worth it:** threading a cancellation token down through `StorageOperator`
 into the query loops. Invasive, multi-pod-relevant, weeks of work, for the one part that
 the field-level cancellation above mostly covers anyway.
 
-**Defer trigger:** same as § 5 — plus [106 OQ1](106-query-request-lifecycle.md#open-questions)
+**Defer trigger:** same as § 5 — plus [106 OQ1](done/106-query-request-lifecycle.md#open-questions)
 answered first.
 
 ### 6. Distributed tracing on mutations
@@ -281,12 +281,12 @@ When to promote a section to its own PRD:
 - **Implementation cost vs. user impact** — robust patterns add
   ongoing maintenance; ensure the user impact justifies it
 
-## What's currently shipped (lean version, in [PRD 056](056-graphql-events-write-api.md))
+## What's currently shipped (lean version, in [PRD 056](done/056-graphql-events-write-api.md))
 
 The bare minimum for safe-retry semantics:
-- Client UUID for new entities ([PRD 056](056-graphql-events-write-api.md) §6 — `client UUIDs` lock)
-- Same UUID + matching content on retry → no-op success ([PRD 056](056-graphql-events-write-api.md) OQ5)
-- Same UUID + differing content → `ID_COLLISION` ([PRD 056](056-graphql-events-write-api.md) OQ5)
+- Client UUID for new entities ([PRD 056](done/056-graphql-events-write-api.md) §6 — `client UUIDs` lock)
+- Same UUID + matching content on retry → no-op success ([PRD 056](done/056-graphql-events-write-api.md) OQ5)
+- Same UUID + differing content → `ID_COLLISION` ([PRD 056](done/056-graphql-events-write-api.md) OQ5)
 - Single-pod single-thread atomicity via `operator.dispatch(UpdateEvent)`
   ([PRD 035](done/035-graphql-foundations.md) architecture)
 

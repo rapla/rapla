@@ -29,7 +29,7 @@
 - `/api/auth/logout` clears the `org.rapla.auth.session` preference (Bearer-authenticated; revokes all sessions for the user).
 - `MyCustomConnector.reauth` tries `refreshUsingToken` first (POST to `connectionInfo.refreshUrl` — read from discovery), falls back to password reauth.
 - Discovery endpoint (`/api/auth/oauth/config`) emits `refreshUrl` and `logoutUrl` — IdP swap becomes a one-env-var change (`RAPLA_OAUTH_ISSUER`).
-- Client-side refresh-token cache: hybrid `TokenStore` (JNLP `PersistenceService` → `~/.rapla/tokens.json` 0600 → NoOp) — see [PRD 029](../029-swing-oauth-login.md) OQ 10.
+- Client-side refresh-token cache: hybrid `TokenStore` (JNLP `PersistenceService` → `~/.rapla/tokens.json` 0600 → NoOp) — see [PRD 029](029-swing-oauth-login.md) OQ 10.
 
 **Open / API-keys half:** mechanism landed via [PRD 043](../043-api-keys-jwt-pat.md) (server-side complete); only the end-user **UI** (Swing dialog / Angular admin panel) is still pending — tracked in [PRD 043](../043-api-keys-jwt-pat.md), not here.
 
@@ -46,9 +46,9 @@ Goal: both work today (embedded auth server) and survive a future switch to Keyc
 
 ## Why this is needed now
 
-1. **[PRD 029](../029-swing-oauth-login.md) (OAuth) Phase 1 shipped without refresh.** OAuth-logged-in Swing sessions die at 1-hour access-token expiry. User has to click "Sign in with browser…" again.
-2. **Restart-survival is half-shipped.** [PRD 029](../029-swing-oauth-login.md)'s persistent-JWKSource change (2026-05-12) made legacy `/auth/refresh` tokens survive restart by accident (stateless, signs with persistent key). OAuth `/oauth2/token` refresh tokens don't survive — SAS's `InMemoryOAuth2AuthorizationService` is in-memory.
-3. **[PRD 029](../029-swing-oauth-login.md) Phase 2 lists Keycloak** as the next-IdP. Designing refresh without Keycloak-portability paints us into a rewrite later.
+1. **[PRD 029](029-swing-oauth-login.md) (OAuth) Phase 1 shipped without refresh.** OAuth-logged-in Swing sessions die at 1-hour access-token expiry. User has to click "Sign in with browser…" again.
+2. **Restart-survival is half-shipped.** [PRD 029](029-swing-oauth-login.md)'s persistent-JWKSource change (2026-05-12) made legacy `/auth/refresh` tokens survive restart by accident (stateless, signs with persistent key). OAuth `/oauth2/token` refresh tokens don't survive — SAS's `InMemoryOAuth2AuthorizationService` is in-memory.
+3. **[PRD 029](029-swing-oauth-login.md) Phase 2 lists Keycloak** as the next-IdP. Designing refresh without Keycloak-portability paints us into a rewrite later.
 4. **API keys are an underused existing feature.** Storage mechanism is sitting there.
 
 ## Scope
@@ -61,7 +61,7 @@ Goal: both work today (embedded auth server) and survive a future switch to Keyc
 - Client `OAuthConfig` DTO gains matching field, plumbed into connector reauth.
 - Optional toggle for OAuth-refresh-survives-restart via persistent `OAuth2AuthorizationService` — see Open Question §1.
 - API key UI / endpoint surface exposing `RaplaKeyStorage.storeAPIKey` to end users (Swing dialog + script consumption).
-- Documentation: extend `docs/authentication.md`; cross-link PRD [029](../029-swing-oauth-login.md) + [030](../030-server-side-view-rendering.md).
+- Documentation: extend `docs/authentication.md`; cross-link PRD [029](029-swing-oauth-login.md) + [030](../030-server-side-view-rendering.md).
 
 ### Out of scope (this PRD)
 
@@ -112,7 +112,7 @@ Six pieces — see [PRD 041](../041-openapi-runtime-removal.md#oauth-refresh-con
 
 ### Discovery endpoint (`/api/auth/oauth/config`)
 
-Survivor of [PRD 041](../041-openapi-runtime-removal.md) cleanup. Emits `tokenUrl` (used for both code exchange and refresh), `authorizeUrl`, `logoutUrl` (points at `/connect/logout` for OIDC RP-initiated logout), `jwksUrl`, etc. The previous `refreshUrl` is **gone**; clients use `tokenUrl` for refresh (OAuth 2.0 standard). External-IdP providers list ([PRD 036](../036-external-idp-oauth-login.md)) also in this response — unchanged.
+Survivor of [PRD 041](../041-openapi-runtime-removal.md) cleanup. Emits `tokenUrl` (used for both code exchange and refresh), `authorizeUrl`, `logoutUrl` (points at `/connect/logout` for OIDC RP-initiated logout), `jwksUrl`, etc. The previous `refreshUrl` is **gone**; clients use `tokenUrl` for refresh (OAuth 2.0 standard). External-IdP providers list ([PRD 036](036-external-idp-oauth-login.md)) also in this response — unchanged.
 
 ### Client-side wiring
 
@@ -241,7 +241,7 @@ Swing UI: small dialog accessible from user menu — "API Keys", list + new + re
 5. **Client: cache `OAuthConfig`** accessible by `MyCustomConnector` (currently login-only). Likely add to `RemoteConnectionInfo`.
 6. **API key endpoint surface.** `ApiKeyController` POST/GET/DELETE. Hash-on-store, plaintext-once. Resource-server fallback. Tier-3 tests per op + bearer-auth via API key.
 7. **Swing UI for API keys.** Small dialog from user menu — list/create/revoke. Tier-1 view-presenter test ([PRD 023](../023-presenter-view-extraction.md) pattern).
-8. **Documentation.** `docs/authentication.md` sections. PRD [029](../029-swing-oauth-login.md) + [030](../030-server-side-view-rendering.md) cross-references.
+8. **Documentation.** `docs/authentication.md` sections. PRD [029](029-swing-oauth-login.md) + [030](../030-server-side-view-rendering.md) cross-references.
 9. **Status flip to `done`** once shipped + smoke-tested.
 
 ## Tests
@@ -264,5 +264,5 @@ Swing UI: small dialog accessible from user menu — "API Keys", list + new + re
 3. **Refresh-token rotation?** Spring SAS rotates by default. Should `/auth/refresh` issue new refresh too? Today returns new but old stays valid. Worth a docs note.
 4. **API key prefix?** Convention is recognisable string for security scanners. `rapla_` / `rk_` / `rcs_`?
 5. **API key scopes?** Today everything = "the user this key was issued for". Read-only? ical-only? Adds complexity; skip until requested.
-6. **Where does the Swing "API Keys" dialog live?** User menu seems right but conflicts with new login dialog real estate ([PRD 029](../029-swing-oauth-login.md) Phase 2 OQ5). Decide together.
+6. **Where does the Swing "API Keys" dialog live?** User menu seems right but conflicts with new login dialog real estate ([PRD 029](029-swing-oauth-login.md) Phase 2 OQ5). Decide together.
 7. **Migration of existing /auth/login clients.** Custom rapla deployments may have third-party REST clients on `/auth/login` with its custom JSON shape. Decision: keep contract; unification is additive.

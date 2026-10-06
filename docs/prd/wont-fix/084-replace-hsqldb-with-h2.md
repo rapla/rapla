@@ -1,7 +1,7 @@
 # PRD 084 — replace the embedded HSQLDB persistence backend with H2
 
 **Status:** wont-fix — 2026-09-13 — H2 measured slower than the in-memory model in [PRD 082](../082-storage-memory-model.md)/[PRD 086](../086-appointment-block-index.md) and was removed again; residue (`h2.version` in `rapla-bom`, `H2WritePathBenchmarkTest`) still to clean up.
-**Related:** [PRD 082](../082-storage-memory-model.md) (storage memory model — the new read-model uses H2; this consolidates the *persistence* backend on the same engine), [PRD 083](../083-user-change-subscription.md) (user change-subscription), AGENTS.md §8 (server lifecycle), [PRD 054](../054-standalone-windows-installer.md) (timestamp/wall-clock storage scars)
+**Related:** [PRD 082](../082-storage-memory-model.md) (storage memory model — the new read-model uses H2; this consolidates the *persistence* backend on the same engine), [PRD 083](../083-user-change-subscription.md) (user change-subscription), AGENTS.md §8 (server lifecycle), [PRD 054](054-standalone-windows-installer.md) (timestamp/wall-clock storage scars)
 
 ## Abstract
 
@@ -15,7 +15,7 @@ rapla's embedded/dev persistence backend is **HSQLDB** (`DBOperator`, `jdbc:hsql
 - **Dialect handling — H2 is already partially wired:** `AbstractTableStorage` has both `isHsqldb()` (`dbProductName.contains("hsql")`) **and `isH2()`** branches (e.g. `if (!isHsqldb() && !isH2())`, `if (isHsqldb() || isH2())`); `RaplaSQL` has `isHsqldb()` branches. So the dialect abstraction already anticipates H2 — Phase 1 is auditing completeness, not greenfield.
 - **`DBOperator`:** a `boolean hsqldb` flag + an HSQLDB-special `SHUTDOWN COMPACT` on disconnect.
 - **Config / distribution:** `application-local.yml` → `jdbc:hsqldb:file:./data/rapla-hsqldb`; `src/main/distribution/contexts/rapla.xml` and `README-Server.txt` use `org.hsqldb.jdbc.JDBCDataSource` URLs.
-- **Timestamp semantics:** `RaplaSQL` has wall-clock/timezone handling ("same wall-clock representation HSQL/MariaDB stored", [PRD 054](../054-standalone-windows-installer.md) scars) that must be preserved byte-for-byte on H2.
+- **Timestamp semantics:** `RaplaSQL` has wall-clock/timezone handling ("same wall-clock representation HSQL/MariaDB stored", [PRD 054](054-standalone-windows-installer.md) scars) that must be preserved byte-for-byte on H2.
 
 ## Why
 
@@ -48,7 +48,7 @@ dhbwrapla and other downstream deployments must be coordinated (their data is th
 - Swap `hsqldb` → `h2` dependency (`rapla-server/pom.xml`, `rapla-bom/pom.xml`).
 - Audit + complete the `isH2()` dialect branches; replace the `hsqldb` flag / `SHUTDOWN COMPACT` special with the H2 equivalent (H2 also supports `SHUTDOWN [COMPACT]`).
 - Update embedded URLs/driver in `application-local.yml`, `contexts/rapla.xml`, `README-Server.txt` → `jdbc:h2:file:...` / `org.h2.Driver`.
-- Preserve timestamp/wall-clock semantics ([PRD 054](../054-standalone-windows-installer.md)) — verified by round-trip test.
+- Preserve timestamp/wall-clock semantics ([PRD 054](054-standalone-windows-installer.md)) — verified by round-trip test.
 - A migration path for existing HSQLDB data (OQ1).
 - `@Tag("db")` tests run green against H2.
 
@@ -68,7 +68,7 @@ dhbwrapla and other downstream deployments must be coordinated (their data is th
 
 ### Phase 2 — schema + timestamp parity
 - [ ] Verify every `RaplaSQL` table DDL (types: `VARCHAR(255)`, `DATETIME`, `INTEGER`, …) creates correctly on H2.
-- [ ] Timestamp/wall-clock round-trip test: write via H2, read back, assert identical `LocalDateTime` to the HSQLDB baseline ([PRD 054](../054-standalone-windows-installer.md) regression).
+- [ ] Timestamp/wall-clock round-trip test: write via H2, read back, assert identical `LocalDateTime` to the HSQLDB baseline ([PRD 054](054-standalone-windows-installer.md) regression).
 
 ### Phase 3 — data migration
 - [ ] Decide OQ1 (XML round-trip vs dual-read vs dump).

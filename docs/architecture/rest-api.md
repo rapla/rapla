@@ -48,7 +48,7 @@ The OpenAPI spec is split into four groups via
 |---|---|---|---|
 | `auth` | `/api/v3/api-docs/auth` | External integrators wiring SSO | `/api/auth/**` |
 | `client` | `/api/v3/api-docs/client` | The rapla SPA / Swing client (codegen target) | `/api/auth/**` + every SPA-internal + admin-UI controller |
-| `rest` | `/api/v3/api-docs/rest` | Scripts / third-party integrators | `/api/events/**`, `/api/resources/**` ([PRD 009](../prd/009-server-bulk-storage-rest-api.md) bulk REST) |
+| `rest` | `/api/v3/api-docs/rest` | Scripts / third-party integrators | `/api/events/**`, `/api/resources/**` ([PRD 009](../prd/done/009-server-bulk-storage-rest-api.md) bulk REST) |
 | `exports` | `/api/v3/api-docs/exports` | Anyone doing data in/out | `/api/export/**`, `/api/ical/import**`, external-event import, legacy `/rapla/{calendar,ical}` feeds |
 
 **The default `/api/v3/api-docs` URL continues to serve a merged
@@ -414,7 +414,7 @@ and PKCE methods.
   client-credentials for end-user logins).
 - Scopes: `openid` + `profile`. No custom scopes today.
 
-**External IdP ([PRD 036](../prd/036-external-idp-oauth-login.md)).** When `rapla.oauth.external.providers[]`
+**External IdP ([PRD 036](../prd/done/036-external-idp-oauth-login.md)).** When `rapla.oauth.external.providers[]`
 is configured (Google, Microsoft Entra, etc.), the SPA's login
 picker also lists those — and Google/Microsoft confidential-client
 secrets are handled by the BFF
@@ -488,7 +488,7 @@ cadence that matches your UX (5–30 s is reasonable).
 
 ---
 
-## 3. Bulk REST ([PRD 009](../prd/009-server-bulk-storage-rest-api.md)) — `RaplaEventsController`, `RaplaResourcesController`
+## 3. Bulk REST ([PRD 009](../prd/done/009-server-bulk-storage-rest-api.md)) — `RaplaEventsController`, `RaplaResourcesController`
 
 Resource-style REST sugar on top of `/storage/dispatch`. Useful
 for scripting and as a friendlier API for SPAs that prefer
@@ -798,7 +798,7 @@ later refresh will fail. Calling logout is optional but recommended
   Classification model
 - [`../prd/026-angular-frontend.md`](../prd/026-angular-frontend.md)
   — SPA-migration scoping and open questions
-- [`../prd/009-server-bulk-storage-rest-api.md`](../prd/009-server-bulk-storage-rest-api.md)
+- [`../prd/009-server-bulk-storage-rest-api.md`](../prd/done/009-server-bulk-storage-rest-api.md)
   — rationale for the `/events` and `/resources` resource-style API
 - [`../prd/020-server-driven-admin-panels.md`](../prd/020-server-driven-admin-panels.md)
   — rationale for `/admin/panels`

@@ -1,6 +1,6 @@
 # PRD 024 — Server-side edit services (Angular precursor)
 
-**Status:** wont-fix — 2026-09-13 — `/api/edit/*` has no consumer; the SPA uses GraphQL ([PRD 064](../064-graphql-conflicts-read-api.md), [PRD 091](../091-spa-reservation-edit-and-availability.md)). Endpoints not removed (AGENTS.md §11) — listed as residue. Previous status: in-progress —
+**Status:** wont-fix — 2026-09-13 — `/api/edit/*` has no consumer; the SPA uses GraphQL ([PRD 064](../done/064-graphql-conflicts-read-api.md), [PRD 091](../091-spa-reservation-edit-and-availability.md)). Endpoints not removed (AGENTS.md §11) — listed as residue. Previous status: in-progress —
 - **Phase 1 (`validateRecurrence`)** DONE: `ReservationEditService` + `ReservationEditController` + `RecurrenceRule` / `RecurrenceValidation` DTOs. Wraps `RepeatingRuleValidator` (rapla-core, [PRD 023](../023-presenter-view-extraction.md) Phase 2).
 - **Phase 2 (`checkConflicts`)** DONE: `ConflictCheckRequest` / `ConflictReport` / `AllocationOutcomeDto` / `AppointmentSpec` DTOs. Wraps `AllocationConflictModel.compute(...)` and pulls allocatable bindings via the existing `facade.getAllocatableBindings(...)` — no separate loader needed. AGENTS.md §12 leak-probe covered.
 - **Phase 3 (`/calendar/view`)** DONE: engine + controller + 16 tier-1 + 7 MockMvc tests (landed 2026-05-11; colours added 2026-05-12 via [PRD 030](../030-server-side-view-rendering.md) Phase 4 `BlockColors`).
@@ -20,7 +20,7 @@ Companion of [PRD 023](../023-presenter-view-extraction.md): 023 carves pure-Jav
 ## Why this is needed now
 
 1. **The Angular rework will land in 12–24 months.** Building it against a "thin client → REST" architecture from day one is the only way that project finishes.
-2. **[PRD 020](../020-server-driven-admin-panels.md) (server-driven admin panels) and [PRD 012](../012-dhbwrapla-client-migration.md) (external event import wizard) already ship the pattern.** 024 generalises it to the reservation-edit surface — the largest UI area not yet covered.
+2. **[PRD 020](../020-server-driven-admin-panels.md) (server-driven admin panels) and [PRD 012](../done/012-dhbwrapla-client-migration.md) (external event import wizard) already ship the pattern.** 024 generalises it to the reservation-edit surface — the largest UI area not yet covered.
 3. **Server-side authority is correct anyway.** Client permission filtering is cosmetic; the server already re-checks on save. Centralising eliminates client/server skew (Swing and server re-implement the same `canAllocate` logic and have drifted before).
 4. **Closes PRD 005's dependency direction.** rapla-server today depends on rapla-client for `abstractcalendar` / `RaplaBuilder` (PRD 005 D3). Layout / formatting in `rapla-core` (per 023) lets rapla-server call it without the back-edge.
 
@@ -50,7 +50,7 @@ Swing keeps calling the builder in-process. Migration to REST is opt-in and not 
 
 ### Considered & rejected
 
-- **`/allocatables/search`** — *rejected*: Swing already has the full set loaded; in-memory filtering on a few thousand entries is sub-ms. Angular can pre-fetch or paginate via `/storage/resources` ([PRD 009](../009-server-bulk-storage-rest-api.md)).
+- **`/allocatables/search`** — *rejected*: Swing already has the full set loaded; in-memory filtering on a few thousand entries is sub-ms. Angular can pre-fetch or paginate via `/storage/resources` ([PRD 009](../done/009-server-bulk-storage-rest-api.md)).
 - **`/format/duration`, `/format/date-range`, `/format/appointment-time`** — *rejected*: locale formatting is local string concatenation; Angular should use the browser's native `Intl.DateTimeFormat` / `Intl.NumberFormat`.
 
 ### In scope — wire contract

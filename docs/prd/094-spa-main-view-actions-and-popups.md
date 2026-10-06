@@ -7,7 +7,7 @@ renderer — the main view these actions live on; the calendar surface hosts the
 Phase 4 drag/resize, but the move *command + scope dialog + mutation* are owned
 here), [PRD 091](091-spa-reservation-edit-and-availability.md) (recurrence semantics the `moveAppointment` SINGLE-split reuses),
 [PRD 093](093-loan-lifecycle.md) (loan lifecycle — its status actions are the first archetype-specific
-command producers), [PRD 056](056-graphql-events-write-api.md) (mutation contract incl. §9 id-integrity/retry — the
+command producers), [PRD 056](done/056-graphql-events-write-api.md) (mutation contract incl. §9 id-integrity/retry — the
 create-inverse relies on it), [PRD 067](067-server-mutation-unification.md) (D7: GraphQL write surface adjustable)
 
 ## Abstract
@@ -156,9 +156,9 @@ appointmentCount === 1 && repeating === null` (`week-grid.component.ts`
 the lone case where Swing skips the dialog** (EVENT is the sole safe action).
 Multi-appointment and repeating blocks don't drag today.
 
-- [ ] **Server: `moveAppointment` mutation — designed in [PRD 056](056-graphql-events-write-api.md)
+- [ ] **Server: `moveAppointment` mutation — designed in [PRD 056](done/056-graphql-events-write-api.md)
       § "Verb-level semantic notes" (the `moveAppointment` verb + `AppointmentEditScope`
-      enum + per-scope semantics live there, since [PRD 056](056-graphql-events-write-api.md) owns the reservation
+      enum + per-scope semantics live there, since [PRD 056](done/056-graphql-events-write-api.md) owns the reservation
       write surface).** Summary: `moveAppointment(reservationId, appointmentId,
       occurrenceStart, dateShift, scope: EVENT|SERIE|SINGLE, keepTime, newEnd,
       expectedLastChanged): Reservation!` carries the full
@@ -169,7 +169,7 @@ Multi-appointment and repeating blocks don't drag today.
       denied. **This is the D5 server work.**
 - [ ] **Resize form.** The same `moveAppointment` verb with a `newEnd` argument
       (Swing runs move and resize through the one `showDialog(..., "move", ...)`
-      path) — see [PRD 056](056-graphql-events-write-api.md). No separate `resizeAppointment` verb.
+      path) — see [PRD 056](done/056-graphql-events-write-api.md). No separate `resizeAppointment` verb.
 - [ ] **Client dialog:** reuse `views/delete-scope-dialog.component.ts` pattern
       for a move-scope chooser (EVENT/SERIE/SINGLE) with Swing's show-when
       predicates (skip the dialog when only one option qualifies — the current
@@ -307,7 +307,7 @@ recurrence invariant that must not be reimplemented in TypeScript. The SPA
 therefore does **not** build `updateReservation` payloads for SERIE/SINGLE (which
 would force the SPA event model to carry multi-appointment sets + exceptions +
 per-appointment restrictions and duplicate the cascade). Instead a new
-`moveAppointment` mutation — **designed in [PRD 056](056-graphql-events-write-api.md)** (the reservation write-surface
+`moveAppointment` mutation — **designed in [PRD 056](done/056-graphql-events-write-api.md)** (the reservation write-surface
 PRD), § "Verb-level semantic notes" — keeps the cascade in Java as the single
 source of truth, the same principle `moveReservations`/`deleteAppointment`/the
 Phase 2 delete-scope path already follow. The client owns only the **scope dialog**

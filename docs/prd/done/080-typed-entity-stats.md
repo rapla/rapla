@@ -1,6 +1,6 @@
 # PRD 080 — Typed-entity stats across entity families
 
-**Status:** implemented (2026-06-21) — all 8 items built + tested (item 4 verify-live-only; see Status block). Extends [PRD 079](../079-graphql-grouped-aggregates.md) (generic grouped
+**Status:** implemented (2026-06-21) — all 8 items built + tested (item 4 verify-live-only; see Status block). Extends [PRD 079](079-graphql-grouped-aggregates.md) (generic grouped
 aggregates) with **typed, selectable group entities** and **per-family stats fields**. Carved out of a
 long design discussion: the generic `keys/values` bucket couldn't carry entity fields (e.g. room size),
 and aggregation existed only on `appointmentBlockStats`.

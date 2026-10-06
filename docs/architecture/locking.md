@@ -101,7 +101,7 @@ language, because that persists `org.rapla.language` to the user's
 preferences (a client-side store whose `refresh` continuation fires the
 update event right as `Application.start` builds the GUI).
 
-**Fix pattern** ([PRD 029](../prd/029-swing-oauth-login.md) Phase 4, 2026-05-18): `refresh(UpdateEvent)` /
+**Fix pattern** ([PRD 029](../prd/done/029-swing-oauth-login.md) Phase 4, 2026-05-18): `refresh(UpdateEvent)` /
 `refreshAll()` compute the `UpdateResult` under `synchronized (this)`,
 release the monitor, then call `fireStorageUpdated`. A dedicated
 `fireLock` keeps the events ordered without putting the `this` monitor

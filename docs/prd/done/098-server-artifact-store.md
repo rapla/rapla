@@ -72,7 +72,7 @@ Intended consumers: view queries ([PRD 074](../074-graphql-declarative-views.md)
 images ([PRD 097](../097-event-html-templates-mustache.md)), later plausibly HTML mail/notification templates, SPA branding (different trust
 surface — needs its own review), admin announcements, stored-views-as-MCP-tools ([PRD 060](../060-graphql-mcp-foundations.md)).
 Explicitly NOT: user attachments (large, user-authored, per-entity — own PRD if ever), per-user UI
-state (user preferences: [PRD 077](../077-calendar-model-graphql.md) saved views, [PRD 089](../089-server-side-recents-favorites.md) recents), plugin/system settings
+state (user preferences: [PRD 077](../077-calendar-model-graphql.md) saved views, [PRD 089](089-server-side-recents-favorites.md) recents), plugin/system settings
 (system preferences hold *settings*; this store holds *content*), executable content of any kind.
 BUILTIN views stay hardcoded in `ViewCatalogService` — not seeded/overridable in the store (upgrade
 conflicts; revisit only with a concrete need).
@@ -384,7 +384,7 @@ keyed on author trust — so loosening the write rule never changes the security
 Phase 1 writes only null (= application-scoped). Uniqueness `(kind, owner, name)` (OQ3); catalog
 reads filter `owner == null` explicitly so future owned rows can't leak into the application
 catalog. Being a real referenced entity also means user deletion runs through standard store
-dependency handling — no orphaned-JSON problem (cf. [PRD 089](../089-server-side-recents-favorites.md)'s no-propagation scar). NOT built now:
+dependency handling — no orphaned-JSON problem (cf. [PRD 089](089-server-side-recents-favorites.md)'s no-propagation scar). NOT built now:
 any user-scope read path, owned-artifact visibility semantics, quotas, or UI.
 
 **D5 — Sequencing: lands before [PRD 097](../097-event-html-templates-mustache.md) Phase 1, coordinated with storage modernization

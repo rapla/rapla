@@ -38,7 +38,7 @@ Every claim is tagged with how strongly it is held to be *true now*:
 
 - **✅ PINNED** — an executable test fails if this drifts. Named inline. Treat as truth.
 - **🔧 GENERATABLE** — should be machine-generated from the cited source; not yet generated, so
-  currently transcribed by hand (drift-prone until generation lands — [PRD 088](../prd/088-spec-graph-formalization.md) Phase 3).
+  currently transcribed by hand (drift-prone until generation lands — [PRD 088](../prd/done/088-spec-graph-formalization.md) Phase 3).
 - **📝 DERIVED** — read out of the code on 2026-06-24, but no test pins it. Probably true; verify
   against the cited file before relying on it.
 
@@ -159,7 +159,7 @@ caches, invalidated on permission or group-membership change. ✅ PINNED (invali
 ## Unverified surface (honest gaps — raise these to ✅ over time)
 
 These claims are 📝 DERIVED only — no test pins them today. Each is a candidate for a pinning test
-([PRD 088](../prd/088-spec-graph-formalization.md) Phase 3 confirmation work):
+([PRD 088](../prd/done/088-spec-graph-formalization.md) Phase 3 confirmation work):
 
 - Absolute vs. relative time bounds are mutually exclusive per field.
 - `ADMIN` rows ignore time windows.

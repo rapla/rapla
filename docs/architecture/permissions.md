@@ -115,7 +115,7 @@ UI offers the right levels; nothing rejects an out-of-range level stored
 through another path). It is **not yet enforced server-side**, because no
 GraphQL write path edits permission lists (`AllocatableMutationController`
 v1 copies existing permissions through and inherits type defaults — it
-never sets a level). When a permission-editing verb lands ([PRD 063](../prd/063-graphql-allocatables-write-api.md) OQ2 —
+never sets a level). When a permission-editing verb lands ([PRD 063](../prd/done/063-graphql-allocatables-write-api.md) OQ2 —
 `setAllocatablePermissions`, and the analogues for `DynamicType` /
 `Reservation`), the save path **must validate the level against this
 matrix** and reject a mismatch (e.g. `READ_TYPE` on an `Allocatable`).
@@ -295,7 +295,7 @@ template-sharing plugin) to grant additional read access.
 store. For new entities, the user must be the owner. For modifications,
 either the owner is unchanged (and the user has `EDIT`) or the user is
 admin. **Re-parenting (changing the owner)** — since 2026-09-13
-([PRD 113 § 5f](../prd/113-graphql-permission-model.md#5f-wp-o1--owner-change-for-group-admins-within-scope-user-ruling-p-4-2026-09-13-approved-to-impl-final-2245)):
+([PRD 113 § 5f](../prd/done/113-graphql-permission-model.md#5f-wp-o1--owner-change-for-group-admins-within-scope-user-ruling-p-4-2026-09-13-approved-to-impl-final-2245)):
 allowed for a global admin, or for a group admin (`canAdminUsers`) when
 both the old and the new owner are within their `canAdminUser` scope and
 the entity is visible to them (`canReadInformation` for resources,
@@ -368,7 +368,7 @@ allocation on a resource the user cannot see at all is absent from
   `READ_NO_ALLOCATION` resources the legacy path shows (over-restrictive /
   fail-closed — not a leak). [PRD 083](../prd/083-user-change-subscription.md) scopes the index to GraphQL for exactly
   this reason.
-- The server operator caches each user's groups including parents (`getGroupsIncludingParents`, `readmodel.UserGroupsCache`) — 91 % of the permission time otherwise. A user change drops that user's entry, a category change drops all; only the resident user instance is served, drafts are computed fresh ([PRD 129](../prd/129-cached-permission-groups.md)).
+- The server operator caches each user's groups including parents (`getGroupsIncludingParents`, `readmodel.UserGroupsCache`) — 91 % of the permission time otherwise. A user change drops that user's entry, a category change drops all; only the resident user instance is served, drafts are computed fresh ([PRD 129](../prd/done/129-cached-permission-groups.md)).
 - The index also caches the `canReadInformation && !canRead` set
   (`informationOnlyAllocatables`, same scan and invalidation); GraphQL's
   expand gate `canReadAllocatableInformation` uses it (2026-10-01).

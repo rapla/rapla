@@ -19,7 +19,7 @@ trap, where regenerating a doc from code/PRDs strips the human-curated context, 
 (End-user *usage* docs are out of scope here — they describe using the app, which no build-time PRD contains,
 so they are authored separately, not derived.)
 
-Related: [PRD 088](../prd/088-spec-graph-formalization.md) (this MADR is the extracted, durable form of its
+Related: [PRD 088](../prd/done/088-spec-graph-formalization.md) (this MADR is the extracted, durable form of its
 decision **D7**, and the readability evidence behind **D6**); [ADR 0002](0002-no-sdd-framework-as-tool.md)
 (no SDD framework as a tool); [ADR 0001](0001-use-madr-for-architecture-decisions.md) (MADR / the durable-why
 layer this maintains).
@@ -115,14 +115,14 @@ This is a process decision, so the check is softer than an arch-test, but it is 
 
 ## Future possibilities
 
-- Pressure-test + finalize the **`doc-coauthoring` skill** once the workflow is proven on one architecture page ([PRD 088](../prd/088-spec-graph-formalization.md) Phase 1).
+- Pressure-test + finalize the **`doc-coauthoring` skill** once the workflow is proven on one architecture page ([PRD 088](../prd/done/088-spec-graph-formalization.md) Phase 1).
 - Add the **advisory drift-check** as a glob-based PR comment if drift recurs despite the announce workflow.
 - An **admin/ops spine**: consolidate the scattered `deployment.md` / `signing.md` / `sslconfig.md` /
   `setup-wsl.md` / `plugins.md` under one index — the admin audience's keep-current entry point.
 
 ## More Information
 
-- [PRD 088](../prd/088-spec-graph-formalization.md) **D6** (rigidity, not binary, is the objection to SDD tooling) and **D7** (this decision).
+- [PRD 088](../prd/done/088-spec-graph-formalization.md) **D6** (rigidity, not binary, is the objection to SDD tooling) and **D7** (this decision).
 - Evidence: "The Documentation Problem: How AI Changes Technical Writing" (shellnetsecurity, 2026) —
   regeneration-wipe + hallucination; Fern "Generated vs Manual Documentation" — the generate/author split;
   "Living Architecture for AI Agents" (ceaksan) — the advisory glob drift-check; Red Hat "code diff → docs PR

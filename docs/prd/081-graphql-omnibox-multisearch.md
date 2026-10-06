@@ -122,7 +122,7 @@ chip** to the rail. The chip carries the user **id**; the SPA binds it into
 visibility — `canAdminUser` / self), and the per-kind count must not leak hidden users. The
 own logged-in user does **not** need search — it is pinned in the SPA selection ([PRD 078](078-spa-graphql-view-renderer.md)); this
 kind covers finding *other* users (admin/planner scoping to someone else's events, which on the
-read path is `ownerEq` for owned events, or [PRD 069](069-graphql-resource-access-read-api.md) `accessibleByUsername` for access-scoped).
+read path is `ownerEq` for owned events, or [PRD 069](done/069-graphql-resource-access-read-api.md) `accessibleByUsername` for access-scoped).
 
 ### Why `GroupHit.memberFilter` (the hard part)
 

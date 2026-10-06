@@ -1,7 +1,7 @@
 # PRD 091 — SPA reservation editing & availability search
 
 **Status:** draft — 2026-07-05 (updated 2026-07-06: equipment-lending archetype prioritized as first implementation target; 2026-07-07: in-sheet undo/redo decided — D5; 2026-07-08: recurrence editor shipped — Phase 4.0–4.3 + 4.5 done, D6 block-level availability permanently deferred, OQ6 → GraphQL `expandOccurrences`)
-**Related:** [PRD 024](wont-fix/024-server-side-edit-services.md) (server-side edit services — the `/api/edit` REST trio), [PRD 026](026-angular-frontend.md) (Angular umbrella), PRD [056](056-graphql-events-write-api.md)/[057](done/057-graphql-dt-mutations-v1.md)/[063](063-graphql-allocatables-write-api.md) (GraphQL mutations, shipped), [PRD 060](060-graphql-mcp-foundations.md) (GraphQL MCP foundations — designed `whoIsFree`/`findFreeSlots`/`checkConflicts`, unbuilt), [PRD 067](067-server-mutation-unification.md) (mutation unification, D7: GraphQL write surface still adjustable — SPA is the first real consumer), PRD [077](077-calendar-model-graphql.md)/[078](078-spa-graphql-view-renderer.md) (view model + renderer, the read side), [PRD 086](086-appointment-block-index.md) (appointment block index — the availability substrate), **[PRD 092](092-free-slot-search.md) (free-slot search — the fixed-resources/variable-time axis, split from this PRD)**, **[PRD 093](093-loan-lifecycle.md) (loan lifecycle — status/blocking rules the availability query must honor)**, [PRD 094](094-spa-main-view-actions-and-popups.md) (main-view actions & popups — command-pattern undo past the save boundary; D5 covers only in-sheet)
+**Related:** [PRD 024](wont-fix/024-server-side-edit-services.md) (server-side edit services — the `/api/edit` REST trio), [PRD 026](026-angular-frontend.md) (Angular umbrella), PRD [056](done/056-graphql-events-write-api.md)/[057](done/057-graphql-dt-mutations-v1.md)/[063](done/063-graphql-allocatables-write-api.md) (GraphQL mutations, shipped), [PRD 060](060-graphql-mcp-foundations.md) (GraphQL MCP foundations — designed `whoIsFree`/`findFreeSlots`/`checkConflicts`, unbuilt), [PRD 067](067-server-mutation-unification.md) (mutation unification, D7: GraphQL write surface still adjustable — SPA is the first real consumer), PRD [077](077-calendar-model-graphql.md)/[078](078-spa-graphql-view-renderer.md) (view model + renderer, the read side), [PRD 086](086-appointment-block-index.md) (appointment block index — the availability substrate), **[PRD 092](092-free-slot-search.md) (free-slot search — the fixed-resources/variable-time axis, split from this PRD)**, **[PRD 093](093-loan-lifecycle.md) (loan lifecycle — status/blocking rules the availability query must honor)**, [PRD 094](094-spa-main-view-actions-and-popups.md) (main-view actions & popups — command-pattern undo past the save boundary; D5 covers only in-sheet)
 
 **Focus (clarified 2026-07-06): the sheet is the GENERAL event editor** — the
 lending archetype (`docs/usecases/equipment-planning.md`, UC-C1/C2) is a *special
@@ -143,7 +143,7 @@ input PotentialConflictInput {
 
 **One `Conflict` type for realized AND potential conflicts (2026-07-06).** A
 potential conflict is a `Conflict` whose side 1 is not persisted (yet) — same
-symmetric pair semantics, different realization state. The shipped [PRD 064](064-graphql-conflicts-read-api.md) type is
+symmetric pair semantics, different realization state. The shipped [PRD 064](done/064-graphql-conflicts-read-api.md) type is
 reshaped into an id-based superset (SPA is the sole consumer — cheap now, expensive
 later, [PRD 067](067-server-mutation-unification.md) D7 spirit):
 
@@ -173,7 +173,7 @@ type Conflict {
   technical: `reservation1` null = brand-new draft; `reservation2`/`appointment2`
   null = §12-masked.
 - **§12: drop vs. mask.** `conflicts(reservationId:)` keeps dropping unreadable
-  conflicts entirely ([PRD 064](064-graphql-conflicts-read-api.md) contract). `potentialConflicts` must NOT drop — the
+  conflicts entirely ([PRD 064](done/064-graphql-conflicts-read-api.md) contract). `potentialConflicts` must NOT drop — the
   resource IS busy — it masks: side 2 fields null, `description` generic ("belegt").
   Readable counterparty → name + time in `description` (server-localized).
 - **Continuity across save:** appointment ids are stable (D3), so the potential
@@ -267,7 +267,7 @@ coupling between header and add mode (implicit collapsing that removes input
 context reads as a bug). Both states are draft-local: reopening the sheet starts
 collapsed.
 Open: auto-recheck vs. on-demand; draft-local vs. per-user-remembered
-pins ([PRD 089](089-server-side-recents-favorites.md) favorites adjacency).
+pins ([PRD 089](done/089-server-side-recents-favorites.md) favorites adjacency).
 
 **Entry points (locked 2026-07-06):** (a) row edit in the table view — a row
 carrying an event id opens `/app/event/:id` directly; a row carrying only an
@@ -282,7 +282,7 @@ from the first second (no redirect on first save). The sheet has ONE state
 AND isNew flag → empty draft with that id; id unknown WITHOUT the flag →
 "nicht gefunden" (a mistyped/foreign URL must never silently become a create
 form; §12 keeps unknown ≡ hidden, the collision case fails uniformly at save
-via [PRD 056](056-graphql-events-write-api.md) §9). No calendar-drag entry in this phase ([PRD 077](077-calendar-model-graphql.md)'s render mode
+via [PRD 056](done/056-graphql-events-write-api.md) §9). No calendar-drag entry in this phase ([PRD 077](077-calendar-model-graphql.md)'s render mode
 owns that).
 
 ### C — Tri-state resource finder (UC-E5; Swing picker successor)
@@ -378,7 +378,7 @@ single-appointment sheet before recurrence. UC-C2 (candidates = `typeKeyIn`, one
 multi-day appointment) is the acceptance case for Phases 1+3.
 
 ### Phase 1 — Availability API (A) — DONE 2026-07-06
-- [x] Reshape `Conflict` type to the id-based superset ([PRD 064](064-graphql-conflicts-read-api.md) follow-up). SPA audit:
+- [x] Reshape `Conflict` type to the id-based superset ([PRD 064](done/064-graphql-conflicts-read-api.md) follow-up). SPA audit:
       zero Angular consumers existed — no migration needed. `@SchemaMapping` field
       resolvers replaced by the materialized `ConflictRow` record (both queries share it);
       realized rows are side-normalized (side 1 = queried reservation).
@@ -387,7 +387,7 @@ multi-day appointment) is the acceptance case for Phases 1+3.
       `CandidateInput @oneOf` (filter delegates to the §12-scoped `allocatables(filter:)`
       resolver; ids resolved with hidden ≡ nonexistent drop). Appointment ids REQUIRED
       (loud REQUIRED error); `repeating` rejected loudly (UNSUPPORTED — the mutation path
-      doesn't materialize recurrence yet either, [PRD 056](056-graphql-events-write-api.md) v1).
+      doesn't materialize recurrence yet either, [PRD 056](done/056-graphql-events-write-api.md) v1).
 - [x] `potentialConflicts` resolver (full enumeration; `startDate` via
       `ConflictImpl.getFirstConflictDate`; side-1 appointments materialized from input;
       §12 masking: unreadable counterparty → side-2 fields null + `not_visible` i18n text)
@@ -396,7 +396,7 @@ multi-day appointment) is the acceptance case for Phases 1+3.
       masked-counterparty tier-3 test — testdefault.xml gives the event type
       `read=everyone` and mutations can't set restrictive permissions, so an
       unreadable-to-monty reservation needs a fixture extension (restricted-read event
-      type) first; [PRD 064](064-graphql-conflicts-read-api.md) precedent.
+      type) first; [PRD 064](done/064-graphql-conflicts-read-api.md) precedent.
 - [x] Integration test: UC-C2 shape — `typeKeyIn` filter, single multi-day appointment
       (`AvailabilityGraphQLControllerTest.ucC2FinderSingleMultiDayAppointment`) +
       drill-down counterparty test. GraphQL package suite green (244 tests).
@@ -420,7 +420,7 @@ Order matters — each step is independently verifiable before the next starts.
       ORIGINAL SPEC (kept for reference):
       Full-state save must NEVER destroy state the UI can't display/edit yet.
       (a) Server: `updateReservation`/`createReservation` must materialize
-      `AppointmentInput.repeating` + `allDay` (today a [PRD 056](056-graphql-events-write-api.md) v1 TODO in
+      `AppointmentInput.repeating` + `allDay` (today a [PRD 056](done/056-graphql-events-write-api.md) v1 TODO in
       `ReservationMutationController.buildAppointment` — a full-state update of
       a recurring event would silently flatten the series). Test-first
       regression: load event with weekly rule → save unchanged → rule intact.
@@ -475,7 +475,7 @@ Order matters — each step is independently verifiable before the next starts.
       ride along untouched via the 2.0b pass-through (the "weitere Attribute"
       expand may show them read-only). The full DynamicType-driven attribute
       form is a later increment of the same header area — now scoped as
-      [PRD 096 — SPA classification editor](096-spa-classification-editor.md)
+      [PRD 096 — SPA classification editor](done/096-spa-classification-editor.md)
       (reusable across events + allocatables; Phase 3 there closes this deferral).
 - [x] **2.5 DONE** — appointment LIST with inline datetime editing, "+ Termin", delete (min 1), recurrence displayed read-only ("Serie · wöchentlich"), disabled Wiederholung button. **2.5 When-axis (appointment list, single-entry slice)** — rendered as a
       LIST (Swing parity: the dialog's Termine list) with "+ Termin" and a
@@ -485,7 +485,7 @@ Order matters — each step is independently verifiable before the next starts.
 - [x] **2.6 DONE** — assigned list with live status pills + editable "gilt für" date picker; add mode per prototype (ONE Auswählbar list, pins on top, debounced `AvailabilitySearchService`: filter query + ids query in parallel, Fertig/Esc/save close). **2.6 With-what minimal** — add/remove allocations via the existing
       `search` query (person + items for UC-C1); chips list; no finder yet
       (Phase 3 replaces the picker interior, the section shell stays).
-- [x] **2.7 DONE** — CONCURRENT_MODIFICATION banner (reload-discarding vs. overwrite); ID_COLLISION on own create id mapped to "already applied" ([PRD 056](056-graphql-events-write-api.md) §9 retry contract); save reloads for fresh lastChanged. NOTE: `lastModifiedAt` (DateTime) is offset-stripped to LocalDateTime for `expectedLastChanged` — verify against a live server probe. **2.7 Concurrency** — `updateReservation` with `expectedLastChanged`;
+- [x] **2.7 DONE** — CONCURRENT_MODIFICATION banner (reload-discarding vs. overwrite); ID_COLLISION on own create id mapped to "already applied" ([PRD 056](done/056-graphql-events-write-api.md) §9 retry contract); save reloads for fresh lastChanged. NOTE: `lastModifiedAt` (DateTime) is offset-stripped to LocalDateTime for `expectedLastChanged` — verify against a live server probe. **2.7 Concurrency** — `updateReservation` with `expectedLastChanged`;
       CONCURRENT_MODIFICATION → reload-and-reapply dialog (UC-E15). Tier-5 test
       for the reapply merge (fresh lastChanged + kept draft edits).
 - [x] **2.8 DONE** — toolbar "Neu" button (client-minted id + isNew state) DONE 2026-07-06; table-lens ROW EDIT landed 2026-07-07 via [PRD 094](094-spa-main-view-actions-and-popups.md) Phase 1 (row context menu Bearbeiten/Anzeigen in the view host). **2.8 Table-lens entry points** — row edit action (event id direct;
@@ -732,13 +732,13 @@ though the mutation contract only requires them when subset restrictions are
 present. Why: (a) the restriction map joins on appointment ids — subset
 allocations at create time are inexpressible without them (the matrix's normal
 case); (b) stable matrix/availability identity across draft edits (index-based
-identity is fragile); (c) create becomes retry-idempotent ([PRD 056](056-graphql-events-write-api.md) OQ5).
+identity is fragile); (c) create becomes retry-idempotent ([PRD 056](done/056-graphql-events-write-api.md) OQ5).
 Swing's server-roundtrip id allocation (`/api/storage/identifier`) is NOT
 copied — rapla ids are stateless typed UUIDs, so client generation is safe.
 The *contract* rule (ids optional for third parties, subset restrictions force
 appointment ids) and the `checkIdIntegrity` operator guard (collision +
 foreign-reservation appointment ids, §12-uniform rejection) are owned by
-**[PRD 056](056-graphql-events-write-api.md) locked decision §9** — this PRD only consumes them.
+**[PRD 056](done/056-graphql-events-write-api.md) locked decision §9** — this PRD only consumes them.
 Alternatives rejected: server pre-allocation mutation (roundtrip per appointment
 add, no gain — server ids are random UUIDs too, uniqueness comes from the
 save-time guard either way); strictly required ids for all consumers (hurts

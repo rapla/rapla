@@ -83,7 +83,7 @@ Concretely:
   every external client referencing the old key breaks loudly until fixed by hand.
 - Bad (accepted): multi-pod schema-rebuild skew (~10 s update-history polling) can briefly
   reject a just-added key's enum value on a stale pod.
-- Constraint: DynamicType keys must be GraphQL-name-compliant — guaranteed by [PRD 058](../prd/058-graphql-key-spec-migration.md)'s
+- Constraint: DynamicType keys must be GraphQL-name-compliant — guaranteed by [PRD 058](../prd/done/058-graphql-key-spec-migration.md)'s
   startup `GraphqlKeyMigration`; `checkGraphQlCompliantName` throws if one slips through
   (GraphQL-reserved words get a trailing `_`).
 

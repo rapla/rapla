@@ -308,7 +308,7 @@ Reference tests:
   carve-out plan and what's still pending (Phase 6).
 - [PRD 024](../prd/wont-fix/024-server-side-edit-services.md) — REST endpoints
   built on the carved-out models.
-- [PRD 025](../prd/025-headless-client-test-harness.md) — the
+- [PRD 025](../prd/done/025-headless-client-test-harness.md) — the
   `HeadlessPresenterTestSupport` + `RecordingView` design.
 - [swing-platform-quirks.md](swing-platform-quirks.md) — WSLg / XWayland
   popup workarounds (FilterEditButton positioning, focus dismissal).

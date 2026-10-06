@@ -291,7 +291,7 @@ for the application entry point.
 | `graphql/schema.graphqls` | 12 KB | GraphQL schema definition ([PRD 035](prd/done/035-graphql-foundations.md)) |
 | `logback-spring.xml` | 6.5 KB | Logback config (Spring-profile-aware) |
 | `application-local.yml` | 5.3 KB | Default dev-profile overrides |
-| `application-standalone.yml` | 2.2 KB | Defaults for the standalone ([PRD 054](prd/054-standalone-windows-installer.md)) Tauri build |
+| `application-standalone.yml` | 2.2 KB | Defaults for the standalone ([PRD 054](prd/wont-fix/054-standalone-windows-installer.md)) Tauri build |
 | `clientlibs.properties` | 558 B | Semicolon-separated JNLP webclient jar names — read by JNLP descriptor template |
 | `ical4j.properties` | 129 B | iCal4j defaults (compatibility mode, etc.) |
 | `commons-logging.properties` | 70 B | Routes commons-logging to SLF4J |

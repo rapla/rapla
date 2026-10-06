@@ -32,8 +32,8 @@ This document covers configuring authentication for a rapla
 deployment. For the design rationale of the refresh-token model see
 [PRD 031](prd/done/031-token-refresh-and-api-keys.md) +
 [PRD 041](prd/041-openapi-runtime-removal.md); for the OAuth flow see
-[PRD 029](prd/029-swing-oauth-login.md) (Swing) and
-[PRD 036](prd/036-external-idp-oauth-login.md) (external IdPs).
+[PRD 029](prd/done/029-swing-oauth-login.md) (Swing) and
+[PRD 036](prd/done/036-external-idp-oauth-login.md) (external IdPs).
 
 ## The refresh-token model
 
@@ -189,13 +189,13 @@ After the first successful external authentication, rapla stamps
 `user.authenticationSource = IdentityClaims.sourceId()` — the label is
 supplied by the active store (no longer a hardcoded `"ldap"`). The
 stamping and persistence happen in `DefaultUserProvisioner.provision()`
-via `operator.storeAndRemove` ([PRD 050](prd/050-external-auth-user-lifecycle.md) Phase 8), not inline in the auth
+via `operator.storeAndRemove` ([PRD 050](prd/done/050-external-auth-user-lifecycle.md) Phase 8), not inline in the auth
 service. The marker drives every downstream "is this an external user?"
 gate:
 
 - `RemoteStorageController.changePassword` / `changeName` /
   `changeEmail` / `confirmEmail` return 401 with the IdP name in the
-  message — even for the user themselves ([PRD 050](prd/050-external-auth-user-lifecycle.md)).
+  message — even for the user themselves ([PRD 050](prd/done/050-external-auth-user-lifecycle.md)).
 - `GET /api/storage/profile/capabilities` returns all-false +
   `authenticationSource` for stamped users; for local users
   `canChangeName` / `canChangeEmail` are true, `canChangePassword`
@@ -249,7 +249,7 @@ DefaultUserProvisioner` (the sync no longer lives inline in
 - **Email** — the legacy "only-when-empty" override is **commented out**;
   the default **overwrite-on-mismatch** (`equalsIgnoreCase`) now applies.
   The value is the IdP-provided email when present, else the Standort
-  email derived by `DhbwLdapGroupMapper`. [PRD 050](prd/050-external-auth-user-lifecycle.md) makes this safe: name /
+  email derived by `DhbwLdapGroupMapper`. [PRD 050](prd/done/050-external-auth-user-lifecycle.md) makes this safe: name /
   email change is 403-gated for any user with a non-null
   `authenticationSource`, so the AD/IdP side is structurally authoritative.
 - **Groups** — re-derived from the DHBW LDAP role mapping on every login
@@ -260,7 +260,7 @@ DefaultUserProvisioner` (the sync no longer lives inline in
 
 Two consequences worth remembering:
 
-1. **The DHBW side is authoritative under [PRD 050](prd/050-external-auth-user-lifecycle.md).** Because name / email
+1. **The DHBW side is authoritative under [PRD 050](prd/done/050-external-auth-user-lifecycle.md).** Because name / email
    change is 403-gated for stamped users and `DhbwUserProvisioner` runs the
    default overwrite-on-mismatch policy, an org-wide email-domain rename in
    AD *is* pushed on the next login — there is no stale-local-value to clear.
@@ -394,22 +394,22 @@ error".
 2. **Default — OAuth enabled, `swing-legacy-login=false`**: the dialog
    shows in "browser login in progress" mode (credential fields hidden)
    and auto-fires `SwingOAuthLoginFlow` — the standard authorization_code
-   + PKCE flow against rapla's `/oauth2/token` ([PRD 029](prd/029-swing-oauth-login.md) Phase 2). Since
+   + PKCE flow against rapla's `/oauth2/token` ([PRD 029](prd/done/029-swing-oauth-login.md) Phase 2). Since
    [PRD 072](prd/done/072-server-side-login-dialog.md) this is the **single "SSO" entry** — rapla brokers the upstream
    IdP via the `/login` chooser (see § "Swing SSO flow" below); there is no
    per-provider Swing menu. The credential fields show only after Abort, together
    with the method combo (password / SSO), so SSO can be retried without a restart
-   ([PRD 126](prd/126-swing-sso-auto-login.md) D11).
+   ([PRD 126](prd/done/126-swing-sso-auto-login.md) D11).
 3. **Admin opted into the legacy dialog — OAuth enabled,
    `swing-legacy-login=true`**: the dialog is shown in full state with
-   username/password fields ([PRD 029](prd/029-swing-oauth-login.md) Phase 3). When
+   username/password fields ([PRD 029](prd/done/029-swing-oauth-login.md) Phase 3). When
    `swing-legacy-show-sso-button=true`, the "Sign in with browser…"
    button is also rendered so users can try SSO; otherwise it's hidden.
    When the last successful login used SSO (`TokenStore.KEY_LOGIN_METHOD`)
    and the SSO method is offered, the start behaves like case 2: silent
    reauth from the cached refresh token, then the browser flow auto-starts;
    Abort returns to the password form
-   ([PRD 126](prd/126-swing-sso-auto-login.md), `RaplaClientServiceImpl.autoSso`).
+   ([PRD 126](prd/done/126-swing-sso-auto-login.md), `RaplaClientServiceImpl.autoSso`).
 4. **Fallback — OAuth disabled server-side, or the discovery probe
    fails**: the dialog is shown in full state with username/password
    fields and no SSO button (a button would have no auth server to
@@ -419,7 +419,7 @@ Swing stores the refresh token only with the user's consent: after an interactiv
 login the client asks once per machine ("Anmeldung auf diesem Rechner speichern bis
 <Datum> oder bis zur Abmeldung?", Ja/Nein, "Nicht mehr fragen"); `ConsentingTokenStore`
 holds the token in memory until then, writes and verifies on Ja, clears on Nein, and an
-explicit logout asks again next time ([PRD 126](prd/126-swing-sso-auto-login.md) Phase 2).
+explicit logout asks again next time ([PRD 126](prd/done/126-swing-sso-auto-login.md) Phase 2).
 
 Token refresh for every client kind is OAuth-standard:
 `POST /oauth2/token grant_type=refresh_token`
@@ -458,7 +458,7 @@ loopback authorize gets `error=access_denied&error_description=<reason>&state`
 (RFC 6749 §4.1.2.1, loopback hosts only), a browser login lands on `/login?error`
 with the reason shown once from the session. Before 2026-10-03 the authorize was
 resumed anyway and Swing's token exchange failed with "Cannot resolve user for
-refresh-token issuance" ([PRD 126](prd/126-swing-sso-auto-login.md)).
+refresh-token issuance" ([PRD 126](prd/done/126-swing-sso-auto-login.md)).
 
 Two bugs were fixed (verified [PRD 072](prd/done/072-server-side-login-dialog.md)) to make rapla-brokered SSO work:
 
@@ -500,7 +500,7 @@ password `admin` account once for bootstrap, launch with no args and type
 When the fallback dialog is used, `loginAction` (`RaplaClientServiceImpl.startLoginInThread`)
 takes the typed username + password `char[]` and exchanges them for tokens via
 `OAuth2PasswordLogin.login(LoginCredentials)` *inline at the dialog button*
-([PRD 029](prd/029-swing-oauth-login.md) Phase 5). The password `char[]` is zeroed in the same lambda that
+([PRD 029](prd/done/029-swing-oauth-login.md) Phase 5). The password `char[]` is zeroed in the same lambda that
 calls the seam, so no password reference survives past the HTTP round-trip.
 Only the resulting `(accessToken, refreshToken)` are stashed on the session.
 
@@ -508,7 +508,7 @@ Only the resulting `(accessToken, refreshToken)` are stashed on the session.
 `/oauth2/token` (RFC 6749 §4.3) and parses the snake_case token response into
 a `LoginTokens`.
 
-> **[PRD 029](prd/029-swing-oauth-login.md) Phase 5 (2026-05-25): no password caching anywhere.** Pre-Phase-5,
+> **[PRD 029](prd/done/029-swing-oauth-login.md) Phase 5 (2026-05-25): no password caching anywhere.** Pre-Phase-5,
 > the dialog built a `ConnectInfo(username, password, connectAs)` polymorphic
 > object that propagated through `start() → login() → dispatch` and was stashed
 > in `RemoteConnectionInfo.connectInfo` for the session's lifetime — keeping
@@ -840,7 +840,7 @@ completes the token exchange. No per-deployment OAuth config required.
 The Angular SPA at `/app/` uses the conformant redirect
 `/login/oauth2/code/{registrationId}`; the legacy DHBW callback
 `/app/auth/callback` is supported via the per-provider
-`rapla.oauth.external.<id>.legacy-callback: true` flag ([PRD 036](prd/036-external-idp-oauth-login.md) Phase 3 —
+`rapla.oauth.external.<id>.legacy-callback: true` flag ([PRD 036](prd/done/036-external-idp-oauth-login.md) Phase 3 —
 formerly the global `rapla.oauth.web.dhbw-legacy-callback`) and
 `LegacyAppCallbackBridgeFilter` — also zero-config.
 
@@ -869,7 +869,7 @@ be overridden with the matching env var.
 | `rapla.oauth.local-accounts-enabled` | `RAPLA_OAUTH_LOCAL_ACCOUNTS_ENABLED` | `true` | Gate for the rapla-local password grant. When `false`, `/oauth2/token grant_type=password` is refused with `unsupported_grant_type` — only the browser/OAuth (external IdP) path can authenticate. Leave `true` for the default single-admin / rapla-local-user deployment. |
 | `rapla.auth.impersonation.enabled` | `RAPLA_AUTH_IMPERSONATION_ENABLED` | `true` | Master switch for admin impersonation ("switch to user"). When `false`, **both** `POST /api/auth/impersonate` (Swing Bearer) and `POST /api/auth/impersonate/switch` (SPA cookie) are refused. Default `true` preserves current behaviour. |
 | `rapla.oauth.external.<id>.auto-provision` | *(per provider)* | `true` | Per external IdP: on first sign-in with no matching rapla user, `true` auto-creates the user; `false` **rejects** the unknown external identity, requiring admin pre-provisioning. Previously only a configured `hosted-domain` bounded who could be auto-created — this knob is the explicit gate. See the per-provider rows below for the recommended value. |
-| `rapla.oauth.external.<id>.legacy-callback` | *(per provider)* | `false` | **Dev-only, per-provider** ([PRD 036](prd/036-external-idp-oauth-login.md) Phase 3; was the global `rapla.oauth.web.dhbw-legacy-callback`). Set on the one external-IdP entry whose realm can't register the conformant redirect URI (DHBW Keycloak on localhost). When `true`: that provider's `ClientRegistration` sends the registered `/app/auth/callback` `redirect_uri`, and `LegacyAppCallbackBridgeFilter` server-side-redirects `/app/auth/callback` → that provider's `/login/oauth2/code/{id}`. At most one provider may set it (single `/app/auth/callback` path). A second Keycloak keeps its conformant per-provider callback. Not for production. (Lives in `application-local.yml`, not committed `application.yml`.) |
+| `rapla.oauth.external.<id>.legacy-callback` | *(per provider)* | `false` | **Dev-only, per-provider** ([PRD 036](prd/done/036-external-idp-oauth-login.md) Phase 3; was the global `rapla.oauth.web.dhbw-legacy-callback`). Set on the one external-IdP entry whose realm can't register the conformant redirect URI (DHBW Keycloak on localhost). When `true`: that provider's `ClientRegistration` sends the registered `/app/auth/callback` `redirect_uri`, and `LegacyAppCallbackBridgeFilter` server-side-redirects `/app/auth/callback` → that provider's `/login/oauth2/code/{id}`. At most one provider may set it (single `/app/auth/callback` path). A second Keycloak keeps its conformant per-provider callback. Not for production. (Lives in `application-local.yml`, not committed `application.yml`.) |
 
 ### Spring redirect URIs
 
@@ -1162,7 +1162,7 @@ session produces one initial line plus one renewal line per hour.
 ### What's NOT stored anywhere
 
 The 2026-05-21 design ([PRD 051](prd/done/051-switch-user-with-oauth.md)) deliberately ships *zero* impersonation
-state outside the issued JWT itself. [PRD 029](prd/029-swing-oauth-login.md) Phase 5 (2026-05-25) wires
+state outside the issued JWT itself. [PRD 029](prd/done/029-swing-oauth-login.md) Phase 5 (2026-05-25) wires
 the client-side dual-slot model so the in-memory storage matches the
 Angular SPA's pattern:
 
@@ -1416,14 +1416,14 @@ picked up by the default `@SpringBootApplication` component scan because
 it lives in the scanned base package `org.rapla.server.spring`. If it
 didn't load, the `jwkSource` `@Bean` it declares is missing and no
 tokens can be issued in the first place. With external IdPs configured
-([PRD 036](prd/036-external-idp-oauth-login.md)) **and** `rapla.oauth.trust-external-issuers=true`, the decoder
+([PRD 036](prd/done/036-external-idp-oauth-login.md)) **and** `rapla.oauth.trust-external-issuers=true`, the decoder
 wraps an `IssuerAwareJwtDecoder` that routes by `iss` claim (check the
 provider's JWKS URL is reachable from the rapla server); in the default
 single-issuer mode (`trust-external-issuers=false`) external tokens are
 not accepted at `/api` at all — see the "Single-issuer `/api`" section
 below.
 
-### After server restart, sessions survive ([PRD 029](prd/029-swing-oauth-login.md) Option A)
+### After server restart, sessions survive ([PRD 029](prd/done/029-swing-oauth-login.md) Option A)
 
 The auth server's RSA keypair is **persisted** in `RaplaKeyStorage`
 (rapla preferences, same data file as the rest of the application
@@ -1525,7 +1525,7 @@ bundled Spring Authorization Server. Multiple providers can be enabled
 simultaneously;
 the Angular SPA shows a "Sign in with …" picker on `/login`. Swing
 always uses the embedded SAS (deprecation context — see
-[PRD 036](prd/036-external-idp-oauth-login.md)).
+[PRD 036](prd/done/036-external-idp-oauth-login.md)).
 
 > **Core concept**: every authenticated identity — local or external —
 > resolves to a rapla `User` entity (groups, permissions, ownership
@@ -1534,7 +1534,7 @@ always uses the embedded SAS (deprecation context — see
 > claims case-insensitively against `user.getUsername()`. Falls back to
 > email-against-`user.getEmail()`; otherwise (and if `auto-provision: true`)
 > creates a new rapla user with the lowercased UPN/preferred_username/email
-> as the username. See [PRD 036](prd/036-external-idp-oauth-login.md) "Why we keep the rapla User".
+> as the username. See [PRD 036](prd/done/036-external-idp-oauth-login.md) "Why we keep the rapla User".
 >
 > *History (2026-05-21)*: previously rapla matched on a per-provider
 > `org.rapla.auth.external-id.<provider>` preference holding the IdP's
@@ -1758,14 +1758,14 @@ callback is only appropriate when there is exactly one upstream broker;
 rapla is the broker-RP to *multiple* IdPs (Keycloak / Microsoft / Google),
 so per-provider is the correct shape.
 
-#### TEMPORARY DHBW dev bridge — per-provider `legacy-callback` ([PRD 036](prd/036-external-idp-oauth-login.md) Phase 3)
+#### TEMPORARY DHBW dev bridge — per-provider `legacy-callback` ([PRD 036](prd/done/036-external-idp-oauth-login.md) Phase 3)
 
 A dev-only workaround exists for the DHBW production Keycloak
 (`idp.example.org`, realm `<realm>`, client `rapla-app` — real values: dhbwrapla `docs/infrastructure.md`):
 that realm only whitelists the **legacy** `/app/auth/callback` redirect
 for localhost, and the maintainer has no admin on the prod realm to
 register the conformant `/login/oauth2/code/keycloak`. The bridge is a
-**per-provider** flag ([PRD 036](prd/036-external-idp-oauth-login.md) Phase 3 — formerly the global
+**per-provider** flag ([PRD 036](prd/done/036-external-idp-oauth-login.md) Phase 3 — formerly the global
 `rapla.oauth.web.dhbw-legacy-callback`): set
 **`rapla.oauth.external.<id>.legacy-callback: true`** on the one provider
 entry that needs it (only in the gitignored `application-local.yml`). Then:
@@ -2015,7 +2015,7 @@ design are now dead data — the new resolver doesn't read them. Safe to
 leave in place; they don't affect anything.
 
 When all users are migrated, set
-`RAPLA_OAUTH_LOCAL_ACCOUNTS_ENABLED=false` (planned — see [PRD 029](prd/029-swing-oauth-login.md)
+`RAPLA_OAUTH_LOCAL_ACCOUNTS_ENABLED=false` (planned — see [PRD 029](prd/done/029-swing-oauth-login.md)
 Phase 2 OQ §5) to disable the password grant. Today the password grant
 stays available; remove rapla-local passwords from `data.xml` to
 disable per-user as a stopgap.

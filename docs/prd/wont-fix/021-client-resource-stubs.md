@@ -3,7 +3,7 @@
 **Status:** wont-fix — superseded by [PRD 026](../026-angular-frontend.md) (Angular frontend). 2026-05-11.
 **Author:** Christopher Kohlhaas
 **Created:** 2026-05-10
-**Related:** PRD 002 (multi-tenancy lazy init), [PRD 009](../009-server-bulk-storage-rest-api.md) (server bulk storage REST), [PRD 012](../012-dhbwrapla-client-migration.md) (DHBW client migration), [PRD 026](../026-angular-frontend.md) (Angular frontend)
+**Related:** PRD 002 (multi-tenancy lazy init), [PRD 009](../done/009-server-bulk-storage-rest-api.md) (server bulk storage REST), [PRD 012](../done/012-dhbwrapla-client-migration.md) (DHBW client migration), [PRD 026](../026-angular-frontend.md) (Angular frontend)
 
 ## Why wont-fix
 

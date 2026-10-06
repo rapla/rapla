@@ -2,7 +2,7 @@
 
 [PRD 035](prd/done/035-graphql-foundations.md) exposes a GraphQL endpoint at `POST /api/graphql` covering
 resources (resources + persons), classifications, dynamic types, and
-reservations (PRD [055](prd/055-graphql-events-read-api.md)/[066](prd/066-graphql-reservation-allocatable-matching.md)). Live UIs: GraphiQL at `/graphiql/`,
+reservations (PRD [055](prd/done/055-graphql-events-read-api.md)/[066](prd/done/066-graphql-reservation-allocatable-matching.md)). Live UIs: GraphiQL at `/graphiql/`,
 Scalar at `/scalar/`, schema-as-data via introspection.
 
 ---
@@ -14,8 +14,8 @@ Scalar at `/scalar/`, schema-as-data via introspection.
 
 **Problem.** Rapla keys go into the GraphQL schema verbatim — no
 PascalCase, no SCREAMING_SNAKE, no automatic transformation
-([PRD 058](prd/058-graphql-key-spec-migration.md) + [PRD 035](prd/done/035-graphql-foundations.md) §5b revision 2026-05-28). That's the right
-boundary: [PRD 058](prd/058-graphql-key-spec-migration.md) owns syntax (the GraphQL identifier regex),
+([PRD 058](prd/done/058-graphql-key-spec-migration.md) + [PRD 035](prd/done/035-graphql-foundations.md) §5b revision 2026-05-28). That's the right
+boundary: [PRD 058](prd/done/058-graphql-key-spec-migration.md) owns syntax (the GraphQL identifier regex),
 admins own convention (case style). But it means an admin who keys a
 DynamicType `room` and category leaves `seminar_raum` / `hoersaal`
 gets a schema like:
@@ -32,7 +32,7 @@ codegen / lint tooling will warn or auto-rename downstream.
 
 **What we should NOT do.** Imposing the convention server-side (e.g.
 having the SDL generator PascalCase type names or uppercase enum
-values) re-introduces the same class of bug [PRD 058](prd/058-graphql-key-spec-migration.md) just removed:
+values) re-introduces the same class of bug [PRD 058](prd/done/058-graphql-key-spec-migration.md) just removed:
 silent transformations destroy information. Concrete burn 2026-05-28
 in a production deployment: `CATEGORY_1_2_3_4` / `CATEGORY_1_23_4` / `CATEGORY_12_3_4` all collapsed
 to `CATEGORY1234`; SDL generator silently dropped 2 of every 3 leaves
@@ -53,7 +53,7 @@ with a WARN. Verbatim emission was the fix.
 
 This lives in the SPA's schema-editor forms ([PRD 057](prd/done/057-graphql-dt-mutations-v1.md)
 `createDynamicType` / `updateDynamicType` mutation consumers when
-those ship). Server-side, the existing [PRD 058](prd/058-graphql-key-spec-migration.md) spec check is the only
+those ship). Server-side, the existing [PRD 058](prd/done/058-graphql-key-spec-migration.md) spec check is the only
 gate — same as today.
 
 **Why this is fine to defer.** Existing production deploys already have keys
@@ -78,7 +78,7 @@ and the SPA-on-interface contract see
 
 Every fenced ```graphql block in this file and in
 `~/git/dhbwrapla/docs/graphql.md` is executable against a running rapla
-server. The schema-as-data nature of the API plus rapla's [PRD 058](prd/058-graphql-key-spec-migration.md)
+server. The schema-as-data nature of the API plus rapla's [PRD 058](prd/done/058-graphql-key-spec-migration.md)
 verbatim-key emission means doc drift is real — queries go stale
 silently when admins rename a DynamicType / attribute / category root,
 or refactor the schema.
@@ -472,7 +472,7 @@ SDL directives carry the bits introspection alone doesn't expose:
 | `@multiplicity(value: BELONGS_TO \| PACKAGE)` | ALLOCATABLE only, non-default multiplicity | Widget hint (vs plain LIST/SINGLE which is implied by the field type wrapper) |
 | `@expectedType(key: "...")` | ALLOCATABLE attrs with a DynamicType constraint | Filter the resource picker |
 | `@rootCategory(path: "key/path")` | CATEGORY attrs with an admin-set root | Allowed root for the category picker |
-| `@editView(value: "title" \| "additional" \| "no-view")` | Placement on the `title > main > additional > no-view` scale. `title` is computed from the DISPLAY nameformat's direct attribute references (`{surname} {forename}` → both; functions/lists ignored, explicit `edit-view=no-view` annotation wins); `additional`/`no-view` mirror the `edit-view` attribute annotation; `main` (default) is omitted | SPA editors: title attrs render as prominent header fields in attribute order, no-view attrs are hidden, additional renders like main for now ([PRD 096](prd/096-spa-classification-editor.md) D5 revision — replaced the earlier single-attribute `@title`) |
+| `@editView(value: "title" \| "additional" \| "no-view")` | Placement on the `title > main > additional > no-view` scale. `title` is computed from the DISPLAY nameformat's direct attribute references (`{surname} {forename}` → both; functions/lists ignored, explicit `edit-view=no-view` annotation wins); `additional`/`no-view` mirror the `edit-view` attribute annotation; `main` (default) is omitted | SPA editors: title attrs render as prominent header fields in attribute order, no-view attrs are hidden, additional renders like main for now ([PRD 096](prd/done/096-spa-classification-editor.md) D5 revision — replaced the earlier single-attribute `@title`) |
 
 Once the SPA has the descriptor info, the read query targets the
 specific classification's typed fields directly:
@@ -559,7 +559,7 @@ classification:
 §12 is enforced at every step — an unreadable target yields a null
 reference, never a partial object.
 
-### 7a. resource hierarchy — `parents` / `children` ([PRD 120](prd/120-resource-hierarchy-parents-children.md))
+### 7a. resource hierarchy — `parents` / `children` ([PRD 120](prd/done/120-resource-hierarchy-parents-children.md))
 
 ```graphql
 { resources { id parents { id } children { id } } }
@@ -659,7 +659,7 @@ also keeps the kind — resource stays resource, person stays person, like Swing
 unknown, internal and wrong-kind types answer like the prototype, while a valid type
 without CREATE permission answers `PERMISSION_DENIED`.
 
-### 11. reservations + the calendar query ([PRD 055](prd/055-graphql-events-read-api.md) + [PRD 066](prd/066-graphql-reservation-allocatable-matching.md))
+### 11. reservations + the calendar query ([PRD 055](prd/done/055-graphql-events-read-api.md) + [PRD 066](prd/done/066-graphql-reservation-allocatable-matching.md))
 
 `reservations(filter:)` requires a mandatory time window and supports
 three orthogonal ways to select which resources drive the result —
@@ -687,7 +687,7 @@ type-bucket; `idIn` is additive and ignores filter rules.
 
 `ownerIn`, `resourceIdsIn` and `resourceMatching` are the three scope
 sources and are UNIONed — users OR resources, as in Swing
-([PRD 123 D10](prd/123-spa-unified-resource-picker.md#decisions-locked-user-2026-09-30)).
+([PRD 123 D10](prd/done/123-spa-unified-resource-picker.md#decisions-locked-user-2026-09-30)).
 Owner ids the caller may not see (self + `canAdminUser`) are dropped
 silently (§12); an empty or absent `ownerIn` adds no owner scope.
 Owner-admitted blocks carry an empty `matchedBy` and fall back to their
@@ -1382,7 +1382,7 @@ GraphQL wherever a **derived value** is produced — **one language, learned onc
 | Slot | Shape | Produces |
 |---|---|---|
 | Column projection | `compute(expr: "…")` on `AppointmentBlock` | a per-row string cell |
-| Group key | `groupBy: [{ key, expr: "…" }]` ([PRD 079](prd/079-graphql-grouped-aggregates.md)) | a bucket key |
+| Group key | `groupBy: [{ key, expr: "…" }]` ([PRD 079](prd/done/079-graphql-grouped-aggregates.md)) | a bucket key |
 | Metric value (Stufe b) | `aggregate: [{ key, expr: "…", fn }]` | a numeric value (coerced) |
 
 **Syntax (externally documented form):**
@@ -1424,7 +1424,7 @@ ist), `maxArgs: -1` = variadisch (`concat`). Der Katalog wird aus der Descriptor
 numeric values work (Stufe b); composing numbers inside the expr needs a numeric type in the EL,
 which would then serve every `expr` slot.
 
-## Raumauslastung — kanonische Query (`appointmentBlockStats`, PRD [079](prd/079-graphql-grouped-aggregates.md)/[080](prd/done/080-typed-entity-stats.md))
+## Raumauslastung — kanonische Query (`appointmentBlockStats`, PRD [079](prd/done/079-graphql-grouped-aggregates.md)/[080](prd/done/080-typed-entity-stats.md))
 
 Auslastung pro Raum: **Gebäude-Scope in ZWEI Variablen** — `$filter` (effiziente Suche, lädt nur
 betroffene Reservierungen) **und** `$resourceFilter` (Raumauswahl: welcher Raum eine Zeile wird),

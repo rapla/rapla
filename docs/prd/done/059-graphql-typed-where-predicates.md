@@ -7,7 +7,7 @@
 **Parent:** [PRD 035 (done) — GraphQL foundations](035-graphql-foundations.md) §"Filter & query language" for the broader filter-axis model this PRD extends.
 
 **Siblings:**
-- [PRD 055 — Events Read API](../055-graphql-events-read-api.md) — establishes the typed-classification interface pattern this extends to filtering (reopened 2026-05-29 for Tier-1 perf migration)
+- [PRD 055 — Events Read API](055-graphql-events-read-api.md) — establishes the typed-classification interface pattern this extends to filtering (reopened 2026-05-29 for Tier-1 perf migration)
 - Reservation where-predicates: now **Phase 6** of this PRD (added 2026-07-07). Nested `AllocatableWhere` stays deferred (see Out of scope)
 
 ## Goal
@@ -124,6 +124,6 @@ Per-phase tier-3 tests:
 ## Open questions
 
 - **OQ1** (Phase 7) — migration order. *Resolution:* obsolete 2026-07-07 — nothing in production; hard cut executed (no deprecation window, String fields removed outright).
-- **OQ2** (Phase 7) — key-compliance enforcement. *Resolution:* already guaranteed — [PRD 058](../058-graphql-key-spec-migration.md)'s `GraphqlKeyMigration` renames non-spec keys at startup and `checkGraphQlCompliantName` throws if one slips through, so every enum value is emittable. Only GraphQL-reserved words differ (trailing `_`), handled in the resolvers.
+- **OQ2** (Phase 7) — key-compliance enforcement. *Resolution:* already guaranteed — [PRD 058](058-graphql-key-spec-migration.md)'s `GraphqlKeyMigration` renames non-spec keys at startup and `checkGraphQlCompliantName` throws if one slips through, so every enum value is emittable. Only GraphQL-reserved words differ (trailing `_`), handled in the resolvers.
 
 (Phases 1–5: none — design locked.)

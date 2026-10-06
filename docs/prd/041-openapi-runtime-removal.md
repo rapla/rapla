@@ -71,7 +71,7 @@
 > Survivors under `/api/auth/`:
 >
 > - `/api/auth/oauth/config` — discovery
-> - `/api/auth/oauth/exchange/{providerId}` — BFF for external IdPs ([PRD 036](036-external-idp-oauth-login.md))
+> - `/api/auth/oauth/exchange/{providerId}` — BFF for external IdPs ([PRD 036](done/036-external-idp-oauth-login.md))
 > - `/api/auth/api-keys/*` — personal-access-token CRUD ([PRD 043](043-api-keys-jwt-pat.md))
 
 ## Goal
@@ -86,7 +86,7 @@ Separable REST-infrastructure cleanup, spun out of [PRD 035](done/035-graphql-fo
 
 - The Jackson-2 island (`SwaggerJacksonConfig`) and reflective generation are standing overhead — see AGENTS.md's Jackson 3 note.
 - [PRD 035](done/035-graphql-foundations.md) makes **GraphQL the external API**, which narrows the REST surface over time — runtime SpringDoc machinery is increasingly disproportionate.
-- But REST is **not** going away: `/api/storage/*` (RemoteStorage, the Swing client's interface — [PRD 009](009-server-bulk-storage-rest-api.md)) is long-lived, plus `/api/auth/*` and export feeds. They still need accurate docs + the SPA's codegen. The answer is not "drop OpenAPI" — it is "move generation to build time."
+- But REST is **not** going away: `/api/storage/*` (RemoteStorage, the Swing client's interface — [PRD 009](done/009-server-bulk-storage-rest-api.md)) is long-lived, plus `/api/auth/*` and export feeds. They still need accurate docs + the SPA's codegen. The answer is not "drop OpenAPI" — it is "move generation to build time."
 - The REST OpenAPI is **product-level** (controllers/DTOs are fixed at build, not per-deployment), so a build-time spec is byte-identical to runtime-generated — *except* for which plugins are enabled. That single per-deployment variable is handled by a cheap runtime filter.
 
 ## Scope
@@ -104,7 +104,7 @@ Separable REST-infrastructure cleanup, spun out of [PRD 035](done/035-graphql-fo
 
 - The GraphQL schema / transport — [PRD 035](done/035-graphql-foundations.md).
 - Retiring OpenAPI entirely — REST stays (auth, exports, RemoteStorage).
-- Hand-maintaining the spec — explicitly rejected: RemoteStorage alone is ~25+ operations ([PRD 009](009-server-bulk-storage-rest-api.md)); auto-generation is the point.
+- Hand-maintaining the spec — explicitly rejected: RemoteStorage alone is ~25+ operations ([PRD 009](done/009-server-bulk-storage-rest-api.md)); auto-generation is the point.
 
 ## Plan
 
@@ -145,7 +145,7 @@ Separable REST-infrastructure cleanup, spun out of [PRD 035](done/035-graphql-fo
 
 ## Cross-references
 
-- [PRD 031 — API namespace redesign](031-api-namespace-redesign.md) — the four SpringDoc groups, `SpringDocGroupsConfig`, `ApiPrefixArchitectureTest`.
+- [PRD 031 — API namespace redesign](done/031-api-namespace-redesign.md) — the four SpringDoc groups, `SpringDocGroupsConfig`, `ApiPrefixArchitectureTest`.
 - [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md) — GraphQL becoming the external API; the OpenAPI-vs-GraphQL "two transports" analysis that spun this PRD out.
-- [PRD 009 — Server bulk-storage REST API](009-server-bulk-storage-rest-api.md) — RemoteStorage, the long-lived Swing-facing REST surface this keeps documented.
+- [PRD 009 — Server bulk-storage REST API](done/009-server-bulk-storage-rest-api.md) — RemoteStorage, the long-lived Swing-facing REST surface this keeps documented.
 - AGENTS.md — the Jackson 3 note; this PRD removes the Jackson-2 island from the runtime.

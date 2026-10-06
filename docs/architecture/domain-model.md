@@ -140,14 +140,14 @@ alphanumeric first char, length 8–64 — deliberately *not* a UUID-structure c
 (ids are opaque; the charset just excludes `;` / whitespace / escaping hazards).
 Applies to NEW Reservation / Appointment / Allocatable entities only; ids already
 persistent are grandfathered (legacy `period_1`-style ids keep saving). Collision
-handling: [PRD 056](../prd/056-graphql-events-write-api.md) §9.
+handling: [PRD 056](../prd/done/056-graphql-events-write-api.md) §9.
 
-**Client ids are MANDATORY on GraphQL creates** (decided 2026-07-06, [PRD 056](../prd/056-graphql-events-write-api.md) §9):
+**Client ids are MANDATORY on GraphQL creates** (decided 2026-07-06, [PRD 056](../prd/done/056-graphql-events-write-api.md) §9):
 `createReservation` (reservation + every appointment) and `createResource`
 reject id-less input with `REQUIRED` — the server-generate fallback is removed.
 Why:
 
-- **Idempotency is id-based, with no content comparison** ([PRD 056](../prd/056-graphql-events-write-api.md) OQ5 revised):
+- **Idempotency is id-based, with no content comparison** ([PRD 056](../prd/done/056-graphql-events-write-api.md) OQ5 revised):
   a retry whose response was lost re-sends the same client-minted id, gets
   `ID_COLLISION`, and maps that to "already applied". Only a client-generated id
   makes this possible — a server-generated id gives the retry no shared key, so

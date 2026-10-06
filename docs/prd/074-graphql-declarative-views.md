@@ -127,7 +127,7 @@ sources with two homes:**
   - **reservation type** (checkbox) → `typeIn`; per-type **classification rules**
     (*neue Regel für*) → the generated `where<TypeKey>` predicates (AND/OR/NOT + attribute
     comparisons, [PRD 059](done/059-graphql-typed-where-predicates.md)) — richer than a flat type list
-  - **resource-tree selection** → `allocatableMatching` ([PRD 066](066-graphql-reservation-allocatable-matching.md)) or `allocatableIdsIn`
+  - **resource-tree selection** → `allocatableMatching` ([PRD 066](done/066-graphql-reservation-allocatable-matching.md)) or `allocatableIdsIn`
   - **date range** (from/to control) → `from` / `to`
 
 ```graphql
@@ -168,7 +168,7 @@ list), and `allocatableMatching` carries the resource-tree selection.
 ## Data = GraphQL (prediction + navigation only)
 
 The query decides **what data is in the result**: prediction (`where` [PRD 059](done/059-graphql-typed-where-predicates.md) +
-`searchText`/`matchKind` [PRD 028](done/028-angular-power-search.md) + access selectors [PRD 069](069-graphql-resource-access-read-api.md)), navigation
+`searchText`/`matchKind` [PRD 028](done/028-angular-power-search.md) + access selectors [PRD 069](done/069-graphql-resource-access-read-api.md)), navigation
 (selection), and **server-computed scalars** the client can't derive
 (`displayName`, `durationMinutes`, typed attributes — the [PRD 073](073-graphql-function-equivalents.md) gaps). It selects
 raw nested data; it does **not** shape a table.
@@ -196,7 +196,7 @@ see §"If a view ever needs more". CEL was evaluated and dropped.)
 The three building blocks:
 
 - **Selection + filter → GraphQL** — `where` ([PRD 059](done/059-graphql-typed-where-predicates.md)), the nested `allocatables`
-  filter (shipped 2026-06-19), access selectors ([PRD 069](069-graphql-resource-access-read-api.md)). In a
+  filter (shipped 2026-06-19), access selectors ([PRD 069](done/069-graphql-resource-access-read-api.md)). In a
   typical deployment **rooms, courses and lecturers are referenced *allocatables*, not classification
   attributes**: `room`/`room-sub`/`room-virtual`, `course`/`course-sub`/`course-group`,
   `person` — split per column by `typeIn`. Rows are **AppointmentBlocks**
@@ -1256,7 +1256,7 @@ serves both internal and public export; the difference is **only** the server-se
 - **Edit forms → Adaptive Cards → mutations.** AC's actual strength (inputs +
   `Action.Submit`) fits the *write* side: an admin-defined form binds existing data
   (GraphQL query + AC templating, client-side) and submits to a **GraphQL mutation**
-  (PRDs [056](056-graphql-events-write-api.md)/[057](done/057-graphql-dt-mutations-v1.md)/[061](061-graphql-dt-mutations-v2.md)/[063](063-graphql-allocatables-write-api.md)). No JVM needed (forms are client-rendered; the server only
+  (PRDs [056](done/056-graphql-events-write-api.md)/[057](done/057-graphql-dt-mutations-v1.md)/[061](061-graphql-dt-mutations-v2.md)/[063](done/063-graphql-allocatables-write-api.md)). No JVM needed (forms are client-rendered; the server only
   runs the mutation, which enforces `canModify`/`canAdmin` per §12/§16). Candidate
   **[PRD 075](075-expression-language-standardization.md)**. Complex types (repeating appointments, allocatable refs) may exceed a
   flat form.
@@ -1346,9 +1346,9 @@ render-modes → [PRD 077](077-calendar-model-graphql.md)**; **the global unifie
 are pure presentation hints in `extensions.view.columns`; they never touch `data`. Server-side
 **evaluation** is NOT done via directives — it lives in **query args** (`filter`/`sort`/`offset` on
 the flat table) and in the **separate typed field `appointmentBlockStats`** (aggregation + grouping,
-[PRD 079](079-graphql-grouped-aggregates.md)). The earlier `@aggregate`/`@group` directives + `extensions.view.totals`/`.groups` were
+[PRD 079](done/079-graphql-grouped-aggregates.md)). The earlier `@aggregate`/`@group` directives + `extensions.view.totals`/`.groups` were
 **removed**: aggregates belong in typed `data` ("like compute"), not an untyped side-channel.
-Rationale (incl. the "footer in one pass" trade-off we accepted): [PRD 079](079-graphql-grouped-aggregates.md).
+Rationale (incl. the "footer in one pass" trade-off we accepted): [PRD 079](done/079-graphql-grouped-aggregates.md).
 
 The render directives shape `extensions.view` only and never alter `data`. A query without `@view`
 returns no `extensions.view` (zero overhead). `extensions.view.page` (pagination meta of the flat
@@ -1423,7 +1423,7 @@ query Termine @view(title: "Termine KW") {
 >   nested object/list column to a flat value. Data stays nested.
 > - **Baustein 12** — numeric per-block field `AppointmentBlock.durationMinutes` (wall-clock end−start),
 >   the aggregatable basis for analytics.
-> - **Aggregation/grouping → moved to [PRD 079](079-graphql-grouped-aggregates.md) (Shape A).** An interim `@aggregate`/`@group` directive
+> - **Aggregation/grouping → moved to [PRD 079](done/079-graphql-grouped-aggregates.md) (Shape A).** An interim `@aggregate`/`@group` directive
 >   pass (totals/groups in `extensions.view`) was built and then **reverted**: aggregates belong in
 >   typed `data`, delivered by the dedicated `appointmentBlockStats` field (global total = no-groupBy).
 >   074's directives are now render-only.

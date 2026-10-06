@@ -5,14 +5,14 @@ black chip text browser-verified on the light-color cases, Swing lane pipeline i
 `week-lanes.ts` with the full tier-5 suite — 34 tests). D6 added: chip double-click
 opens the editor (Swing/table parity). Phases 3+4 open.
 **Related:** [PRD 077](077-calendar-model-graphql.md) (calendar model — owns week/month render modes; the week grid
-shipped as a prototype under this PRD's scope), [PRD 095](095-month-grid-render-mode.md) (month grid — its OQ2 chip
+shipped as a prototype under this PRD's scope), [PRD 095](done/095-month-grid-render-mode.md) (month grid — its OQ2 chip
 contrast is resolved here as D1), [PRD 032](done/032-angular-ui-library-evaluation.md) (own-implementation calendar decision,
 EventCalendar MIT reference rule), [PRD 094](094-spa-main-view-actions-and-popups.md) (context actions on blocks/selections —
 explicitly out of scope here)
 
 ## Abstract
 
-The SPA now has two block-based calendar renderers — `MonthGridComponent` ([PRD 095](095-month-grid-render-mode.md))
+The SPA now has two block-based calendar renderers — `MonthGridComponent` ([PRD 095](done/095-month-grid-render-mode.md))
 and the week time-grid prototype (`WeekGridComponent`, 2026-07-08) — each carrying
 its own copy of chip styling, color handling, and time/name composition, and the week
 grid diverges from the Swing week view in documented ways. This PRD (a) extracts the
@@ -34,13 +34,13 @@ suite over all extracted pure logic.
 | Aspect | Swing | SPA today | Verdict |
 |---|---|---|---|
 | Chip text color | **Always black** (`SwingRaplaBlock.FOREGROUND_COLOR = Color.black`); users pick block colors that work with black text | White text on colored chips, dark on neutral — unreadable on light colors (yellow/lime, see 2026-07-08 screenshot) | **Unify → D1** |
-| Block color resolution | `RaplaBuilder.getColorForClassifiable` + `BlockColors.resolve`, shared by ALL views | Server `AppointmentBlock.color` ([PRD 095](095-month-grid-render-mode.md), delegates to the same helpers, §12-gated) — correct; but client-side chip styling duplicated per grid | **Extract → D2** |
+| Block color resolution | `RaplaBuilder.getColorForClassifiable` + `BlockColors.resolve`, shared by ALL views | Server `AppointmentBlock.color` ([PRD 095](done/095-month-grid-render-mode.md), delegates to the same helpers, §12-gated) — correct; but client-side chip styling duplicated per grid | **Extract → D2** |
 | Lane assignment (week) | `GroupAllocatablesStrategy` (+`AbstractGroupStrategy`): group blocks by their first **selected** allocatable (locale-sorted; selection = the calendar's chosen resources); `resolveConflicts` spawns extra slots on collision; **fixed-slots** mode (default when not compact) keeps each selected resource's lane stable across the week; `mergeSlots` (compact) greedily collapses non-colliding lanes | Pure overlap greedy (interval partitioning) ≈ Swing's *compact* mode only; lanes reshuffle day-by-day, no resource identity | **Unify → D3** |
 | Collision floor | 5-minute minimum block length in `isCollision` (zero-length blocks claim lane space) | `endMin <= startMin` clamped to +30 min | **Unify → D3** |
 | Rows-per-hour | `CalendarOptions.getRowsPerHour()` — per-user persisted; **also a zoom**: hour height = `rowSize × rowsPerHour` (`LinearRowScale`) | Component-local signal; raster affects gridlines + selection snap only, hour height fixed 48 px | **Unify → D4** |
 | Worktime / excluded days | `CalendarOptions` worktime start/end minutes + `excludeDays` (hide weekends) | Auto-fit axis (default 8–18, expands to data); always 7 days | **Partial-unify → D4** (auto-fit stays as fallback) |
 | Cross-day selection | `SelectionHandler` FLOW: anchor-swap, intermediate days fully selected, one continuous interval | Ported 1:1 (2026-07-08, browser-verified) | ✅ done |
-| Selection → creation | Selection persists after mouse-up; creation via context menu (`fireSelectionPopup`) | Release opens the prefilled event sheet immediately ([PRD 095](095-month-grid-render-mode.md) 3a decision) | **Deliberate divergence → D5** |
+| Selection → creation | Selection persists after mouse-up; creation via context menu (`fireSelectionPopup`) | Release opens the prefilled event sheet immediately ([PRD 095](done/095-month-grid-render-mode.md) 3a decision) | **Deliberate divergence → D5** |
 | Auto-scroll during drag | `m_wv.scrollTo` follows the pointer | missing | Phase 4 |
 | Selection raster clamp | row clamped to `rowsPerDay-1` | clamped to axis bounds | ✅ done |
 
@@ -97,7 +97,7 @@ SavedView options vs user preferences).
   consumes, fail-closed degradation when a custom view omits one).
 
 ### Out of scope
-- Drag-move of existing blocks ([PRD 095](095-month-grid-render-mode.md) Phase 3b for month; week follows after).
+- Drag-move of existing blocks ([PRD 095](done/095-month-grid-render-mode.md) Phase 3b for month; week follows after).
 - Context menus / actions on blocks and selections — [PRD 094](094-spa-main-view-actions-and-popups.md). But the *shape* is
   locked here: context menus are ONE shared concept across table and block
   renderers (Swing: `SelectionMenuContext` + `ObjectMenuFactory` serve table rows
@@ -267,7 +267,7 @@ Swing. Rejected: server-emitted text color (more wire surface for a constant).
 Swing, block look and color logic live once (`SwingRaplaBlock`, `RaplaBuilder`,
 `BlockColors`) and every view renders the same block. The SPA's per-grid copies have
 already diverged once (text color); extraction is the fix, not discipline. Server
-stays the single source of the *effective color* ([PRD 095](095-month-grid-render-mode.md) D2/D3 — §12 gating stays
+stays the single source of the *effective color* ([PRD 095](done/095-month-grid-render-mode.md) D2/D3 — §12 gating stays
 server-side).
 
 **D3 — week lanes get Swing's model: group by SELECTED resource + fixed/compact
@@ -296,7 +296,7 @@ Keyboard: Enter on a focused chip still activates (a11y parity with tables).
 
 **D5 — selection→creation stays immediate (divergence from Swing, deliberate).**
 Swing keeps the selection standing and creates via context menu; the SPA opens the
-prefilled event sheet on release ([PRD 095](095-month-grid-render-mode.md) 3a "editor öffnet vorbefüllt", reaffirmed
+prefilled event sheet on release ([PRD 095](done/095-month-grid-render-mode.md) 3a "editor öffnet vorbefüllt", reaffirmed
 for the week grid 2026-07-08). Context actions on a standing selection are [PRD 094](094-spa-main-view-actions-and-popups.md)
 territory and can layer on later without changing the default.
 

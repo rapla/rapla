@@ -192,7 +192,7 @@ path if introspection-surfaced docs are needed later.
 
 ### 4. Hot-swap UX tightening
 
-[PRD 057](done/057-graphql-dt-mutations-v1.md) OQ1. v1 inherits [PRD 055](055-graphql-events-read-api.md) Cut C's 10s `GraphQlSchemaRebuilder`
+[PRD 057](done/057-graphql-dt-mutations-v1.md) OQ1. v1 inherits [PRD 055](done/055-graphql-events-read-api.md) Cut C's 10s `GraphQlSchemaRebuilder`
 poll. Schema editor wants ~2s for admin feedback.
 
 Options:
@@ -250,7 +250,7 @@ v1's `REFERENCE_EXISTS` extension is a flat list of 50 referrer ids
 - **Total counts** — `"1247 reservations, 23 allocatables"` — useful
   without paging through ids.
 - **Paginated drill-down** — `referrersOf(dynamicTypeId, first, after)`
-  with cursor pagination per [PRD 055](055-graphql-events-read-api.md)'s connection pattern.
+  with cursor pagination per [PRD 055](done/055-graphql-events-read-api.md)'s connection pattern.
 
 **Locked v2 error extension shape:**
 
@@ -385,8 +385,8 @@ existence-leak rules) — out of scope for v2.
 
 - [PRD 057 (done) — DynamicType Mutations v1](done/057-graphql-dt-mutations-v1.md) — the v1 surface this PRD extends
 - [PRD 035 (done) — GraphQL foundations](done/035-graphql-foundations.md) — §5a category-kind cascade affects valueType migration on CATEGORY attributes
-- [PRD 055 — GraphQL Events Read API](055-graphql-events-read-api.md) — Cut C `GraphQlSchemaRebuilder` is the hot-swap mechanism v2 §4 directly invokes; connection / cursor pagination pattern reused by `referrersOf`
-- [PRD 056 — GraphQL Events Write API](056-graphql-events-write-api.md) — error code taxonomy + `ValidationError` shape this PRD's error extensions follow
+- [PRD 055 — GraphQL Events Read API](done/055-graphql-events-read-api.md) — Cut C `GraphQlSchemaRebuilder` is the hot-swap mechanism v2 §4 directly invokes; connection / cursor pagination pattern reused by `referrersOf`
+- [PRD 056 — GraphQL Events Write API](done/056-graphql-events-write-api.md) — error code taxonomy + `ValidationError` shape this PRD's error extensions follow
 - [PRD 062 — GraphQL API Robustness](062-graphql-api-robustness.md) — error-mapping + transport invariants shared across the GraphQL mutation surface (renumbered from 058 on 2026-05-29)
 
 ## Decision log

@@ -95,7 +95,7 @@ an arbitrary row).
 
 ## Surface 2 — the resource rail (`ResourceSelectionComponent`)
 
-Since [PRD 123](../prd/123-spa-unified-resource-picker.md) the list itself (chips, type select, group tree, "Weitere…" caps, ★) lives in
+Since [PRD 123](../prd/done/123-spa-unified-resource-picker.md) the list itself (chips, type select, group tree, "Weitere…" caps, ★) lives in
 `ResourcePickerComponent` (`resource/resource-picker.component.ts`). The picker never decides
 what a click means: it emits `pick { item, ctrl, shift }`, and each host applies its own
 semantics. The rail (`mode="rail"`) owns the selection engine described here; the event
@@ -132,4 +132,4 @@ stale anchor.
   for the composite-inverse pattern.
 - Calendar surfaces ([PRD 077](../prd/077-calendar-model-graphql.md)) reuse `TableSelection` for block multi-select when
   they arrive; the month grid's drag-create day-range selection is a different
-  concept ([PRD 095](../prd/095-month-grid-render-mode.md)) and stays separate.
+  concept ([PRD 095](../prd/done/095-month-grid-render-mode.md)) and stays separate.

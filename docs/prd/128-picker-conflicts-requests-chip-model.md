@@ -1,7 +1,7 @@
 # PRD 128 — Conflicts and resource requests in the picker; chip model
 
 **Status:** implemented — 2026-10-05 (phases 1/1b/2/3/D7 built by rapla-impl2 + rapla-impl, browser-checked on the DHBW copy, committed c3ddea7a0/f95055f20/c72cdcff1, on dhbw-test since 02:22; residues below, OQ8 awaits PRD 083 Part B; concept 2026-10-04/05)
-**Related:** [PRD 127](127-picker-accordion-type-order.md) (accordion this builds on), [PRD 064](064-graphql-conflicts-read-api.md) (`allConflicts` deferred there), [PRD 078](078-spa-graphql-view-renderer.md#scope--a-view-only-queries-within-a-selection-performance) (event chip = navigation, not scope), [PRD 123](123-spa-unified-resource-picker.md) (D10 owner union)
+**Related:** [PRD 127](done/127-picker-accordion-type-order.md) (accordion this builds on), [PRD 064](done/064-graphql-conflicts-read-api.md) (`allConflicts` deferred there), [PRD 078](078-spa-graphql-view-renderer.md#scope--a-view-only-queries-within-a-selection-performance) (event chip = navigation, not scope), [PRD 123](done/123-spa-unified-resource-picker.md) (D10 owner union)
 
 ## Abstract
 

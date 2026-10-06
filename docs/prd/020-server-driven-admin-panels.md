@@ -8,7 +8,7 @@
 Replace per-plugin Swing `PluginOptionPanel` classes (and the small dhbw
 server-rendered HTML admin pages) with a **single generic renderer on the
 client driven by structured server-side panel definitions**. Same mechanic as
-the externaleventimport wizard ([PRD 012](012-dhbwrapla-client-migration.md)) and dynamic-type editor: server
+the externaleventimport wizard ([PRD 012](done/012-dhbwrapla-client-migration.md)) and dynamic-type editor: server
 publishes structure + data + actions, client renders with a fixed widget
 toolkit — no plugin/deployment knowledge needed.
 
@@ -20,7 +20,7 @@ beans — no client jar, no custom Swing, no signing chain.
 ## Why now
 
 1. **Backend HTML admin pages dead-end** — [PRD 003](done/003-custom-deployments-after-spring-migration.md) §I's `/dhbw/terminal/url` works but has no evolution path (no shared styling/widgets, all artisanal HTML).
-2. **The mechanism exists for adjacent surfaces** — dynamic-type GUI + externaleventimport wizard ([PRD 012](012-dhbwrapla-client-migration.md) §B1/B2/B4) are already "server data → client widgets". Closing the gap removes a one-off HTML path.
+2. **The mechanism exists for adjacent surfaces** — dynamic-type GUI + externaleventimport wizard ([PRD 012](done/012-dhbwrapla-client-migration.md) §B1/B2/B4) are already "server data → client widgets". Closing the gap removes a one-off HTML path.
 3. **2026-05-07 direction** — custom deployments don't ship Swing. Existing `PluginOptionPanel`s were the last place a deployment had to choose between custom-client-jar or yaml-only.
 4. **dhbw needs LDAP role-mapping editing now** — `DhbwAuthPluginOptionPanel` was deleted in [PRD 003](done/003-custom-deployments-after-spring-migration.md) D2; role mappings in `application.yml` require redeploy. This PRD's first concrete deliverable.
 
@@ -119,7 +119,7 @@ record ActionResult(
 ) {}
 ```
 
-Mirrors the externaleventimport wizard shape ([PRD 012](012-dhbwrapla-client-migration.md) §B1): structured records, enum-typed kinds, generic `Map<String, Object>` values for contract stability.
+Mirrors the externaleventimport wizard shape ([PRD 012](done/012-dhbwrapla-client-migration.md) §B1): structured records, enum-typed kinds, generic `Map<String, Object>` values for contract stability.
 
 ### Server SPI (rapla-server)
 
@@ -249,6 +249,6 @@ Discovery via `DhbwRaplaApplication`'s `@SpringBootApplication(scanBasePackages 
 | PRD | Relationship |
 |---|---|
 | **003** custom deployments | This PRD's mechanism is what §I should have been. [PRD 003](done/003-custom-deployments-after-spring-migration.md) §I superseded by PRD 020 Phase 4b. |
-| **012** dhbwrapla client carve-out | Wire-contract pattern mirrors [PRD 012](012-dhbwrapla-client-migration.md) §B1 (`ExternalEventImportMetadata`). 012 made *import wizard* generic; 020 makes *admin/preferences UI* generic. |
+| **012** dhbwrapla client carve-out | Wire-contract pattern mirrors [PRD 012](done/012-dhbwrapla-client-migration.md) §B1 (`ExternalEventImportMetadata`). 012 made *import wizard* generic; 020 makes *admin/preferences UI* generic. |
 | **019** Spring Boot lifecycle | [PRD 019](done/019-spring-boot-lifecycle-migration.md)'s storage-up ordering means `PreferencesPanel` beans injecting `RaplaFacade` get a connected one before `@PostConstruct` — no `@DependsOn` needed. |
 | **AGENTS.md §11** | Phase 5 `TerminalUrlController` deletion is planned (function moves upstream), not a not-to-fix-compile deletion. |

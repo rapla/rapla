@@ -16,7 +16,7 @@ The question is whether to adopt an off-the-shelf spec-driven-development (SDD) 
 OpenSpec, GitHub Spec Kit, AWS Kiro, Tessl, BMAD — to formalize this, or to build a thin machine
 layer on top of the existing discipline.
 
-Related: [PRD 088 — spec-graph formalization](../prd/088-spec-graph-formalization.md) (this MADR is
+Related: [PRD 088 — spec-graph formalization](../prd/done/088-spec-graph-formalization.md) (this MADR is
 the extracted, durable form of that PRD's decision **D1**).
 
 ## Decision Drivers
@@ -56,7 +56,7 @@ the 668-line [PRD 082](../prd/082-storage-memory-model.md)).
 ### Confirmation
 
 No `openspec/`, `.specify/`, `.kiro/`, or equivalent framework scaffolding appears in the repo;
-[PRD 088](../prd/088-spec-graph-formalization.md)'s spec-lint (Phase 0) is the home-grown machine layer instead. Reviewed at [PRD 088](../prd/088-spec-graph-formalization.md) close.
+[PRD 088](../prd/done/088-spec-graph-formalization.md)'s spec-lint (Phase 0) is the home-grown machine layer instead. Reviewed at [PRD 088](../prd/done/088-spec-graph-formalization.md) close.
 
 ## Pros and Cons of the Options
 
@@ -97,10 +97,10 @@ No `openspec/`, `.specify/`, `.kiro/`, or equivalent framework scaffolding appea
 ## Future possibilities
 
 - Revisit Spec Kit's `converge`/`analyze` *as an idea* for a code-vs-spec drift check, home-grown.
-- If the spec graph ([PRD 088](../prd/088-spec-graph-formalization.md) Phase 2) outgrows Markdown + lint, reconsider a graph store then — not now.
+- If the spec graph ([PRD 088](../prd/done/088-spec-graph-formalization.md) Phase 2) outgrows Markdown + lint, reconsider a graph store then — not now.
 
 ## More Information
 
-- Full framework-fit table + rationale: [PRD 088](../prd/088-spec-graph-formalization.md) §2 and D1.
+- Full framework-fit table + rationale: [PRD 088](../prd/done/088-spec-graph-formalization.md) §2 and D1.
 - Background: 2026-06-24 multi-agent research workflow comparing the five frameworks.
 - Related: [ADR-0001](0001-use-madr-for-architecture-decisions.md) (the durable-why layer this implies).

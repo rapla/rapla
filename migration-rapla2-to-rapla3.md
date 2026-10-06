@@ -267,7 +267,7 @@ needed. Rapla 3 upgrades your existing store in place:
 > Rapla 3 writes `CHANGES.CHANGED_AT` with the same wall-clock convention Rapla 2
 > used (and the same one every other timestamp column uses), so the history rows
 > your Rapla 2 instance left behind stay correctly ordered against Rapla 3's own
-> writes. Builds before [PRD 108](docs/prd/108-changes-history-timestamp-convention.md)
+> writes. Builds before [PRD 108](docs/prd/done/108-changes-history-timestamp-convention.md)
 > stored that one column shifted by the local UTC offset; on those, legacy rows
 > from the last one to two hours before the copy were replayed as if they lay in
 > the future and could revert freshly migrated entities in the cache. If you are
@@ -286,7 +286,7 @@ becomes `c1_c5Enum`; categories under `user-groups` get no enum).
 **Migrate first, rename afterwards in Rapla 3.** Two reasons:
 
 1. **Key shape is migrated automatically.** On the first Rapla 3 boot,
-   [PRD 058](docs/prd/058-graphql-key-spec-migration.md) renames every key that is
+   [PRD 058](docs/prd/done/058-graphql-key-spec-migration.md) renames every key that is
    not GraphQL-safe (`ü` → `ue`, `-` → `_`, reserved suffix → trailing `_`) and
    rewrites the references. No manual step.
 2. **Renaming is safe in Rapla 3, unsafe in Rapla 2.** Type definitions and
@@ -447,7 +447,7 @@ migrated.
 - [`architecture/legacy-urls.md`](docs/architecture/legacy-urls.md) — URL changes, `rapla.legacy-context-path`, replacements for the Rapla 2 REST API.
 - [`architecture/what-changed-in-rapla-3.md`](docs/architecture/what-changed-in-rapla-3.md)
   — the internal code rework (developer-facing).
-- [PRD 045](docs/prd/045-end-user-deployment-and-db-config.md) — end-user deployment
+- [PRD 045](docs/prd/done/045-end-user-deployment-and-db-config.md) — end-user deployment
   + database configuration model.
 - [PRD 090](docs/prd/090-additive-permission-resolution.md) — additive permission
   resolution + soft-deny migration.

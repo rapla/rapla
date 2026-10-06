@@ -27,7 +27,7 @@ heal `*.spec.ts` files.
 
 **Out of scope (deferred):**
 
-- Wiring Playwright e2e into CI — [PRD 034](../034-ci-baseline-workflow.md) Phase 4.
+- Wiring Playwright e2e into CI — [PRD 034](034-ci-baseline-workflow.md) Phase 4.
 - A broad e2e suite. AGENTS.md §10 caps tier 7 at ~5–15 critical-path tests;
   this PRD lands the harness + one smoke test, not the suite.
 - `webServer` auto-start in the config — the rapla dev server start is the
@@ -64,6 +64,6 @@ heal `*.spec.ts` files.
 
 ## Follow-ups
 
-- Wire `npm run e2e` into CI — [PRD 034](../034-ci-baseline-workflow.md) Phase 4.
+- Wire `npm run e2e` into CI — [PRD 034](034-ci-baseline-workflow.md) Phase 4.
 - Grow the suite to the ~5–15 critical-path tests AGENTS.md §10 allows for
   tier 7 (this PRD landed only the harness + smoke test).

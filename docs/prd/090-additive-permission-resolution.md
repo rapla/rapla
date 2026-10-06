@@ -76,7 +76,7 @@ recomputed from live permissions for display.
 ### Admin migration endpoint (REST, like api-keys / auth) + SPA migration UI (a simple table)
 - A **REST** `@RestController` under `/api/` (admin-scoped) — *not* GraphQL. The migration UI is an
   operational admin tool, not domain data, so it sits with the auth / api-key REST surfaces (AGENTS.md
-  §14 "GraphQL-only" is about data). Follows [PRD 049](049-controller-interface-deduplication.md)'s `@HttpExchange`-interface routing and the
+  §14 "GraphQL-only" is about data). Follows [PRD 049](done/049-controller-interface-deduplication.md)'s `@HttpExchange`-interface routing and the
   `rest-endpoint-creation` conventions.
   - `GET` → **structured findings** (not pre-baked strings) for the un-acknowledged, still-soft-deny
     allocatables: `{entityId, entityName, form, principalType, principalName, currentLevel, additiveLevel, via}`.
@@ -119,7 +119,7 @@ recomputed from live permissions for display.
 
 ### GraphQL implications (future permission-write API — deferred)
 - The migration is **REST, not GraphQL** (admin-only operational tool). GraphQL needs no migration verb.
-- When a permission-*write* mutation lands ([PRD 063](063-graphql-allocatables-write-api.md) OQ2), additive makes it simpler/safer:
+- When a permission-*write* mutation lands ([PRD 063](done/063-graphql-allocatables-write-api.md) OQ2), additive makes it simpler/safer:
   - **Input enum `SettableAccessLevel` without `DENIED`** (2026-10-01, user ruling: the output enum drops `DENIED` too — `PermissionDto.of` skips `DENIED` rows, and `PermissionInputMapper` keeps the stored `DENIED` rows on every replace so a read-modify-write cannot strip them before Phase 5; the REST migration dialog is the only place they show).
   - **Whole-list-replace is now safe** — additive has no load-bearing subtraction to accidentally drop,
     so a `setPermissions(allocatable, [grants])` shape no longer risks silent escalation.
@@ -132,7 +132,7 @@ recomputed from live permissions for display.
     (reveal, don't hard-block — mirrors the editor). The migration UI's "resolved" for these is
     *accept (acknowledge)*, not prune, so they remain expressible.
   - Add an **`effectiveAccess(forUser/forGroup)`** read field — clean `max` under additive.
-- [PRD 069](069-graphql-resource-access-read-api.md) access-query: **`accessLevel: DENIED` becomes degenerate** (matches all) → dropped (2026-10-01, same change).
+- [PRD 069](done/069-graphql-resource-access-read-api.md) access-query: **`accessLevel: DENIED` becomes degenerate** (matches all) → dropped (2026-10-01, same change).
 
 ### Already landed (compatible, keep)
 - Swing `DENIED` deprecation (`PermissionField` filters it off new rows; renders existing as

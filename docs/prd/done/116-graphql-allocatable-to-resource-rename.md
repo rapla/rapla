@@ -1,7 +1,7 @@
 # PRD 116 — GraphQL API rename: Allocatable → Resource
 
 **Status:** done — implemented 2026-09-13, reviewed PASS (rapla-review), closed 2026-09-14. Open: OQ1 (Siegen store-only views), Siegen deployment with rewritten patch files.
-**Related:** [PRD 063](../063-graphql-allocatables-write-api.md) (allocatable write verbs — renamed here), [PRD 055 § Decisions](../055-graphql-events-read-api.md) (D1 "Name Reservation (not Event)" — stays), [PRD 035 (done)](035-graphql-foundations.md) (the type family being renamed), [PRD 112](../112-deployment-patch.md) (how shipped views/documents get the new vocabulary), [ADR 0005](../../decisions/0005-graphql-keys-are-api-identity.md) (renames break loudly, no auto-migration — applies here unchanged), [PRD 113 § 1d](../113-graphql-permission-model.md#1d-one-input-per-entity--createupdate-inputs-merged) (early-beta ruling: schema breaks allowed)
+**Related:** [PRD 063](063-graphql-allocatables-write-api.md) (allocatable write verbs — renamed here), [PRD 055 § Decisions](055-graphql-events-read-api.md) (D1 "Name Reservation (not Event)" — stays), [PRD 035 (done)](035-graphql-foundations.md) (the type family being renamed), [PRD 112](112-deployment-patch.md) (how shipped views/documents get the new vocabulary), [ADR 0005](../../decisions/0005-graphql-keys-are-api-identity.md) (renames break loudly, no auto-migration — applies here unchanged), [PRD 113 § 1d](113-graphql-permission-model.md#1d-one-input-per-entity--createupdate-inputs-merged) (early-beta ruling: schema breaks allowed)
 
 ## Abstract
 

@@ -7,8 +7,8 @@
 **Parent:** [PRD 035](done/035-graphql-foundations.md) (foundations) — [done/035-graphql-foundations.md](done/035-graphql-foundations.md). This PRD picks up the MCP-side work and the cross-type discovery / compute primitives that didn't ship as part of [PRD 035](done/035-graphql-foundations.md) Phase 1-2.
 
 **Siblings:**
-- [PRD 055 — Events Read API](055-graphql-events-read-api.md) — single-type reservation reads
-- [PRD 056 — Events Write API](056-graphql-events-write-api.md) — curated `book` mutation tool wraps [PRD 056](056-graphql-events-write-api.md)'s `createReservation`
+- [PRD 055 — Events Read API](done/055-graphql-events-read-api.md) — single-type reservation reads
+- [PRD 056 — Events Write API](done/056-graphql-events-write-api.md) — curated `book` mutation tool wraps [PRD 056](done/056-graphql-events-write-api.md)'s `createReservation`
 - [PRD 028 — Angular Power Search](done/028-angular-power-search.md) — substrate for the search root in §"Search & discovery"
 - [PRD 043 — API Keys (JWT/PAT)](043-api-keys-jwt-pat.md) — the scoped-key mechanism the MCP transport sits on
 
@@ -18,7 +18,7 @@ The original [PRD 035](done/035-graphql-foundations.md) goal was an MCP server e
 primitives to AI assistants. The 2026-05-15 design review broadened that to
 a shared GraphQL + MCP substrate; [PRD 035](done/035-graphql-foundations.md) Phase 1-2 shipped the structural
 schema, classification generation, and the read surface for single-type
-queries ([PRD 055](055-graphql-events-read-api.md)). This PRD lands the remaining surface needed before the
+queries ([PRD 055](done/055-graphql-events-read-api.md)). This PRD lands the remaining surface needed before the
 MCP transport itself is worth wiring: cross-type discovery (search), the
 three compute primitives (`findFreeSlots` / `checkConflicts` / `whoIsFree`),
 the new query roots that close the SPA's scheduling-domain needs, and the
@@ -41,7 +41,7 @@ SPA surface first is the right ordering.
 - Subscriptions / streaming (Phase 2 of [PRD 035](done/035-graphql-foundations.md))
 - Multi-pool `findFreeSlots` / embedded `poolFilter` (v1 single explicit-id `poolIds`)
 - `whoIsFree` by category (v1 takes explicit `subjectIds`)
-- M365 Copilot deployment — deferred to [PRD 036](036-external-idp-oauth-login.md)
+- M365 Copilot deployment — deferred to [PRD 036](done/036-external-idp-oauth-login.md)
 - A GraphQL mutation passthrough for MCP (per-op safety markers lost)
 
 ## New query roots — completing the SPA's scheduling-domain needs
@@ -251,7 +251,7 @@ The three computes are **Query** fields — side-effect-free, even
 
 ### Out of scope for v1
 
-Resource (allocatable) writes — admin-managed via Swing/SPA + [PRD 009](009-server-bulk-storage-rest-api.md)'s
+Resource (allocatable) writes — admin-managed via Swing/SPA + [PRD 009](done/009-server-bulk-storage-rest-api.md)'s
 `/api/resources`; the external API is booking-focused. Subscriptions /
 streaming (Phase 2). Calendar-sync operations (PRDs [038](038-graph-calendar-sync.md)/[039](039-external-ical-subscription-per-resource.md)).
 
@@ -474,9 +474,9 @@ follow-on; for v1 the agent composes
 
 - [PRD 035 (done) — Foundations](done/035-graphql-foundations.md)
 - [PRD 028 — Angular Power Search](done/028-angular-power-search.md) — `search` root resolves [PRD 028](done/028-angular-power-search.md) OQ#3 (bounded window) and OQ#10 (§12)
-- [PRD 036 — External IdP OAuth Login](036-external-idp-oauth-login.md) — M365 Copilot showcase track
+- [PRD 036 — External IdP OAuth Login](done/036-external-idp-oauth-login.md) — M365 Copilot showcase track
 - [PRD 040 — dispatch validate before lock](040-dispatch-validate-before-lock.md) — multi-pod lock semantics
 - [PRD 043 — API Keys JWT/PAT](043-api-keys-jwt-pat.md) — scoped key mechanism
-- [PRD 055 — Events Read API](055-graphql-events-read-api.md)
-- [PRD 056 — Events Write API](056-graphql-events-write-api.md)
+- [PRD 055 — Events Read API](done/055-graphql-events-read-api.md)
+- [PRD 056 — Events Write API](done/056-graphql-events-write-api.md)
 - AGENTS.md §12 permission-leak invariant

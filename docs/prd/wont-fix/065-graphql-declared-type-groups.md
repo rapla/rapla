@@ -1,13 +1,13 @@
 # PRD 065 — GraphQL Declared Type Groups (cross-classification interfaces + filters)
 
-**Status:** wont-fix — 2026-09-13 — nothing built and no consumer needs it (`typeIn`, per-type filters, views and stats cover the cross-type cases); the group naming collides with the [PRD 058](../058-graphql-key-spec-migration.md) name rules.
+**Status:** wont-fix — 2026-09-13 — nothing built and no consumer needs it (`typeIn`, per-type filters, views and stats cover the cross-type cases); the group naming collides with the [PRD 058](../done/058-graphql-key-spec-migration.md) name rules.
 
 **Date:** 2026-05-29
 
 **Parent:** [PRD 035 (done) — GraphQL foundations](../done/035-graphql-foundations.md) §"Classification axis — cross-type queries" + §"Input vs output groups — both v1". [PRD 035](../done/035-graphql-foundations.md) designed this as **the primary cross-type surface** but deferred implementation; this PRD picks up the work.
 
 **Siblings:**
-- [PRD 055 — Events Read API](../055-graphql-events-read-api.md) — provides the structural `Reservation` type that the group interfaces sit above
+- [PRD 055 — Events Read API](../done/055-graphql-events-read-api.md) — provides the structural `Reservation` type that the group interfaces sit above
 - [PRD 057 (done) — DT mutations v1](../done/057-graphql-dt-mutations-v1.md) + [PRD 061 — DT mutations v2](../061-graphql-dt-mutations-v2.md) — annotation surface needed to admin-edit group membership; this PRD reads the annotation, [PRD 061](../061-graphql-dt-mutations-v2.md) owns the writing
 - [PRD 059 — Typed Where Predicates](../done/059-graphql-typed-where-predicates.md) — per-type `<TypeKey>Where` predicate pattern this PRD reuses verbatim for the group filters (`<Group>Filter` is the union shape; `where<TypeKey>` from [PRD 059](../done/059-graphql-typed-where-predicates.md) is per-type)
 - [PRD 060 — MCP foundations](../060-graphql-mcp-foundations.md) — declared group queries are the obvious MCP-friendly cross-type primitive (one schema-typed entry point vs ad-hoc cross-type filters)
@@ -26,14 +26,14 @@ In v1 (this PRD):
   - A GraphQL interface `<Group>` extending the structural interface (`ReservationClassification` or `AllocatableClassification`) with the shared attribute fields.
   - A typed input `<Group>Filter` reusing the [PRD 059](../done/059-graphql-typed-where-predicates.md) `where<TypeKey>` pattern — predicates over the shared attributes + AND/OR/NOT combinators.
   - Each member DT's generated `<TypeKey>Classification` implements ALL declared groups (`implements ReservationClassification & CourseEvent & GradedActivity`).
-- New Query roots per group on the reservation side: `<groupName>s(filter: <Group>Filter, from: LocalDateTime!, to: LocalDateTime!): [<Group>!]!` (e.g. `courseEvents(filter:, from:, to:)`). Same time-window discipline as [PRD 055](../055-graphql-events-read-api.md)'s `reservations(filter:)`.
+- New Query roots per group on the reservation side: `<groupName>s(filter: <Group>Filter, from: LocalDateTime!, to: LocalDateTime!): [<Group>!]!` (e.g. `courseEvents(filter:, from:, to:)`). Same time-window discipline as [PRD 055](../done/055-graphql-events-read-api.md)'s `reservations(filter:)`.
 - §12 — per-entity `canRead` at the output boundary, mixed visibility silently narrowed.
 - Tier-3 tests: schema introspection (group interface + filter + query root all emitted), happy-path filter on a shared attribute, §12 leak test, member-DT divergence (an attribute that's NOT in every member is correctly absent from the interface).
 
 Out of scope:
-- Allocatable-side groups (e.g. "all bookable resources implementing `HasCapacity`"). Same design but separate slice — open as [PRD 066](../066-graphql-reservation-allocatable-matching.md) if demand surfaces.
+- Allocatable-side groups (e.g. "all bookable resources implementing `HasCapacity`"). Same design but separate slice — open as [PRD 066](../done/066-graphql-reservation-allocatable-matching.md) if demand surfaces.
 - Connection-style pagination (`edges { node } pageInfo`). v1 returns flat lists, matching the existing `reservations(filter:)` / `allocatables(filter:)` shape. Pagination is its own PRD once a real consumer needs cursor-based traversal.
-- Group-aware mutations (`createCourseEvent(...)`). v1 is read-only; writes go through the typed-per-DT path from [PRD 056](../056-graphql-events-write-api.md).
+- Group-aware mutations (`createCourseEvent(...)`). v1 is read-only; writes go through the typed-per-DT path from [PRD 056](../done/056-graphql-events-write-api.md).
 - Admin UI for editing group membership. Annotation is read here; editing belongs to [PRD 061](../061-graphql-dt-mutations-v2.md)'s annotation-surface expansion.
 - Group hierarchies / nested groups (a `GradedActivity` that's ALSO a `CourseEvent`). v1 lets a type declare multiple flat groups (`groups: "CourseEvent, GradedActivity"`); inter-group hierarchy is future.
 
@@ -49,7 +49,7 @@ Out of scope:
 </rapla:dynamictype>
 ```
 
-Annotation key: `graphqlGroups` — comma-separated list (whitespace-trimmed). Empty / missing = type belongs to no declared groups (only the structural interface). The list shape is verbatim per [PRD 058](../058-graphql-key-spec-migration.md) key-spec migration (no silent transforms, no PascalCase auto-rewrite).
+Annotation key: `graphqlGroups` — comma-separated list (whitespace-trimmed). Empty / missing = type belongs to no declared groups (only the structural interface). The list shape is verbatim per [PRD 058](../done/058-graphql-key-spec-migration.md) key-spec migration (no silent transforms, no PascalCase auto-rewrite).
 
 Validation at generator time:
 - Group names must match `[A-Z][A-Za-z0-9_]*` (PascalCase, GraphQL-type-compliant). Invalid → WARN + skip group emission.
@@ -95,17 +95,17 @@ Mismatch → the attribute is silently absent from the interface. The concrete `
 
 Per group: `<groupName>s(filter: <Group>Filter, from: LocalDateTime!, to: LocalDateTime!): [<Group>!]!`
 
-- `from` + `to` are mandatory (same as `Query.reservations(filter:)` from [PRD 055](../055-graphql-events-read-api.md) — server-side scan otherwise).
+- `from` + `to` are mandatory (same as `Query.reservations(filter:)` from [PRD 055](../done/055-graphql-events-read-api.md) — server-side scan otherwise).
 - Server-side cap: same 365-day window + default 500 limit / hard cap 5000 as `Query.reservations(filter:)`.
 - Naming: `courseEvents` for group `CourseEvent`, `gradedActivities` for group `GradedActivity`. Lowercase-first-letter + pluralize. For irregular plurals the admin can override via a future `pluralName` annotation; v1 uses naive `+ "s"`.
 
 ### Resolver — no engine rewrite
 
 For each group query the resolver:
-1. Resolves the caller from `RequestContextInstrumentation` (per [PRD 055](../055-graphql-events-read-api.md) perf pattern).
+1. Resolves the caller from `RequestContextInstrumentation` (per [PRD 055](../done/055-graphql-events-read-api.md) perf pattern).
 2. Looks up the group's member DTs from the schema-build-time map (stored in a sibling of `StructuralTypeFetchers`).
 3. Translates the typed `<Group>Filter` to a `ClassificationFilter[]` — one filter per member DT (each typed-per-attribute predicate maps to a rule on that DT's matching attribute).
-4. Calls `operator.queryAppointmentsByLocalDateTime(caller, allocatables, owners, from, to, classificationFilters, null, false)` — same path [PRD 055](../055-graphql-events-read-api.md)'s `reservations(filter:)` uses.
+4. Calls `operator.queryAppointmentsByLocalDateTime(caller, allocatables, owners, from, to, classificationFilters, null, false)` — same path [PRD 055](../done/055-graphql-events-read-api.md)'s `reservations(filter:)` uses.
 5. §12-filters the result, applies the 500 default / 5000 cap.
 
 Reuses the existing `ClassificationFilter` execution engine — no new evaluator, no engine rewrite (consistent with [PRD 035](../done/035-graphql-foundations.md) §"Execution — no engine rewrite").
@@ -116,7 +116,7 @@ When admin saves a DT ([PRD 057](../done/057-graphql-dt-mutations-v1.md) / [PRD 
 
 ### §12 invariants
 
-Identical to [PRD 055](../055-graphql-events-read-api.md)'s `Query.reservations(filter:)`:
+Identical to [PRD 055](../done/055-graphql-events-read-api.md)'s `Query.reservations(filter:)`:
 1. Anonymous → empty.
 2. Result entries `canRead`-filtered; mixed visibility silently narrowed.
 3. Mandatory window + cap.

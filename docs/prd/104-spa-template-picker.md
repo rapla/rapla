@@ -1,10 +1,10 @@
 # PRD 104 — SPA "Neu" picker: unified types + templates dialog
 
 **Status:** in-progress — 2026-07-24
-**Related:** [PRD 107](107-reservation-prototype-prefill.md) (Phase 5 `newEventOptions` is the data source; D6 defines `reservationsFromTemplate`),
-[PRD 089](089-server-side-recents-favorites.md) (recents mechanism the picker adopts later),
+**Related:** [PRD 107](done/107-reservation-prototype-prefill.md) (Phase 5 `newEventOptions` is the data source; D6 defines `reservationsFromTemplate`),
+[PRD 089](done/089-server-side-recents-favorites.md) (recents mechanism the picker adopts later),
 [PRD 094](094-spa-main-view-actions-and-popups.md) (main-view actions — the "Neu" entry point lives there),
-[PRD 068](068-dualis-import-wizard-redesign.md) (external event import — the second template consumer, see § Templates as import blueprints)
+[PRD 068](done/068-dualis-import-wizard-redesign.md) (external event import — the second template consumer, see § Templates as import blueprints)
 
 ## Abstract
 
@@ -17,7 +17,7 @@ The old type menu disappears; the dialog is skipped only for exactly-1-type-and-
 ~~The server still computes a grouping `path` per template (kept on the wire for later grouped
 rendering, e.g. section headers); grouping stays a server concern so Swing can adopt it later
 and §12 filtering happens before any label/count is computed.~~ **`path` removed 2026-09-13**
-([PRD 113 § 1c](113-graphql-permission-model.md#1c-eventtemplate-target-schema), user go per
+([PRD 113 § 1c](done/113-graphql-permission-model.md#1c-eventtemplate-target-schema), user go per
 AGENTS.md § 11): never consumed by the UI; `TemplatePathBuilder` + tests + the SPA selection
 deleted with it. The D2/D3 paragraphs below are history.
 
@@ -72,7 +72,7 @@ deleted with it. The D2/D3 paragraphs below are history.
 ## Templates as import blueprints (external event import)
 
 Second template consumer (2026-07-30): the **external event import**
-([PRD 068](068-dualis-import-wizard-redesign.md) — generic contract
+([PRD 068](done/068-dualis-import-wizard-redesign.md) — generic contract
 `org.rapla.plugin.externaleventimport.ExternalEventImportService`, Dualis impl in dhbwrapla).
 Today the import copies the picked template per selected item but uses only the FIRST copied
 reservation (`DualisEventsLoaderImpl.createReservations` — `copies.iterator().next()`); a

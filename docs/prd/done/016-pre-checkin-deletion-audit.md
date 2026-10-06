@@ -1,6 +1,6 @@
 # PRD 016: Pre-check-in audit of `git diff HEAD` after Date migration
 
-**Status:** done (2026-05-11). The audit drove six follow-up commits (`4a6b6603` … `bcaceb88`) that systematically restored Pattern-2 collateral and finished the per-file verdict pass. Working-tree file count dropped from 242 at audit start to ~48 today (the remainder are intentional Date-migration edits plus the architecture docs from [PRD 022](../022-architecture-documentation.md)). No outstanding "unsure" verdicts remain.
+**Status:** done (2026-05-11). The audit drove six follow-up commits (`4a6b6603` … `bcaceb88`) that systematically restored Pattern-2 collateral and finished the per-file verdict pass. Working-tree file count dropped from 242 at audit start to ~48 today (the remainder are intentional Date-migration edits plus the architecture docs from [PRD 022](022-architecture-documentation.md)). No outstanding "unsure" verdicts remain.
 **Date:** 2026-05-09 (closed: 2026-05-11)
 
 ## Goal

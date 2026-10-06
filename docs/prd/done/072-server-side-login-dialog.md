@@ -272,7 +272,7 @@ IdP-disable worst-case window. At the cap the user is forced back through the Id
 IdP-side disable is finally caught.
 
 The one residual gap — an **IdP-only** disable of a user still present in rapla — is bounded by the
-21 d cap; tighten further by mirroring the disable **into rapla** (deprovisioning, cross-ref [PRD 050](../050-external-auth-user-lifecycle.md)
+21 d cap; tighten further by mirroring the disable **into rapla** (deprovisioning, cross-ref [PRD 050](050-external-auth-user-lifecycle.md)
 JIT provisioning) so the ≤ 1 h `clearSession` axis applies.
 
 **Precedent — every brokered system does exactly this:** short access token + absolute refresh cap +
@@ -461,7 +461,7 @@ single-slot is also what couples to risk #1 above.
      impersonation model; no "which kind of token" branching in resolvers/controllers.
 
    **`OAuthExchangeController` — investigated, left untouched (no work invented).** It still forwards
-   the raw IdP token response to the caller (and provisions as a side effect, [PRD 050](../050-external-auth-user-lifecycle.md)). But the shipped
+   the raw IdP token response to the caller (and provisions as a side effect, [PRD 050](050-external-auth-user-lifecycle.md)). But the shipped
    SPA (Phase 4) is fully cookie-based and dropped `angular-oauth2-oidc` + client-side PKCE, so **no
    live client calls `/api/auth/oauth/exchange/*` anymore** (no Angular `.ts` reference; only docs,
    `OAuthConfigController`'s legacy chooser config, and `OAuthExchangeStaleTokenAnonymousTest`).
@@ -498,13 +498,13 @@ single-slot is also what couples to risk #1 above.
      provider, `/api` validates one issuer; framed as RFC 8693 token-exchange (Backstage / Cognito
      / Auth0 precedent);
    - the **server orchestration (#2 = Hybrid)**: Spring `oauth2Login()` for the head + an
-     `AuthenticationSuccessHandler` for the rapla tail; the `OAuthExchangeController` ([PRD 036](../036-external-idp-oauth-login.md) BFF)
-     **stays** untouched for the SPA path; provisioning ([PRD 050](../050-external-auth-user-lifecycle.md)) shared in the success handler;
+     `AuthenticationSuccessHandler` for the rapla tail; the `OAuthExchangeController` ([PRD 036](036-external-idp-oauth-login.md) BFF)
+     **stays** untouched for the SPA path; provisioning ([PRD 050](050-external-auth-user-lifecycle.md)) shared in the success handler;
    - **credential model A** (HttpOnly access cookie + path-scoped refresh cookie) + the
      **cookie-based reactive-401 refresh**, CSRF wiring, logout policy;
    - the **revocation & session-cap story (#7 = a)**: IdP tokens discarded, revoke-in-rapla
      (`clearSession`, ≤ 1 h), **21 d absolute non-sliding cap**, the two-axis revoke table, and the
-     optional idle-timeout/rotation hardenings (cross-ref [PRD 036](../036-external-idp-oauth-login.md) § "Refresh path");
+     optional idle-timeout/rotation hardenings (cross-ref [PRD 036](036-external-idp-oauth-login.md) § "Refresh path");
    - which clients use what (SPA/explorers = cookie; Swing = re-minted rapla Bearer; iCal/API-keys = Bearer);
    - the **single-issuer cutover** (#6 step): `/api` drops external-issuer trust once all clients re-mint.
 
@@ -552,7 +552,7 @@ single-slot is also what couples to risk #1 above.
    ≤1 h refresh boundary. See the Credential-model section for the full trade-off.
 2. ~~**OAuth orchestration**~~ — **RESOLVED 2026-06-19: Hybrid.** Split the flow into the
    security-critical **head** (authorize-redirect, state, PKCE, nonce, callback, `code`→token,
-   `id_token` validation) and the rapla-specific **tail** (provision per [PRD 050](../050-external-auth-user-lifecycle.md), mint the rapla
+   `id_token` validation) and the rapla-specific **tail** (provision per [PRD 050](050-external-auth-user-lifecycle.md), mint the rapla
    JWT via `RefreshSessionService.issueAndPersist`, set cookie). Use Spring **`oauth2Login()`** for
    the head (framework handles the dangerous parts correctly; OIDC `scope=openid` → `id_token`-only,
    aligns with M2/(a)); reuse rapla's building blocks for the tail in an

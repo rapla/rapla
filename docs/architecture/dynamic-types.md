@@ -118,7 +118,7 @@ Defines one column. Fields:
   resource over both kinds and also rejects chains longer than 10 edges; at startup a cycle or a too-deep chain is
   logged as ERROR (read from the attribute values), never removed. The graph lives in `LocalCache.graph` (used by
   conflicts, calendar expansion and GraphQL `Resource.parents` / `children`) —
-  [PRD 120](../prd/120-resource-hierarchy-parents-children.md#decisions-locked).
+  [PRD 120](../prd/done/120-resource-hierarchy-parents-children.md#decisions-locked).
 
 ### `AttributeAnnotations` (UI hints)
 
@@ -140,7 +140,7 @@ Defines one column. Fields:
 - `KEY_CLASSIFICATION_TYPE` — see table above.
 - `KEY_COLORS`, `KEY_CONFLICTS`, `KEY_LOCATION` — admin flags.
 - `KEY_ORDER` (`order`) — numeric position of the type; set in the data only, no edit UI yet
-  ([PRD 127](../prd/127-picker-accordion-type-order.md) D5). `DynamicTypeImpl.TYPE_ORDER` sorts resource
+  ([PRD 127](../prd/done/127-picker-accordion-type-order.md) D5). `DynamicTypeImpl.TYPE_ORDER` sorts resource
   types before person types, then types with `order` (ascending; non-numeric = unset), then creation order.
   The Swing resource tree, GraphQL `resources` and every nested resource list
   (`ClassificationGraphQLController.treeOrder()`: `TYPE_ORDER`, then `KEY_SORTING`/name within a type) and the
@@ -371,7 +371,7 @@ client-side `ModifiableCalendarState` applies the same `needsChange` /
 Attribute *values* reference entities by id, but the persisted schema and the
 persisted preferences reference **DynamicTypes and Categories by key path**
 (surfaced during a Rapla 2 → 3 migration in 2026-08; the application-side fix is
-recorded in [PRD 058](../prd/058-graphql-key-spec-migration.md)):
+recorded in [PRD 058](../prd/done/058-graphql-key-spec-migration.md)):
 
 | Where | Reference form | Resolved relative to |
 |---|---|---|
@@ -391,7 +391,7 @@ Consequences:
   holds ids, so nothing breaks until the next **restart**. **Rapla 3** re-stores
   every referer in the same dispatch — `addChangedDynamicTypeDependant` for type
   and attribute keys, `addCategoryKeyPathReferers` for category keys
-  ([PRD 058](../prd/058-graphql-key-spec-migration.md), `DbOperatorKeyRenameTest`).
+  ([PRD 058](../prd/done/058-graphql-key-spec-migration.md), `DbOperatorKeyRenameTest`).
 - On load, an unresolvable **category** path is dropped silently
   (`DynamicTypeReader`: constraint/default → `null`; filter rule → gone). An
   unresolvable **type** key in a preference aborts the boot

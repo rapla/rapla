@@ -4,7 +4,7 @@
 >
 > **The standalone desktop build is currently broken and not part of the Rapla 3 alpha.**
 > Whether a standalone installation will be supported in Rapla 3 at all is undecided
-> (see [PRD 054](../docs/prd/054-standalone-windows-installer.md)). Do not build, ship, or
+> (see [PRD 054](../docs/prd/wont-fix/054-standalone-windows-installer.md)). Do not build, ship, or
 > rely on it. Use the server deployment or the Java Web Start client instead
 > (see the [main README](../README.md)).
 
@@ -14,7 +14,7 @@ build of rapla, producing a signed MSI installer for Windows 11 x64.
 **This is a trial install** — single-user, no auth, file-backed storage in
 `%APPDATA%\rapla\`. Meant for evaluating rapla in 60 seconds before
 deciding whether to deploy a real multi-user server. See
-[`../docs/prd/054-standalone-windows-installer.md`](../docs/prd/054-standalone-windows-installer.md).
+[`../docs/prd/wont-fix/054-standalone-windows-installer.md`](../docs/prd/wont-fix/054-standalone-windows-installer.md).
 
 ## Layout
 
@@ -164,5 +164,5 @@ shared with the JNLP signing path.
   The OAuth code path runs normally (SPA login screen + Spring AS form
   login), the server-side password check is just no-oped.
 
-See [`../docs/prd/054-standalone-windows-installer.md`](../docs/prd/054-standalone-windows-installer.md)
+See [`../docs/prd/wont-fix/054-standalone-windows-installer.md`](../docs/prd/wont-fix/054-standalone-windows-installer.md)
 for the full design + scope + deferred items.

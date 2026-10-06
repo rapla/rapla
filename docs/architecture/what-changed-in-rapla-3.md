@@ -26,7 +26,7 @@ Cross-references below to the PRDs that drove each piece of the work.
 |---|---|---|
 | Module shape | 1 monolithic Maven project (`pom.xml` + `parent/pom.xml`) | 5-module reactor (`rapla-bom`, `rapla-core`, `rapla-client`, `rapla-server`, `rapla-app`) — [PRD 005](../prd/done/005-multi-module-split.md) |
 | DI framework | Custom `restinject` (annotation-processor-driven; external Maven dep `artifactId restinject` at `2.0-RC11`) | Spring Boot 4 (client: `@ComponentScan` + `@Service`; server: explicit `@Bean` factories) — [PRD 001](../prd/done/001-spring-boot-migration.md) / [011](../prd/done/011-spring-boot-4-jackson-3.md) |
-| REST wire | Hand-rolled JSON-RPC: `org/rapla/enpoints/`, `org/rapla/rest/`, `org/rapla/server/internal/rest/` (~2.3 k LOC) | Spring MVC + Jackson 3 + `@HttpExchange` interfaces (Swing client), GraphQL at `/api/graphql` (SPA) — PRD [009](../prd/009-server-bulk-storage-rest-api.md) / [010](../prd/done/010-jackson-field-based-wire-format.md) / [049](../prd/049-controller-interface-deduplication.md) |
+| REST wire | Hand-rolled JSON-RPC: `org/rapla/enpoints/`, `org/rapla/rest/`, `org/rapla/server/internal/rest/` (~2.3 k LOC) | Spring MVC + Jackson 3 + `@HttpExchange` interfaces (Swing client), GraphQL at `/api/graphql` (SPA) — PRD [009](../prd/done/009-server-bulk-storage-rest-api.md) / [010](../prd/done/010-jackson-field-based-wire-format.md) / [049](../prd/done/049-controller-interface-deduplication.md) |
 | Server runtime | Embedded Jetty bootstrapped by custom code, webapp under `/rapla` | `RaplaSpringBootApplication`, embedded Tomcat 11, context root `/`, autoconfig (`META-INF/spring/AutoConfiguration.imports`) — [PRD 001](../prd/done/001-spring-boot-migration.md) |
 | Wire format | Custom Jackson 2 mapper config | Jackson 3 field-based serialisation — [PRD 010](../prd/done/010-jackson-field-based-wire-format.md) |
 | Date types in entities | `java.util.Date` everywhere (millis-since-epoch on the wire) | `java.time.LocalDateTime` / `LocalDate` — PRD [001-a](../prd/done/001-a-date-to-localdatetime.md) / [014](../prd/done/014-appointment-long-to-java-time.md) (Appointment) / [015](../prd/done/015-finish-date-migration-rapla-client.md) (rapla-client) |
@@ -62,7 +62,7 @@ Replaced by:
   ([PRD 002](../prd/done/002-swing-spring-di.md)); on the server explicit
   `@Bean` factory methods (AGENTS.md §3).
 - REST proxy generation via Spring 6's `@HttpExchange` /
-  `HttpServiceProxyFactory` ([PRD 009](../prd/009-server-bulk-storage-rest-api.md)).
+  `HttpServiceProxyFactory` ([PRD 009](../prd/done/009-server-bulk-storage-rest-api.md)).
 - JSON serialisation via Jackson 3 ([PRD 010](../prd/done/010-jackson-field-based-wire-format.md)).
 
 Master's `parent/pom.xml:31` declared `<restinject.version>2.0-RC11</restinject.version>`.
@@ -118,7 +118,7 @@ is closed: pinned by `NoRaplaClientImportInServerTest` arch test
 - `RaplaSpringBootApplication` is the single `@SpringBootApplication`.
 - Autoconfig discovered via `META-INF/spring/AutoConfiguration.imports`.
 - Embedded Tomcat 11 (Spring Boot 4.0.8). Context root `/`
-  ([PRD 031](../prd/031-api-namespace-redesign.md)); `/rapla/` survives only
+  ([PRD 031](../prd/done/031-api-namespace-redesign.md)); `/rapla/` survives only
   as a literal prefix on the published calendar and iCal routes
   ([legacy-urls.md](legacy-urls.md)).
 - Spring Authorization Server issues RS256 JWTs; Spring Security
@@ -186,7 +186,7 @@ rules.
 
 Details and costs per tier: AGENTS.md §10.
 
-Mock-framework policy ([PRD 027](../prd/027-mock-framework-policy.md)): **no mocks of internal rapla types**
+Mock-framework policy ([PRD 027](../prd/done/027-mock-framework-policy.md)): **no mocks of internal rapla types**
 — use the real thing at the appropriate tier. The carve-outs make
 tier-1 viable.
 
@@ -283,7 +283,7 @@ documentation**: more than half of the Java growth is test code.
   — server-side edit services (wont-fix; superseded by the GraphQL API).
 - [`../prd/026-angular-frontend.md`](../prd/026-angular-frontend.md)
   — Angular SPA.
-- [`../prd/029-swing-oauth-login.md`](../prd/029-swing-oauth-login.md)
+- [`../prd/029-swing-oauth-login.md`](../prd/done/029-swing-oauth-login.md)
   — Swing OAuth login (PKCE).
 - [`../prd/030-server-side-view-rendering.md`](../prd/030-server-side-view-rendering.md)
   — server-rendered table surfaces (`/api/table/*`).

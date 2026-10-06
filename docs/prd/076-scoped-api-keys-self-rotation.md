@@ -107,7 +107,7 @@ superseded and will be reworked to the GraphQL path.
    *automation* mints that key with `access_details`).
 
    **Resource permissions today:** as of 2026-06-25 the GraphQL `Allocatable` type exposes NO
-   permission-list field (only `owner`, itself covered; `accessLevel` occurrences are [PRD 069](069-graphql-resource-access-read-api.md) filter
+   permission-list field (only `owner`, itself covered; `accessLevel` occurrences are [PRD 069](done/069-graphql-resource-access-read-api.md) filter
    *inputs*, not output) — no current resource-permission leak. The directive is the guardrail: when
    such a field is added it gets `@requiresAccessDetails(kind: PERMISSIONS)` and is gated by the same
    `access_details` scope from day one.
@@ -263,7 +263,7 @@ their own keys from the browser cookie session, and expired entries must not acc
       predecessor is still live → **409**. Pure anti-sprawl, explicitly NOT a compromise control.
 - [x] **Expired-entry compaction (D11).** On every keystore write (create / rotate / revoke), prune
       stored entries whose `exp` is already past; `list()` filters expired entries out. No
-      decoder-side deletion (§16 — reads stay side-effect-free), no scheduled sweep ([PRD 089](089-server-side-recents-favorites.md) D6 pattern).
+      decoder-side deletion (§16 — reads stay side-effect-free), no scheduled sweep ([PRD 089](done/089-server-side-recents-favorites.md) D6 pattern).
 - [x] Tier-3 `ApiKeyInteractiveRotationTest` (5/5): human rotates own key (old valid during grace);
       `graceMinutes > 2880` → 400; cross-user id → not-found (§12); chain capped at 2 (409 then ok
       after delete); expired entry pruned + absent from `list()`. `ApiKeySelfRotationTest` (6/6)
@@ -403,7 +403,7 @@ keystore and still showed in `list()`. Fix: on every keystore write (create / ro
 drop entries whose `exp` is already past, and filter expired entries out of `list()`. Rejected
 alternatives: (a) **decoder-side deletion** — the decoder is a read/verify path; deleting there
 violates AGENTS.md §16 (reads stay side-effect-free); (b) **scheduled sweep** — heavier, and the
-codebase favours opportunistic compaction (this is exactly the [PRD 089](089-server-side-recents-favorites.md) D6 / `UserListsService`
+codebase favours opportunistic compaction (this is exactly the [PRD 089](done/089-server-side-recents-favorites.md) D6 / `UserListsService`
 pattern). Accepted tradeoff: a user who rotates once and never touches keys again leaves one dead
 entry (unusable, invisible in the UI) until their next write — bounded, not unbounded growth.
 

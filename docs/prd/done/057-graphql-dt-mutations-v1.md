@@ -3,8 +3,8 @@
 **Status:** done — v1 controller shipped 2026-05-29; deferred items spun out to [PRD 061](../061-graphql-dt-mutations-v2.md)
 
 **Parent:** [PRD 035 §"Schema design — structural-static + classification-generated"](035-graphql-foundations.md)
-+ §"Rebuild on admin change". **Siblings:** [PRD 055](../055-graphql-events-read-api.md) (events read),
-[PRD 056](../056-graphql-events-write-api.md) (events mutations), [PRD 061](../061-graphql-dt-mutations-v2.md) (DynamicType mutations v2 — deferred items).
++ §"Rebuild on admin change". **Siblings:** [PRD 055](055-graphql-events-read-api.md) (events read),
+[PRD 056](056-graphql-events-write-api.md) (events mutations), [PRD 061](../061-graphql-dt-mutations-v2.md) (DynamicType mutations v2 — deferred items).
 
 **Triggered by:** the eventual Angular SPA gaining a schema editor for
 DynamicTypes (data-model administration). Server side is unblocked; SPA UI
@@ -14,12 +14,12 @@ is the work that prompts implementation.
 
 Land the **write-side mutation surface for DynamicTypes themselves** —
 admin operations that change the deployment's data model (create/replace/
-delete DynamicTypes and their Attributes). Distinct from [PRD 056](../056-graphql-events-write-api.md) which
+delete DynamicTypes and their Attributes). Distinct from [PRD 056](056-graphql-events-write-api.md) which
 mutates *data within* DynamicTypes (reservations, allocatables) using the
 existing schema as a fixed contract.
 
 When an admin saves a DynamicType change:
-1. Server's existing hot-swap fires ([PRD 055](../055-graphql-events-read-api.md) Cut C `GraphQlSchemaRebuilder`)
+1. Server's existing hot-swap fires ([PRD 055](055-graphql-events-read-api.md) Cut C `GraphQlSchemaRebuilder`)
 2. Schema regenerates within ~10s; generated `<TypeKey>Classification`
    types reflect the new attribute set
 3. The admin's SPA can immediately query against the new shape
@@ -67,8 +67,8 @@ type Mutation {
 }
 ```
 
-Two mutations. `saveDynamicType` is an upsert (matches [PRD 056](../056-graphql-events-write-api.md) update
-full-state style); `deleteDynamicTypes` is uniform bulk (matches [PRD 056](../056-graphql-events-write-api.md)
+Two mutations. `saveDynamicType` is an upsert (matches [PRD 056](056-graphql-events-write-api.md) update
+full-state style); `deleteDynamicTypes` is uniform bulk (matches [PRD 056](056-graphql-events-write-api.md)
 delete consolidation lesson). **No `ChangeOp` extension in v1** — admin
 doesn't need atomic cross-type schema + data workflows that often; if
 needed later, ChangeOp gains additive variants.
@@ -213,7 +213,7 @@ stores it. No special "reorder" verb.
 `deleteDynamicTypes(ids: [id])` rejects with `REFERENCE_EXISTS` (first 50
 referring ids in the extension) if any data instance uses the type — any
 Reservation for reservation types, any Allocatable for resource/person
-types. Admin must delete instances first ([PRD 056](../056-graphql-events-write-api.md) mutations) before
+types. Admin must delete instances first ([PRD 056](056-graphql-events-write-api.md) mutations) before
 removing the type. Per-type referrer breakdown is deferred to [PRD 061](../061-graphql-dt-mutations-v2.md).
 Soft-delete / "deprecation" semantics are out of scope.
 
@@ -370,7 +370,7 @@ If 42 allocatables exist of this type, server rejects:
 ```
 
 Admin must reassign or delete the instances first (via reservation/allocatable
-mutations from [PRD 056](../056-graphql-events-write-api.md)).
+mutations from [PRD 056](056-graphql-events-write-api.md)).
 
 ### Example 5 — Create DynamicType then first instance (two roundtrips)
 
@@ -395,7 +395,7 @@ The original atomic-batch sketch (preserved for design-history): a single
 `applyChanges([{ createDynamicType: {...} }, { createAllocatable: { typeId:
 "<new-dt-uuid>", ... } }])` call with the same-batch reference from
 operation #1 to operation #0 using the client-assigned UUID — exactly the
-pattern [PRD 056](../056-graphql-events-write-api.md) locked. Both succeed or both reject. Dropped from v1 in
+pattern [PRD 056](056-graphql-events-write-api.md) locked. Both succeed or both reject. Dropped from v1 in
 favor of two roundtrips.
 
 **Hot-swap caveat:** between the mutation's response and the rebuild, the
@@ -414,7 +414,7 @@ that locks the behavior land in [PRD 061](../061-graphql-dt-mutations-v2.md).
 
 ### Example 7 — Delete an attribute (forces data drop) — DEFERRED to [PRD 061](../061-graphql-dt-mutations-v2.md)
 
-Full-state semantics from [PRD 056](../056-graphql-events-write-api.md) update style: an attribute absent from
+Full-state semantics from [PRD 056](056-graphql-events-write-api.md) update style: an attribute absent from
 the input list is **deleted**. All existing classifications drop their value
 for that attribute. The "absence = deletion" rule is dangerous if the SPA
 accidentally submits an incomplete list (stale form state); mitigations
@@ -437,7 +437,7 @@ with affected-entity counts, dry-run preview) are deferred to [PRD 061](../061-g
 
 ## Tests (tier-3 spec — shipped)
 
-Same patterns as [PRD 056](../056-graphql-events-write-api.md) — `@SpringBootTest` + `@AutoConfigureMockMvc(addFilters
+Same patterns as [PRD 056](056-graphql-events-write-api.md) — `@SpringBootTest` + `@AutoConfigureMockMvc(addFilters
 = false)` + `@WithMockUser(roles = "ADMIN")` for happy path; non-admin
 variants for §12 rejection tests.
 
@@ -456,7 +456,7 @@ Shipped:
 
 ### OQ1 — Hot-swap poll-rate adjustment — DEFERRED to [PRD 061](../061-graphql-dt-mutations-v2.md)
 
-[PRD 055](../055-graphql-events-read-api.md) Cut C ships with 10s polling. Schema-editor UX wants ~2s for
+[PRD 055](055-graphql-events-read-api.md) Cut C ships with 10s polling. Schema-editor UX wants ~2s for
 admin feedback responsiveness. Open: lower it globally, or add a
 faster post-mutation poll trigger?
 
@@ -502,7 +502,7 @@ extending `ChangeOp` later is additive.
 ## Decision log
 
 - **2026-05-28** — PRD opened as draft / placeholder. Triggered by the
-  [PRD 056](../056-graphql-events-write-api.md) discussion of "how does the read/write API behave when admin
+  [PRD 056](056-graphql-events-write-api.md) discussion of "how does the read/write API behave when admin
   edits a DynamicType?" Surface sketched; implementation deferred until
   Angular schema editor work begins.
 - **2026-05-28** — Surface consolidated to 2 mutations:

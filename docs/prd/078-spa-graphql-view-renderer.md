@@ -44,8 +44,8 @@ over recurrence blocks.
   the generic `ViewHostComponent` render every stored view by name at `/app/views/:viewName`.
   Beyond Phases 1–3 below, the renderer has since absorbed the render-modes and interaction work
   owned by other PRDs: week/day time grid ([PRD 077](077-calendar-model-graphql.md)), month grid
-  ([PRD 095](095-month-grid-render-mode.md)), stats projection
-  ([PRD 079](079-graphql-grouped-aggregates.md)/[PRD 080](done/080-typed-entity-stats.md)),
+  ([PRD 095](done/095-month-grid-render-mode.md)), stats projection
+  ([PRD 079](done/079-graphql-grouped-aggregates.md)/[PRD 080](done/080-typed-entity-stats.md)),
   table selection ([PRD 099](done/099-spa-table-selection.md)), event sheet + edit
   ([PRD 091](091-spa-reservation-edit-and-availability.md)), row actions + undo
   ([PRD 094](094-spa-main-view-actions-and-popups.md)), print support. Those are tracked in their
@@ -160,7 +160,7 @@ each declared variable by its GraphQL type, not its name):
 |---|---|
 | `resource` | `ReservationFilter.allocatableMatching.idIn` (+ a second `AllocatableFilter.idIn` for aggregation/pivot views) |
 | `user` | `ReservationFilter.ownerEq` — the user's own events |
-| `group` | `ReservationFilter.accessibleByGroup` ([PRD 069](069-graphql-resource-access-read-api.md), admin-scoped) |
+| `group` | `ReservationFilter.accessibleByGroup` ([PRD 069](done/069-graphql-resource-access-read-api.md), admin-scoped) |
 
 **Own user pinned (quick "my events").** The logged-in user is permanently pinned at the
 top-left of the resource selection — one click away from a `user`-scope chip (`ownerEq:<me>`),
@@ -219,7 +219,7 @@ mode default; no client-side anchor computation).
 - [ ] **Phase 3 — grouping + component registry + pagination.** *(partially landed)*
   - [x] **Client-side** day/weekday sectioning (`graphql/weekday-grouping.ts` `groupByWeekday`,
         buckets Montag→Sonntag). The server has **no** grouping directive (`@group`/`@aggregate`
-        were removed from 074 on 2026-06-21 → [PRD 079](079-graphql-grouped-aggregates.md); the
+        were removed from 074 on 2026-06-21 → [PRD 079](done/079-graphql-grouped-aggregates.md); the
         render directives are `@column`/`@hidden`/`@join`/`@flatten` only), so day-grouping is a
         pure SPA renderer concern.
   - [x] Sort-on-header-click (Material `matSort`; disabled in grouped mode).
@@ -244,7 +244,7 @@ mode default; no client-side anchor computation).
   (The *template*-authoring UI is a different thing and is done — 097 Phase 4,
   `static/template-editor/`, the presentation layer's own static page.)
 - [x] **Phase 5 — query lifecycle: abort superseded reads, coalesce click bursts.** *(2026-08-12,
-      [PRD 106](106-query-request-lifecycle.md) Phase 1)* Rapid date-navigation used to fire one
+      [PRD 106](done/106-query-request-lifecycle.md) Phase 1)* Rapid date-navigation used to fire one
       un-cancelled POST per click; the monotonic `reqToken` guard discarded stale *responses* but
       let every stale *request* run to completion server-side.
   - [x] The query effect feeds a `Subject` piped through
@@ -255,8 +255,8 @@ mode default; no client-side anchor computation).
   - [x] `reqToken` and both `token !== this.reqToken` checks **deleted** — `switchMap` subsumes
         them, so the change is net-negative in lines.
   - [x] **Reads only.** `GraphqlService.mutate()` keeps its own independent subscriptions;
-        nothing throttles or cancels a write ([106 D1](106-query-request-lifecycle.md#decisions-locked)).
-  - **Convention** ([106 D2](106-query-request-lifecycle.md#decisions-locked)): no central
+        nothing throttles or cancels a write ([106 D1](done/106-query-request-lifecycle.md#decisions-locked)).
+  - **Convention** ([106 D2](done/106-query-request-lifecycle.md#decisions-locked)): no central
         cancellation registry in `graphql.service.ts` — a repeatable user-driven trigger gets its
         own `Subject` + `switchMap` at the call site, as `event-sheet.component.ts:233,256`
         already does. Id-keyed one-shot loads need nothing.

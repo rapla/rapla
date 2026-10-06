@@ -37,8 +37,8 @@ references — pasting one into your IDE jumps to the right place.
 | [tableview-and-graphql-views.md](tableview-and-graphql-views.md) | Legacy Swing TableView config (views, columns, `defaultValue` annotations, the dhbw-configured Termine table) as the capability benchmark for the GraphQL-native view system ([PRD 074](../prd/074-graphql-declarative-views.md)) — proves the new path reproduces the existing tables |
 | [spa-selection-and-actions.md](spa-selection-and-actions.md) | Row/item selection in the SPA (Swing/Excel semantics, keyboard map, touch selection mode) and how a multi-row selection feeds the row-action/command system (bulk Löschen, subset-wins gating, best-effort undo) — PRDs [094](../prd/094-spa-main-view-actions-and-popups.md)/099 |
 | [legacy-urls.md](legacy-urls.md) | The `/rapla/` prefix after the context-root move (server routes kept it literally, client URL generators must emit it themselves) + the `UrlEncryptor` salt-in-return-value wire format — read before touching published calendar/iCal URL generation |
-| [calendar-rendering.md](calendar-rendering.md) | Block-based calendar rendering rules extracted from Swing + HTML export (shared rapla-core strategy machinery): color resolution + always-black text, the lane/slot pipeline (`GroupAllocatablesStrategy` over SELECTED resources, fixed vs compact), rows-per-hour scale/worktime, FLOW/BLOCK selection — ground truth for the SPA month/week grids (PRDs [095](../prd/095-month-grid-render-mode.md)/[077](../prd/077-calendar-model-graphql.md)/[100](../prd/100-spa-block-renderer-unification.md)) |
-| [exchange-sync.md](exchange-sync.md) | The server-side Exchange/EWS connector plugin: poll/sweep cycles, watermark locking, rapla-marking via extended properties, mailbox-to-person mapping, own-vs-foreign item rules — derived from a 2026-09-09 production incident ([PRD 114](../prd/114-exchange-sync-per-mailbox-lock.md)/[070](../prd/070-restore-exchange-connector-wiring.md)) |
+| [calendar-rendering.md](calendar-rendering.md) | Block-based calendar rendering rules extracted from Swing + HTML export (shared rapla-core strategy machinery): color resolution + always-black text, the lane/slot pipeline (`GroupAllocatablesStrategy` over SELECTED resources, fixed vs compact), rows-per-hour scale/worktime, FLOW/BLOCK selection — ground truth for the SPA month/week grids (PRDs [095](../prd/done/095-month-grid-render-mode.md)/[077](../prd/077-calendar-model-graphql.md)/[100](../prd/100-spa-block-renderer-unification.md)) |
+| [exchange-sync.md](exchange-sync.md) | The server-side Exchange/EWS connector plugin: poll/sweep cycles, watermark locking, rapla-marking via extended properties, mailbox-to-person mapping, own-vs-foreign item rules — derived from a 2026-09-09 production incident ([PRD 114](../prd/114-exchange-sync-per-mailbox-lock.md)/[070](../prd/done/070-restore-exchange-connector-wiring.md)) |
 
 ## What lives where (quick lookup)
 
@@ -74,7 +74,7 @@ explanation is worth more than a deleted page.
 
 ## Drafted
 
-[PRD 022](../prd/022-architecture-documentation.md) captures the rationale and scope of this doc set. It will
+[PRD 022](../prd/done/022-architecture-documentation.md) captures the rationale and scope of this doc set. It will
 move to `docs/prd/done/` once the eight pages are stable.
 
 ## Page headers

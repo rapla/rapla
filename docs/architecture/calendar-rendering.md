@@ -3,7 +3,7 @@
 Rules extracted from the legacy calendar renderers (Swing client + server HTML
 export pages), verified against source 2026-07-08. These are the ground truth for
 the SPA's block-based render modes (month/week grids and future day/program) —
-[PRD 100](../prd/100-spa-block-renderer-unification.md) tracks the SPA-side unification; [PRD 095](../prd/095-month-grid-render-mode.md) shipped the month slice, the week
+[PRD 100](../prd/100-spa-block-renderer-unification.md) tracks the SPA-side unification; [PRD 095](../prd/done/095-month-grid-render-mode.md) shipped the month slice, the week
 grid prototype landed 2026-07-08 ([PRD 077](../prd/077-calendar-model-graphql.md)).
 
 **The core design principle worth copying:** all block/lane/color logic lives ONCE
@@ -24,12 +24,12 @@ every grid component, with the server keeping color/§12 authority.
   `BlockColors.resolve`, rapla-core `plugin/calendarview/`): the reservation's own
   color annotation wins; otherwise the first color-bearing allocatable's color.
   The SPA gets the *effective* color as the §12-gated `AppointmentBlock.color`
-  GraphQL field ([PRD 095](../prd/095-month-grid-render-mode.md) D2/D3 — unreadable contributor ⇒ color nulls, block
+  GraphQL field ([PRD 095](../prd/done/095-month-grid-render-mode.md) D2/D3 — unreadable contributor ⇒ color nulls, block
   stays); clients never re-derive colors.
 - **Text on blocks is ALWAYS black**: `SwingRaplaBlock.FOREGROUND_COLOR =
   Color.black` (`SwingRaplaBlock.java:111`). There is no luminance-based flip —
   deployments choose block colors that read with black text, and every renderer
-  (Swing, HTML export, SPA) must agree. [PRD 100](../prd/100-spa-block-renderer-unification.md) D1; resolves [PRD 095](../prd/095-month-grid-render-mode.md) OQ2.
+  (Swing, HTML export, SPA) must agree. [PRD 100](../prd/100-spa-block-renderer-unification.md) D1; resolves [PRD 095](../prd/done/095-month-grid-render-mode.md) OQ2.
 - Special block states tint the *background*, not the text: exceptions, conflicts,
   not-visible/anonymous blocks, request-state blocks (alpha-adjusted colors in
   `SwingRaplaBlock`).
@@ -109,7 +109,7 @@ group(blocks)                  # strategy-specific initial grouping
   compact mode without resource grouping. [PRD 100](../prd/100-spa-block-renderer-unification.md) Phase 2 ports the
   selected-resource grouping + fixed/compact modes + 5-min floor. The SPA month
   grid deliberately does NOT use per-day slots — it renders EventCalendar-style
-  spanning bars ([PRD 095](../prd/095-month-grid-render-mode.md), `month-chunks.ts`), a locked divergence from
+  spanning bars ([PRD 095](../prd/done/095-month-grid-render-mode.md), `month-chunks.ts`), a locked divergence from
   `HTMLMonthViewPage`.
 
 ## 3. Time scale — rows per hour, worktime, excluded days
@@ -149,7 +149,7 @@ group(blocks)                  # strategy-specific initial grouping
   follow the pointer (`m_wv.scrollTo`).
 - In Swing the selection PERSISTS after mouse-up; creation happens via the
   context menu on the selection (`fireSelectionPopup`). **The SPA deliberately
-  diverges** ([PRD 095](../prd/095-month-grid-render-mode.md) 3a, [PRD 100](../prd/100-spa-block-renderer-unification.md) D5): releasing the drag opens the event sheet
+  diverges** ([PRD 095](../prd/done/095-month-grid-render-mode.md) 3a, [PRD 100](../prd/100-spa-block-renderer-unification.md) D5): releasing the drag opens the event sheet
   immediately, prefilled with the interval; nothing persists until Speichern.
 - **Editing opens on DOUBLE-click, everywhere.** Swing blocks and the SPA table
   rows (`onRowDblClick`) edit on double-click; single click selects. Block chips
@@ -172,7 +172,7 @@ group(blocks)                  # strategy-specific initial grouping
 
 `DraggingHandler` (rapla-client, same package) moves/resizes existing blocks;
 `RaplaBlock.isMovable()` gates it (`canModify` + not an exception occurrence).
-The SPA plan ([PRD 095](../prd/095-month-grid-render-mode.md) Phase 3b, D6): drag gate = `canModify && appointmentCount
+The SPA plan ([PRD 095](../prd/done/095-month-grid-render-mode.md) Phase 3b, D6): drag gate = `canModify && appointmentCount
 === 1 && appointment.repeating == null` read from the builtin view's hidden
 fields — fail-closed when a custom view omits them; the server re-checks in
 `moveReservations`. Repeating/multi-appointment blocks are not draggable until

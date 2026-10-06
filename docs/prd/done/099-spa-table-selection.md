@@ -64,7 +64,7 @@ Primary reference per repo convention — interaction semantics to mirror:
   `DISCONTIGUOUS_TREE_SELECTION`, multi-selection flows into the same
   `addObjectMenu` → bulk actions on resources from the left rail.
 - **NOT this PRD:** `SelectionHandler` (calendarview) selects contiguous *time
-  ranges* — the SPA analog is the month-grid drag-create ([PRD 095](../095-month-grid-render-mode.md), shipped).
+  ranges* — the SPA analog is the month-grid drag-create ([PRD 095](095-month-grid-render-mode.md), shipped).
 
 ## SPA state today
 

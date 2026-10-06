@@ -33,7 +33,7 @@ wires the SPA to it. End state: the same seven warnings, from one implementation
 **What gets built:** a `ReservationChecker` SPI in rapla-core (pure: context in, warnings out), the
 standard checkers as server beans, a `ReservationCheckService` that folds them in a deterministic
 order, and one GraphQL field. The SPA calls it before `createReservation`/`updateReservation` and
-renders the codes through the existing i18n keys ([PRD 103](103-i18n-language-coverage.md)).
+renders the codes through the existing i18n keys ([PRD 103](done/103-i18n-language-coverage.md)).
 
 **Where each check can run** — this is what shaped D1/D3:
 

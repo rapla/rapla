@@ -1,6 +1,6 @@
 # 032 — Angular calendar view + UI component library
 
-**Status:** done — both decisions locked (Material 2026-05-12; calendar 2026-07-07: **own implementation, no external calendar library** — see §Calendar view decision). The Phase-1 bake-off is cancelled (no library to bake off); calendar implementation ships via [PRD 095](../095-month-grid-render-mode.md) (month) and [PRD 077](../077-calendar-model-graphql.md) (week/resources).
+**Status:** done — both decisions locked (Material 2026-05-12; calendar 2026-07-07: **own implementation, no external calendar library** — see §Calendar view decision). The Phase-1 bake-off is cancelled (no library to bake off); calendar implementation ships via [PRD 095](095-month-grid-render-mode.md) (month) and [PRD 077](../077-calendar-model-graphql.md) (week/resources).
 
 ## Goal
 
@@ -8,7 +8,7 @@ Pick the UI stack for the Angular frontend from [PRD 026](../026-angular-fronten
 
 **Component library: Angular Material (decided 2026-05-12).** Rationale below in §Component library decision. This PRD no longer evaluates component libraries — only the calendar.
 
-**Calendar view library: none — own implementation (decided 2026-07-07).** The original bake-off premise ("view-only: no drag-edit, no resource axis") was superseded: multi-resource week + in-grid drag-edit ARE on the roadmap (PRD [077](../077-calendar-model-graphql.md)/[095](../095-month-grid-render-mode.md)), which collapses the finalist field — see §Calendar view decision.
+**Calendar view library: none — own implementation (decided 2026-07-07).** The original bake-off premise ("view-only: no drag-edit, no resource axis") was superseded: multi-resource week + in-grid drag-edit ARE on the roadmap (PRD [077](../077-calendar-model-graphql.md)/[095](095-month-grid-render-mode.md)), which collapses the finalist field — see §Calendar view decision.
 
 Constraint: **OSS license compatible with Rapla (AGPL / Apache 2.0)**. Commercial libs (Syncfusion, Bryntum, Mobiscroll, Kendo, DevExtreme, AG Grid Enterprise, FullCalendar Premium, Schedule-X Premium) are disqualified up front.
 
@@ -91,7 +91,7 @@ With drag-edit and resource view out of scope, several previously-screened libra
 ## Calendar view decision (2026-07-07): own implementation, references not runtime deps
 
 **Requirement change that forced the re-screen:** the SPA roadmap needs **multi-resource
-week views + in-grid drag-edit** ([PRD 077](../077-calendar-model-graphql.md); month grid first via [PRD 095](../095-month-grid-render-mode.md)) — both were on
+week views + in-grid drag-edit** ([PRD 077](../077-calendar-model-graphql.md); month grid first via [PRD 095](095-month-grid-render-mode.md)) — both were on
 this PRD's original "explicitly NOT required" list. Multi-resource views are exactly what
 the commercial vendors paywall: FullCalendar core (MIT) has no resource axis (Premium,
 proprietary — visible source is NOT copyable), Schedule-X resource scheduler is paid,
@@ -136,7 +136,7 @@ working grid, but bus-factor-1 with no fork insurance and a public-hooks ceiling
 (b) fork EventCalendar — Svelte build chain + untyped-JS maintenance, ruled out;
 (c) resurrect-or-port question for the *layout engine* (server-side `CalendarLayoutEngine`,
 deleted 2026-05-27 `f4e9c048`, recoverable from git — vs a TS port of `BestFitStrategy`)
-stays OPEN, owned by the week-grid work — the month grid ([PRD 095](../095-month-grid-render-mode.md)) needs no overlap layout.
+stays OPEN, owned by the week-grid work — the month grid ([PRD 095](095-month-grid-render-mode.md)) needs no overlap layout.
 
 ## Component library decision
 

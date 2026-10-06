@@ -12,7 +12,7 @@
 #   - file-backed storage in the user's %APPDATA%\rapla\ directory
 #   - random local port so multiple desktops on the same machine don't clash
 #
-# Cross-link: docs/prd/054-standalone-windows-installer.md
+# Cross-link: docs/prd/wont-fix/054-standalone-windows-installer.md
 
 server:
   # Pick a free port at runtime. The Tauri launcher reads the actual port

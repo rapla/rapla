@@ -294,7 +294,7 @@ The chosen `DialogAction` (`:506`) drives `AppointmentResize.change()`
 #### SPA move/resize — implemented ([PRD 101](../prd/101-transpose-anchors-move-copy-paste.md) Phase 5, 2026-07-09)
 
 The verb family and typed targets are designed in **[PRD 101](../prd/101-transpose-anchors-move-copy-paste.md)** (which supersedes
-the earlier [PRD 056](../prd/056-graphql-events-write-api.md) `moveAppointment(…, dateShift, scope)` sketch). The transpose
+the earlier [PRD 056](../prd/done/056-graphql-events-write-api.md) `moveAppointment(…, dateShift, scope)` sketch). The transpose
 math and the EVENT/SERIE/SINGLE cascade live **server-side** ([PRD 101](../prd/101-transpose-anchors-move-copy-paste.md) D1) — the
 SPA never rebuilds an `updateReservation` payload for a scoped move; its only job
 is the dialog + the compensating-undo command.

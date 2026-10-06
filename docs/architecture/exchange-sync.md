@@ -5,7 +5,7 @@ appointments into the Outlook calendars of persons, using one Exchange *sync acc
 location that has the persons' calendars shared to it. Everything below was established or
 verified on a production system on 2026-09-09 — see
 [PRD 115](../prd/done/115-exchange-sync-hotfix-2026-09.md) for the analysis and the hotfixes,
-[PRD 114](../prd/114-exchange-sync-per-mailbox-lock.md) for the open phases, and [PRD 070](../prd/070-restore-exchange-connector-wiring.md) for the
+[PRD 114](../prd/114-exchange-sync-per-mailbox-lock.md) for the open phases, and [PRD 070](../prd/done/070-restore-exchange-connector-wiring.md) for the
 Spring wiring.
 
 ## Moving parts

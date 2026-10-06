@@ -1,6 +1,6 @@
 # PRD 028 — Angular power search (single-calendar shell)
 
-**Status:** done — 2026-09-13 — server substrate (`MatchKind`, `searchText`, `hasConflicts`) shipped 2026-05-29; the SPA search UI was superseded by [PRD 081](../081-graphql-omnibox-multisearch.md) (omnibox) + [PRD 089](../089-server-side-recents-favorites.md) (recents/favorites). Previous status: in-progress — GraphQL substrate Phase 1 SHIPPED 2026-05-29 (see §"GraphQL substrate augmentations"). SPA-side consumption (Apollo client, codegen, calendar shell, tier composition, hasConflicts badge UX) NOT STARTED — it's a multi-day delivery slot, schedule when ready.
+**Status:** done — 2026-09-13 — server substrate (`MatchKind`, `searchText`, `hasConflicts`) shipped 2026-05-29; the SPA search UI was superseded by [PRD 081](../081-graphql-omnibox-multisearch.md) (omnibox) + [PRD 089](089-server-side-recents-favorites.md) (recents/favorites). Previous status: in-progress — GraphQL substrate Phase 1 SHIPPED 2026-05-29 (see §"GraphQL substrate augmentations"). SPA-side consumption (Apollo client, codegen, calendar shell, tier composition, hasConflicts badge UX) NOT STARTED — it's a multi-day delivery slot, schedule when ready.
 **Author:** Christopher Kohlhaas (with AI assistance)
 **Created:** 2026-05-11
 
@@ -223,7 +223,7 @@ What ships (the unchanged design — what the resolvers expose):
    Tier composition stays client-side; per-call internal order is
    server-authoritative.
 
-4. **`Reservation.hasConflicts: Boolean!`** — picks up the [PRD 064](../064-graphql-conflicts-read-api.md)
+4. **`Reservation.hasConflicts: Boolean!`** — picks up the [PRD 064](064-graphql-conflicts-read-api.md)
    deferred field. Power search needs the badge; the calendar view
    may later too. Implementation: `LightDataFetcher` reading the
    per-query `RequestContextInstrumentation` cache + per-row
@@ -264,10 +264,10 @@ What ships (the unchanged design — what the resolvers expose):
 Phase 1 requirements:
 | Augmentation | Requires |
 |---|---|
-| `searchText` + `matchKind` on `allocatables` / `reservations` | None (additive on PRDs [055](../055-graphql-events-read-api.md) + [059](059-graphql-typed-where-predicates.md)) |
+| `searchText` + `matchKind` on `allocatables` / `reservations` | None (additive on PRDs [055](055-graphql-events-read-api.md) + [059](059-graphql-typed-where-predicates.md)) |
 | `MatchKind` enum | None |
 | Server-side row ranking | None (resolver-internal) |
-| `Reservation.hasConflicts` | [PRD 064](../064-graphql-conflicts-read-api.md) v1's `operator.getConflicts(r)` (shipped) |
+| `Reservation.hasConflicts` | [PRD 064](064-graphql-conflicts-read-api.md) v1's `operator.getConflicts(r)` (shipped) |
 
 Phase 1 ships everything power search needs **for the dominant case**
 ("find me the room/person/booking named ..."). It deliberately doesn't

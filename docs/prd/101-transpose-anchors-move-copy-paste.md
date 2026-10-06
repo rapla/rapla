@@ -9,13 +9,13 @@ EVENT/SERIE/SINGLE scope dialog. Phase 6+ (copy verbs, SPA copy/paste,
 This PRD is the durable record of a long design dialog (2026-07-09) plus a six-track
 research sweep (5-agent workflow over the Swing codebase + 1 multi-reservation deep-dive
 + external API survey). Read this before touching move/copy/paste/template mutations —
-it supersedes the interim `moveAppointment` sketch that briefly lived in [PRD 056](056-graphql-events-write-api.md).
+it supersedes the interim `moveAppointment` sketch that briefly lived in [PRD 056](done/056-graphql-events-write-api.md).
 
-**Related:** [PRD 056](056-graphql-events-write-api.md) (reservation write surface — the verbs land there; its
+**Related:** [PRD 056](done/056-graphql-events-write-api.md) (reservation write surface — the verbs land there; its
 `moveReservations`/`copyReservations(dateShift: Duration)` are the migration targets),
 [PRD 094](094-spa-main-view-actions-and-popups.md) (SPA calendar drag/resize consumer — Phase 4 + D5: scope logic stays server-side),
 [PRD 091](091-spa-reservation-edit-and-availability.md) (recurrence editor — SINGLE-split semantics), PRD 099 (table selection — the SPA
-multi-select that feeds bulk verbs), [PRD 095](095-month-grid-render-mode.md) (month grid — the day-granular drag surface),
+multi-select that feeds bulk verbs), [PRD 095](done/095-month-grid-render-mode.md) (month grid — the day-granular drag surface),
 `docs/architecture/reservation-edit.md` (Swing drag/resize/delete flows).
 
 ## Abstract
@@ -137,7 +137,7 @@ primitive subsumes it; a server port needs exactly one implementation.
   years/months.
 - Note: appointments store zone-less `LocalDateTime` → `plus(Duration)` is already
   wall-clock-safe; DST was a red herring in the design dialog.
-- `checkIdIntegrity` ([PRD 056](056-graphql-events-write-api.md) §9) resolves appointment ids globally → `reservationId`
+- `checkIdIntegrity` ([PRD 056](done/056-graphql-events-write-api.md) §9) resolves appointment ids globally → `reservationId`
   args are redundant on appointment-addressed verbs.
 
 ### 6. External API survey (Google / MS Graph / RFC 5545 / FullCalendar)
@@ -275,7 +275,7 @@ repeating).
 
 ### Ids, retry, response contract
 
-- **Copy family mints ids server-side** ([PRD 056](056-graphql-events-write-api.md) §9 carve-out: "server-initiated
+- **Copy family mints ids server-side** ([PRD 056](done/056-graphql-events-write-api.md) §9 carve-out: "server-initiated
   creates keep server-generated ids" — the client sends no entity content). Client ids
   on copy/instantiate were also a staleness race (template event count). NOT idempotent:
   a retried copy creates a second copy — documented on the verbs; visible + cheap to fix,
@@ -283,7 +283,7 @@ repeating).
 - **Responses must return what was created** (never make a consumer diff): copy verbs
   return the clones with ids; `splitOccurrence`/`exchangeAllocatable`-SINGLE responses
   must expose the new appointment id.
-- Error codes (extends the [PRD 056](056-graphql-events-write-api.md) taxonomy): `OCCURRENCE_NOT_FOUND` (stale/wrong
+- Error codes (extends the [PRD 056](done/056-graphql-events-write-api.md) taxonomy): `OCCURRENCE_NOT_FOUND` (stale/wrong
   `occurrence`), plus existing `CONCURRENT_MODIFICATION`, `REFERENCE_NOT_FOUND` (§12
   uniform), `PERMISSION_DENIED`; `INVALID_SHIFT` semantics = OQ7 (open).
 
@@ -366,7 +366,7 @@ the GraphQL work; landed alongside it.
 ## Open questions (remaining)
 
 - **OQ7 — `INVALID_SHIFT` semantics**: define exactly — a move emptying an absolute-end
-  series (all occurrences past `until`)? `until < start`? Currently [PRD 056](056-graphql-events-write-api.md) prose,
+  series (all occurrences past `until`)? `until < start`? Currently [PRD 056](done/056-graphql-events-write-api.md) prose,
   unimplemented. Resolve when the move verb lands (Phase 2).
 - **OQ6 — orphaned-exception display**: D2 makes orphans *meaningful* (dormant holiday
   facts), so GC would be a bug. At most a UI "inactive exceptions" grouping — a client
@@ -426,7 +426,7 @@ move/resize now).
 ### Phase 6+ (deferred) — copy verbs, SPA copy/paste, `instantiateTemplate`,
       `exchangeAllocatable` (month scoped-drag landed early in Phase 5)
 
-Then: rewrite [PRD 056](056-graphql-events-write-api.md) verb notes to the final shape (drop the superseded sketch),
+Then: rewrite [PRD 056](done/056-graphql-events-write-api.md) verb notes to the final shape (drop the superseded sketch),
 update [PRD 094](094-spa-main-view-actions-and-popups.md) Phase 4 task list, distill §1–§7 into `docs/architecture/reservation-edit.md`.
 
 ## Tests

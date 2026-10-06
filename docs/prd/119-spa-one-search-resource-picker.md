@@ -1,7 +1,7 @@
 # PRD 119 — SPA: one search field, resource picker with type chips and group tree
 
 **Status:** in progress — 2026-09-15, updated 2026-10-05 (Phases 1–3b and 2b committed, Phase 4 waits for a group source). Direction decided by the user on 2026-09-15 after two rounds of clickable prototypes; data access revised the same day (user: load one lean resource list, not the full resource as Swing does; change notification later). Phases 1–3 implemented and committed on master in `d0395b700` (2026-09-15, rapla-impl); Phase 3b (D12 display caps, D5 row-order fix, two missing tests) committed in `2b14f6e6d`; Phase 4 waits for a group source. D13 (2026-10-05, user) supersedes D3: picker field back, top field hands its term over by click — Phase 2b committed in `c72cdcff1` (2026-10-05).
-**Related:** [PRD 081](081-graphql-omnibox-multisearch.md) (omnibox multisearch, "find / step / filter" split), [PRD 089](089-server-side-recents-favorites.md) (server-side recents + favorites), [PRD 099](099-spa-table-selection.md) (`TableSelection` click/Ctrl/Shift semantics), [PRD 104](104-spa-template-picker.md) (the "Neu" picker: flat list + recents instead of a menu tree), [PRD 116](done/116-graphql-allocatable-to-resource-rename.md) (`Resource` umbrella, `ResourceKind { RESOURCE, PERSON }`), [PRD 077](077-calendar-model-graphql.md) (groups as `ClassificationFilter[]`), [PRD 028](028-angular-power-search.md) (`searchText` / `matchKind`)
+**Related:** [PRD 081](081-graphql-omnibox-multisearch.md) (omnibox multisearch, "find / step / filter" split), [PRD 089](done/089-server-side-recents-favorites.md) (server-side recents + favorites), [PRD 099](done/099-spa-table-selection.md) (`TableSelection` click/Ctrl/Shift semantics), [PRD 104](104-spa-template-picker.md) (the "Neu" picker: flat list + recents instead of a menu tree), [PRD 116](done/116-graphql-allocatable-to-resource-rename.md) (`Resource` umbrella, `ResourceKind { RESOURCE, PERSON }`), [PRD 077](077-calendar-model-graphql.md) (groups as `ClassificationFilter[]`), [PRD 028](done/028-angular-power-search.md) (`searchText` / `matchKind`)
 
 ## Abstract
 
@@ -27,14 +27,14 @@ The SPA's resource picker opens empty: the left list only shows recents, favorit
 **D2 — Type chips show a simple group tree of its own (user ruling 2026-09-15, relayed by the coordinator: "Parität zum Swing-Baum overruled").**
 - **Deliberate first cut:** the grouping will change again (user, 2026-09-15: "wir werden die Gruppierung eh nochmal ändern — ist jetzt die erste Stufe"). The API is shaped so that change needs no break (`groupPaths`, S1).
 - **Rule:** under a type chip the list is an expandable tree with one level per categorization value (D11). Every node shows its member count and offers "alle wählen" (select all resources below it). Resources without a categorization value sit directly under the type.
-- **Not in scope:** the Swing `TreeFactoryImpl` rules are deliberately **not** mirrored. belongsTo / package nesting is delivered by [PRD 120](120-resource-hierarchy-parents-children.md) (`Resource.parents`, D7/D8 there); no parity test.
+- **Not in scope:** the Swing `TreeFactoryImpl` rules are deliberately **not** mirrored. belongsTo / package nesting is delivered by [PRD 120](done/120-resource-hierarchy-parents-children.md) (`Resource.parents`, D7/D8 there); no parity test.
 - **Who computes what:** the **server computes** the group values per resource (`groupPaths`, D8); the SPA only nests by that field and never interprets deployment-specific attributes (PRD 081 principle).
 
 **D8 — One lean resource list, filtered in the browser (user, 2026-09-15).** On start the SPA loads all readable resources once, with only the fields the picker needs: `id`, `kind`, `name`, `classification { typeKey type { name } }` (the type name labels the chip), `groupPaths` (`belongsTo` later, D2). It never loads the full resource (classification values, permissions) like the Swing client. Typing, chip counts, "first 20 A–Z", favorites/recents ordering and the tree are then computed in the browser, **with no server call per keystroke**. How the list learns about added, changed or deleted resources is solved later (OQ 6); until then the list reloads when the SPA starts.
 
 **D9 — Events are found by everyone who may read them (user, 2026-09-15).** The event bucket of the search checks `canRead` instead of `canModify`, so a student finds the exam in their course calendar. Opening an event the caller can't edit opens the sheet read-only (`EventSheetDialogData.readOnly` follows `canModify`). A §12 leak test covers the change (S3).
 
-**D10 — No *Benutzer* chip (user, 2026-09-15).** Users (rapla accounts, owner scope) appear only as hits under *Alle* while typing; the pinned "meine" entry stays for the caller's own events. **Overruled 2026-10-01 by [PRD 123 D9](123-spa-unified-resource-picker.md#decisions-locked-user-2026-09-30): a *Benutzer* chip (degrading to *meine* for a one-account user), the pinned card goes; user hits while typing stay.**
+**D10 — No *Benutzer* chip (user, 2026-09-15).** Users (rapla accounts, owner scope) appear only as hits under *Alle* while typing; the pinned "meine" entry stays for the caller's own events. **Overruled 2026-10-01 by [PRD 123 D9](done/123-spa-unified-resource-picker.md#decisions-locked-user-2026-09-30): a *Benutzer* chip (degrading to *meine* for a one-account user), the pinned card goes; user hits while typing stay.**
 
 **D11 — Flat tree levels first (user, 2026-09-15).** A categorization value is one tree level carrying its name. Nesting by a category's parent chain (faculty ▸ programme ▸ course, as in the prototype) is a later extension; each entry of `groupPaths` is a path from the start, so deeper levels only make the paths longer without breaking the API.
 
@@ -72,7 +72,7 @@ Resources stay part of the top search — the user rejected moving them out — 
 
 **D6 — Groups replace the "Gruppe" tab.** Hierarchy groups live in the tree (D2). Self-defined filter groups (PRD 077) appear in an "Eigene Gruppen" section under their type chip once a server source for them exists. This supersedes the interim coordinator ruling of the same day ("a loaded group becomes its own chip"), which the user replaced after the tree prototype.
 
-**D7 — ~~The event sheet's add mode keeps its own field.~~ Overturned 2026-09-30 by [PRD 123](123-spa-unified-resource-picker.md) D1: the sheet renders the same picker in assign mode.**
+**D7 — ~~The event sheet's add mode keeps its own field.~~ Overturned 2026-09-30 by [PRD 123](done/123-spa-unified-resource-picker.md) D1: the sheet renders the same picker in assign mode.**
 
 ### Behaviour inventory for removed code (AGENTS.md §11)
 
@@ -93,7 +93,7 @@ Resources stay part of the top search — the user rejected moving them out — 
 The existing `resources(filter:)` query carries the list; GraphQL resolves only the selected fields. Two new fields on `Resource`:
 
 - **S1 — `groupPaths: [[String!]!]!`.** One path per value of the type's attribute annotated `categorization=true` (`AttributeAnnotations.KEY_CATEGORIZATION`). Each path has one level today (the value's name, D11); a multi-valued attribute yields sibling paths, so the resource appears under each value. Empty when the type has no such attribute or the resource has no value. Deeper levels later only lengthen the paths — no API break (D2 first cut). **§12:** when the categorization attribute references another resource, a value the caller cannot read is left out — its name must not surface.
-- **S2 — `belongsTo: ID` (later, D2 — not part of the first delivery). Superseded by [PRD 120](120-resource-hierarchy-parents-children.md): `Resource.parents` / `children` replace `belongsTo` / `packageIds` (removed 2026-10-03).** The parent resource via the type's belongsTo attribute. **§12:** `null` when the caller cannot read the parent — neither the id nor the name of an unreadable parent may surface. The packages relation (a resource contains others) follows the same pattern if needed (`packageIds: [ID!]`, filtered to readable ids).
+- **S2 — `belongsTo: ID` (later, D2 — not part of the first delivery). Superseded by [PRD 120](done/120-resource-hierarchy-parents-children.md): `Resource.parents` / `children` replace `belongsTo` / `packageIds` (removed 2026-10-03).** The parent resource via the type's belongsTo attribute. **§12:** `null` when the caller cannot read the parent — neither the id nor the name of an unreadable parent may surface. The packages relation (a resource contains others) follows the same pattern if needed (`packageIds: [ID!]`, filtered to readable ids).
 - **Cost.** The query is one pass over the type buckets with an O(1) readable-id check per resource (per-user cache, `rapla.readmodel.authoritative`, default on) and cached names (`ClassificationImpl.TextCache`). The payload is about 100 bytes per resource: roughly 200 KB for 2,000 resources, 2 MB for 20,000. These are estimates from the code, not measurements; no perf test for now (user, 2026-09-15).
 - **S3 — event search gate (D9).** `SearchGraphQLController.searchEvents` checks `canRead` instead of `canModify`. The query stays `search(kinds: [EVENT])`: a windowless name scan over all reservations per request, with the permission check on name matches only. More callers now get hits, so more permission checks run per request.
 - **Not needed any more:** a separate tree query, sort-before-`limit` in `resources`, a count query — all computed in the browser from the list.
@@ -123,10 +123,10 @@ The existing `resources(filter:)` query carries the list; GraphQL resolves only 
 
 ### Later
 - Keeping the loaded list current while the SPA is open (OQ 6).
-- Deeper category levels (D11). belongsTo nesting (S2) → [PRD 120](120-resource-hierarchy-parents-children.md).
+- Deeper category levels (D11). belongsTo nesting (S2) → [PRD 120](done/120-resource-hierarchy-parents-children.md).
 
 ### Out of scope
-- The event sheet's add mode (D7) — now [PRD 123](123-spa-unified-resource-picker.md).
+- The event sheet's add mode (D7) — now [PRD 123](done/123-spa-unified-resource-picker.md).
 - Event search beyond event names, and occurrence hits (PRD 081 later phases).
 - A server source for self-defined groups (PRD 077); D6 only reserves the section.
 

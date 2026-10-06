@@ -1,12 +1,12 @@
 # PRD 030 — Server-side view rendering (the complete picture)
 
-**Status:** in-progress (done except small) — 2026-09-14 — Phases 1–5 and 7–8 shipped; the calendar-layout engine was deleted (see the correction below); open: Phase 9, removing the three async fallbacks in `CalendarModelImpl`. History: Phases 1–6 landed 2026-05-12 with 84 new tests; Phase 6 deletes the back-edge as an arch-test invariant.
+**Status:** reopened 2026-10-06 (closed in the PRD triage by mistake; Phase 9 async fallbacks in `CalendarModelImpl` + their client callers and the Phase 8 `CSVExportMenu` switch are still open). Previously: in-progress (done except small) — 2026-09-14 — Phases 1–5 and 7–8 shipped; the calendar-layout engine was deleted (see the correction below); open: Phase 9, removing the three async fallbacks in `CalendarModelImpl`. History: Phases 1–6 landed 2026-05-12 with 84 new tests; Phase 6 deletes the back-edge as an arch-test invariant.
 
 > **Correction 2026-07-07:** the PRD-024-Phase-3 calendar-layout read-side core
 > (`CalendarLayoutEngine`, `RenderedBlock`, `CalendarPage`, `CalendarViewService`,
 > `BlockDecorator`/`RaplaBlockDecorator` + tests) was **deleted 2026-05-27** in commit
 > `f4e9c048` — it never gained a consumer ("used by nobody yet" → removed). Only
-> `BlockColors` survives (`rapla-core/plugin/calendarview/`), now consumed by [PRD 095](095-month-grid-render-mode.md)'s
+> `BlockColors` survives (`rapla-core/plugin/calendarview/`), now consumed by [PRD 095](done/095-month-grid-render-mode.md)'s
 > `AppointmentBlock.color` GraphQL field. Whether the SPA week grid (PRD [077](077-calendar-model-graphql.md)/[032](done/032-angular-ui-library-evaluation.md))
 > **resurrects the engine from git** or **ports `BestFitStrategy` & co. to TS** for
 > client-side layout is an open question owned by that work — see [PRD 032](done/032-angular-ui-library-evaluation.md) §Calendar
@@ -19,11 +19,11 @@ Phases:
 - Phase 2: `TableViewService` (`/table/reservations`, `/table/appointments`) + `TableViewController` + 9 contract + 8 MockMvc tests
 - Phase 3: `/table/config` + `/table/columns/catalog` + 5 contract + 7 MockMvc tests
 - Phase 4: `BlockColors` helper (12 tier-1) + `BlockDecorator` interface + `RaplaBlockDecorator` + engine overload + `RaplaBlock.getColorsAsHex()` refactored to delegate + `CalendarViewController` wired to ship colors
-- Phase 5: `CsvSerializer` (12 tier-1) + `/export/csv` route on `ExportController` + 6 MockMvc tests. ~~`ExportService` interface~~ **removed 2026-05-21 ([PRD 049](049-controller-interface-deduplication.md))** — zero Java consumers; `ExportController.csvDownload(...)` is the single source of truth (its `ResponseEntity<byte[]>` with `Content-Disposition` was always richer than the interface's `String` return).
+- Phase 5: `CsvSerializer` (12 tier-1) + `/export/csv` route on `ExportController` + 6 MockMvc tests. ~~`ExportService` interface~~ **removed 2026-05-21 ([PRD 049](done/049-controller-interface-deduplication.md))** — zero Java consumers; `ExportController.csvDownload(...)` is the single source of truth (its `ResponseEntity<byte[]>` with `Content-Disposition` was always richer than the interface's `String` return).
 - Phase 6: `LocalCache.cachedReservations` documented as Swing-legacy + `NoRaplaClientImportInServerTest` arch-test pinning the no-back-edge state + three stale `javax.swing.table.TableColumn` imports cleaned out of the table-view-server pages
 **Author:** Christopher Kohlhaas (with AI assistance)
 **Created:** 2026-05-12
-**Related:** [PRD 020](020-server-driven-admin-panels.md) (server-driven admin panels — already-done piece), [PRD 024](wont-fix/024-server-side-edit-services.md) (server-side edit services, calendar layout done), [PRD 026](026-angular-frontend.md) (Angular frontend, primary consumer), [PRD 028](done/028-angular-power-search.md) (Angular power search), PRD 021 wont-fix (resource stubs, historical motivation), PRD 005 (multi-module split, D3 back-edge), PRD 008 (server-sync update events), [PRD 009](009-server-bulk-storage-rest-api.md) (bulk storage REST, other thin-client foundation)
+**Related:** [PRD 020](020-server-driven-admin-panels.md) (server-driven admin panels — already-done piece), [PRD 024](wont-fix/024-server-side-edit-services.md) (server-side edit services, calendar layout done), [PRD 026](026-angular-frontend.md) (Angular frontend, primary consumer), [PRD 028](done/028-angular-power-search.md) (Angular power search), PRD 021 wont-fix (resource stubs, historical motivation), PRD 005 (multi-module split, D3 back-edge), PRD 008 (server-sync update events), [PRD 009](done/009-server-bulk-storage-rest-api.md) (bulk storage REST, other thin-client foundation)
 
 ## The big idea
 
@@ -44,11 +44,11 @@ This is an **architecture-of-information project**. Done well:
 | Surface | Status | Where |
 |---|---|---|
 | **Admin panel rendering** | **Done** — [PRD 020](020-server-driven-admin-panels.md) | Server publishes structured panel definitions; client renders. 5/11 vanilla + 4 dhbw panels migrated. |
-| **External-event-import wizard** | **Done** — [PRD 012](012-dhbwrapla-client-migration.md) | Server-driven metadata + render. Pattern for plugin-contributed views. |
+| **External-event-import wizard** | **Done** — [PRD 012](done/012-dhbwrapla-client-migration.md) | Server-driven metadata + render. Pattern for plugin-contributed views. |
 | **Calendar layout (read-side core)** | **Done** — [PRD 024](wont-fix/024-server-side-edit-services.md) Phase 3, 2026-05-11 | `CalendarLayoutEngine` (rapla-core) + `CalendarViewController` + 16 tier-1 + 7 MockMvc tests. Returns `CalendarPage` with positioned `RenderedBlock`s. Used by nobody yet. |
 | **HTML export** | **Partial — server-side already** | Autoexport plugin server-renders HTML; re-implements parts of `RaplaBuilder`. Phase 5 harmonises. |
 | **iCal export** | **Done — server-side already** | `org.rapla.plugin.export2ical`. No change. |
-| **Bulk allocatable / reservation fetch** | **Done** — [PRD 009](009-server-bulk-storage-rest-api.md) | Thin-client foundation. Serves full entities — this PRD adds projected-view endpoints alongside. |
+| **Bulk allocatable / reservation fetch** | **Done** — [PRD 009](done/009-server-bulk-storage-rest-api.md) | Thin-client foundation. Serves full entities — this PRD adds projected-view endpoints alongside. |
 
 ## What's still on the client
 
@@ -193,7 +193,7 @@ Refactor `RaplaBlock.getColorsAsHex()` to delegate to new `BlockColors.resolve(R
 
 Natural completion of [PRD 023](023-presenter-view-extraction.md) Phase 4.
 
-### Phase 5 — CSV export (≈3 days, landed 2026-05-12; `ExportService` interface deleted 2026-05-21 per [PRD 049](049-controller-interface-deduplication.md))
+### Phase 5 — CSV export (≈3 days, landed 2026-05-12; `ExportService` interface deleted 2026-05-21 per [PRD 049](done/049-controller-interface-deduplication.md))
 
 - `/api/export/csv` GET → CSV with `Content-Disposition: attachment`.
 - Reuses `TableViewEngine.project(...)` + CSV serializer.
@@ -376,5 +376,5 @@ Reuse `PreferencesAdminControllerIntegrationTest` as MockMvc template — same S
 - **PRD 021 wont-fix** — client resource stubs. Motivation subsumed.
 - **PRD 005** — multi-module split. Phase 6 deletes D3 back-edge.
 - **PRD 008** — server-sync update events. Phase 2's cache-invalidation rides on this.
-- **[PRD 009](009-server-bulk-storage-rest-api.md)** — bulk storage REST. Edit-side companion.
+- **[PRD 009](done/009-server-bulk-storage-rest-api.md)** — bulk storage REST. Edit-side companion.
 - **[PRD 023](023-presenter-view-extraction.md)** — pure-Java carve-outs. Phase 4 (`BlockColors`) is natural completion of 023 P4.

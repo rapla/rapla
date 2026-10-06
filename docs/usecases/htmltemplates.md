@@ -287,7 +287,7 @@ Wochenraster eines Raums als publizierte HTML-Seite bzw. Aushang — genau das, 
 Die heute hand-codierten HTML-Export-Seiten (AbstractHTMLCalendarPage → HTMLWeekViewPage/HTMLMonthViewPage/HTMLCompactViewPage) werden hinter den §15-eingefrorenen Routen durch gespeicherte Templates ersetzt — der strategische Hauptzweck (097 Phase 6). Kurs/Studiengang abonniert seinen Plan per URL, ohne Login.
 
 - **Tier:** 2D-Raster · **Auth:** publiziert (anonym) · **mehrere Dokumente pro View:** ja
-- **Datenquelle:** appointmentBlocks + color (§12-gated, [PRD 095](../prd/095-month-grid-render-mode.md)) + matchedBy (Lane-Gruppierung, [PRD 100](../prd/100-spa-block-renderer-unification.md) Phase 5) → CalendarLayoutEngine ([PRD 030](../prd/030-server-side-view-rendering.md), resurrect in 097 Phase 5) emittiert das positionierte Modell; Auth-/Publish-Mechanik (AutoExportPlugin.HTML_EXPORT-Flag + URL-Encryption) wird unverändert geerbt
+- **Datenquelle:** appointmentBlocks + color (§12-gated, [PRD 095](../prd/done/095-month-grid-render-mode.md)) + matchedBy (Lane-Gruppierung, [PRD 100](../prd/100-spa-block-renderer-unification.md) Phase 5) → CalendarLayoutEngine ([PRD 030](../prd/030-server-side-view-rendering.md), resurrect in 097 Phase 5) emittiert das positionierte Modell; Auth-/Publish-Mechanik (AutoExportPlugin.HTML_EXPORT-Flag + URL-Encryption) wird unverändert geerbt
 - **Link-Navigation:** Block → Dozenten-/Raum-Dokument wäre der klassische Stundenplan-Drilldown (Stundenplan → Dozent → dessen Plan); heute haben die Export-Seiten keine Links — Mustache-Templates könnten sie erstmals admin-editierbar hinzufügen
 - **Uni-Beleg:** ein internes Infra-Dokument des Deployments — Rewrite-Regeln des Load Balancers für /rapla/calendar und /rapla/internal_calendar: die publizierten HTML-Kalender-Exporte sind in der Produktion des Deployments aktiv in Benutzung (UC-7 'Publish/export a calendar', set-and-forget)
 
@@ -352,9 +352,9 @@ Planer druckt eine Terminliste eines Zeitfensters, gruppiert nach Tag (oder Ress
 Campus-Admin erzeugt einen Auslastungsbericht: Stunden (wall-clock oder UE) pro Raum pro ISO-Woche/Monat über ein Semester, optional mit Raumgröße als Spalte ohne Client-Join. Als druckbares Dokument statt GraphiQL-Rohdaten.
 
 - **Tier:** gruppiert (1D) · **Auth:** Session · **mehrere Dokumente pro View:** ja
-- **Datenquelle:** appointmentBlockStats(filter, groupBy:[date/allocatables/expr], aggregate:[DURATION_MINUTES×SUM,…]) — [PRD 079](../prd/079-graphql-grouped-aggregates.md) implementiert (v1 2026-06-21) inkl. voller AllocatableFilter auf der Raum-Dimension; StatKey.entity ([PRD 080](../prd/done/080-typed-entity-stats.md)) macht Raumfelder wie AnzahlPlaetzeFest selektierbar
+- **Datenquelle:** appointmentBlockStats(filter, groupBy:[date/allocatables/expr], aggregate:[DURATION_MINUTES×SUM,…]) — [PRD 079](../prd/done/079-graphql-grouped-aggregates.md) implementiert (v1 2026-06-21) inkl. voller AllocatableFilter auf der Raum-Dimension; StatKey.entity ([PRD 080](../prd/done/080-typed-entity-stats.md)) macht Raumfelder wie AnzahlPlaetzeFest selektierbar
 - **Link-Navigation:** optional: Raum-Zeile → Raum-Wochenplan-Dokument
-- **Uni-Beleg:** [PRD 079](../prd/079-graphql-grouped-aggregates.md): 'Auslastung pro Raum, Standort <Standort>' via whereRaum.Gebaeude startsWith `<site-code>` — der Uni-Deployment-Fall war die motivierende Query; GraphQL-Playbook zeigt die Kapazitätspflege via AnzahlPlaetzeFest
+- **Uni-Beleg:** [PRD 079](../prd/done/079-graphql-grouped-aggregates.md): 'Auslastung pro Raum, Standort <Standort>' via whereRaum.Gebaeude startsWith `<site-code>` — der Uni-Deployment-Fall war die motivierende Query; GraphQL-Playbook zeigt die Kapazitätspflege via AnzahlPlaetzeFest
 
 ### Inventar-/Ressourcenverzeichnis (Räume je Gebäude, Plätze je Gebäude)
 
@@ -370,7 +370,7 @@ Admin druckt ein Ressourcenverzeichnis: Räume pro Gebäude gezählt, Sitzplatzs
 Planer druckt vor einer Planungsrunde die Überschneidungen einer Veranstaltung (beide Seiten, betroffene Ressource, Zeitfenster). §12: nur Konflikte, deren beide Seiten + Ressource lesbar sind.
 
 - **Tier:** flach · **Auth:** Session · **mehrere Dokumente pro View:** nein
-- **Datenquelle:** conflicts(reservationId: ID!) ([PRD 064](../prd/064-graphql-conflicts-read-api.md), im Schema) — per-Reservation; eine globale 'alle Konflikte im Fenster'-Query existiert NICHT (Lücke für eine echte Konflikt-Sammelliste); potentialConflicts nur für Draft-Preflight
+- **Datenquelle:** conflicts(reservationId: ID!) ([PRD 064](../prd/done/064-graphql-conflicts-read-api.md), im Schema) — per-Reservation; eine globale 'alle Konflikte im Fenster'-Query existiert NICHT (Lücke für eine echte Konflikt-Sammelliste); potentialConflicts nur für Draft-Preflight
 - **Link-Navigation:** Konfliktzeile → Terminlisten-/Detaildokument der Gegenseite (reservationId-Parameter)
 - **Uni-Beleg:** GraphQL-Playbook Use-Case 4b 'Kollidiert eine konkrete Buchung?' (2-Schritt: Reservierung per Name finden → conflicts) — inkl. §12-Hinweis, dass ein Nutzer an einem Standort Konflikte an einem anderen Standort nicht sieht
 

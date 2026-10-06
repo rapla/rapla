@@ -3,7 +3,7 @@
 **Status:** done (2026-06-21) — all audit findings shipped, mitigated, or reframed. H7 → [PRD 076](../076-scoped-api-keys-self-rotation.md)
 (scoped API keys). The soft-shell CSP enforce-flip that was deferred here (report-only; the
 critical `script-src` was already enforced) **shipped in [PRD 102](../102-browser-credential-hardening.md) Phase 1 (2026-07-10)** —
-`/app` is now enforced via `RaplaCspHeaderWriter`. The Phase-4 gate's CI-wiring is [PRD 034](../034-ci-baseline-workflow.md)'s scope.
+`/app` is now enforced via `RaplaCspHeaderWriter`. The Phase-4 gate's CI-wiring is [PRD 034](034-ci-baseline-workflow.md)'s scope.
 
 ## Goal
 
@@ -26,8 +26,8 @@ H4); CSP is the structural defense that breaks it even for unknown future sinks.
 ## Scope
 
 In: rapla server (Spring Security, page controllers, JWT decode) and the Angular SPA
-build config. Out: auth *flows* (PRDs [029](../029-swing-oauth-login.md)/031/[036](../036-external-idp-oauth-login.md)/[043](../043-api-keys-jwt-pat.md)/[050](../050-external-auth-user-lifecycle.md) own those); GraphQL
-read-scope (§12 / [PRD 069](../069-graphql-resource-access-read-api.md)); operational follow-ups (ops); deployment-specific auth
+build config. Out: auth *flows* (PRDs [029](029-swing-oauth-login.md)/031/[036](036-external-idp-oauth-login.md)/[043](../043-api-keys-jwt-pat.md)/[050](050-external-auth-user-lifecycle.md) own those); GraphQL
+read-scope (§12 / [PRD 069](069-graphql-resource-access-read-api.md)); operational follow-ups (ops); deployment-specific auth
 adapters (belong with their deployment, not this core PRD).
 
 ## Plan
@@ -128,7 +128,7 @@ adapters (belong with their deployment, not this core PRD).
   `connect-src 'self' <idp-origins>; object-src 'none'; base-uri 'self'; frame-ancestors 'none';
   frame-src 'none'; form-action 'self'`. Tests updated: `CspPolicyBuilderTest`, `SecurityHeadersTest`.
 - **Phase-4 gate (shipped 2026-06-21):** `rapla-angular/tests/csp-enforce-readiness.spec.ts`
-  (tier-7, not yet in CI per [PRD 034](../034-ci-baseline-workflow.md) Phase 4). Logs in (admin/empty → B3 nag → skip), walks the
+  (tier-7, not yet in CI per [PRD 034](034-ci-baseline-workflow.md) Phase 4). Logs in (admin/empty → B3 nag → skip), walks the
   CDK overlays that exist, and asserts the authenticated SPA produces **zero** report-only
   `securitypolicyviolation`s — now **strict-green** (the soft shell is clean). A load-bearing
   **control canary** (an `<object>` that MUST trip `object-src 'none'`) keeps it from passing
@@ -307,7 +307,7 @@ Per AGENTS.md §1 every fix landed test-first. The Phase-2 CSP gate now exists:
 `rapla-angular/tests/csp-enforce-readiness.spec.ts` — drives the authenticated SPA, walks
 the CDK overlays, and fails on any new report-only `securitypolicyviolation` (with a control
 canary so it can't pass blind). Currently strict-green. The only remaining piece is wiring it
-into CI, which is **[PRD 034](../034-ci-baseline-workflow.md) Phase 4's job** (the browser-e2e lane), not 071.
+into CI, which is **[PRD 034](034-ci-baseline-workflow.md) Phase 4's job** (the browser-e2e lane), not 071.
 
 ## Decisions (locked 2026-06-18)
 1. **Zero deploy-config** is a hard requirement; reuse existing config, never add a
@@ -328,7 +328,7 @@ A7/B3/H3 (this session): `RaplaPasswordEncoderTest`, `PasswordRehashAuthenticate
 `FixAdminPasswordGuardTest`, `CryptoHandlerTest`, `UrlCipherV2Test`,
 `UrlEncryptionControllerIntegrationTest`, `ChangePasswordNagFlowTest`, `LoginPageHintTest`.
 CSP Phase-4 gate: `rapla-angular/tests/csp-enforce-readiness.spec.ts` (tier-7, run via
-`npm run e2e`; not yet in CI per [PRD 034](../034-ci-baseline-workflow.md) Phase 4). All green.
+`npm run e2e`; not yet in CI per [PRD 034](034-ci-baseline-workflow.md) Phase 4). All green.
 
 ## Open Questions
 - ~~Phase 2: confirm `@angular/build` (vite) dev-server leaves no residual WebSocket

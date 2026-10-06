@@ -120,7 +120,7 @@ R1 is cleanest and "free" with A or B. R2 is the compatible intermediate. R3 is 
 Trade-off: ~0.5–2s slower re-login due to Spring context rebuild. Acceptable for a Swing desktop app where OAuth round-trip dominates login time.
 
 1. **Phase 0 — Baseline measurement.** Heap-dump comparison: fresh login as admin → switch to non-admin → switch back → snapshot at each. Identify dominator-tree retainers.
-2. **Phase 1a — Remove the JVM-global EDT exception handler.** Delete the `EventQueue.push(...)` block from `RaplaClientServiceImpl.initialize()` lines 198-223. Introduce `org.rapla.client.swing.SwingSafe.invokeLater(Runnable, Logger)` wrapper. Replace ~13 `SwingUtilities.invokeLater(...)` sites in OAuth + logout/restart paths (`RaplaClientServiceImpl`; former `OAuthCallbackPasteDialog` removed — see [PRD 029](029-swing-oauth-login.md)). Master-shape `initialize()` recovered; **zero** AWT-static listener registrations. Independent of A — lands first.
+2. **Phase 1a — Remove the JVM-global EDT exception handler.** Delete the `EventQueue.push(...)` block from `RaplaClientServiceImpl.initialize()` lines 198-223. Introduce `org.rapla.client.swing.SwingSafe.invokeLater(Runnable, Logger)` wrapper. Replace ~13 `SwingUtilities.invokeLater(...)` sites in OAuth + logout/restart paths (`RaplaClientServiceImpl`; former `OAuthCallbackPasteDialog` removed — see [PRD 029](done/029-swing-oauth-login.md)). Master-shape `initialize()` recovered; **zero** AWT-static listener registrations. Independent of A — lands first.
 3. **Phase 1b — Minimal R2 step on RaplaEventBus.** Add `@PreDestroy` and explicit `reset()` to `RaplaEventBus`; wire `ClientFacadeImpl.logout()` to call `reset()`. Becomes redundant when Phase 2 lands (A makes bus die with `ctx.close()`; `@PreDestroy` still fires for free). Lands first so most-visible RxJava leak patched before Phase 2.
 4. **Phase 2 — Context close+recreate loop in `SpringRaplaClient.main()`.** Refactor `main()` to own the `AnnotationConfigApplicationContext` lifecycle. `RaplaClientServiceImpl.logout()` signals launcher (via `CountDownLatch` or `ApplicationEvent`) to close and rebuild. Before `ctx.close()`, `disposeAllFrames()` hook iterates `Frame.getFrames()` and calls `.dispose()` so AWT releases strong refs. Add CI grep failing on any new `Toolkit.getDefaultToolkit().getSystemEventQueue().push`, `UIManager.addPropertyChangeListener`, `KeyboardFocusManager.addPropertyChangeListener`, `Toolkit.addAWTEventListener` outside the allowed (zero) callsites.
 
@@ -150,7 +150,7 @@ Phases 1a + 1b non-controversial and small; can land independently of Phase 2. P
       }
   }
   ```
-- Replace `SwingUtilities.invokeLater(...)` with `SwingSafe.invokeLater(..., logger)` at OAuth + logout/restart sites in `RaplaClientServiceImpl` (the `OAuthCallbackPasteDialog` callsite no longer exists — paste fallback removed, see [PRD 029](029-swing-oauth-login.md)).
+- Replace `SwingUtilities.invokeLater(...)` with `SwingSafe.invokeLater(..., logger)` at OAuth + logout/restart sites in `RaplaClientServiceImpl` (the `OAuthCallbackPasteDialog` callsite no longer exists — paste fallback removed, see [PRD 029](done/029-swing-oauth-login.md)).
 - Delete `RaplaClientServiceImpl.initialize()` lines 198-223 (`Toolkit.getDefaultToolkit().getSystemEventQueue().push(...)` block).
 - `initialize()` matches master's shape — only `Thread.setDefaultUncaughtExceptionHandler` remains.
 - Test: tier-2 unit invoking `SwingSafe.invokeLater(throwing-runnable, logger)` and asserting `logger.error(...)` called.
@@ -190,7 +190,7 @@ Implementation:
   ```
 - `RaplaClientServiceImpl`:
   - `logout()` → `eventBus.reset()` + `logoutSignal.next(NextSession.showLoginDialog())`. Drop the `SwingSafe.invokeLater(this::start)` self-restart (line 1338) — `main()` drives rebuild now.
-  - `switchTo(User target)` ([PRD 051](done/051-switch-user-with-oauth.md)) → `logoutSignal.next(NextSession.switchTo(adminFullInfo, impersonationToken, targetUsername))`. Phase 5 ([PRD 029](029-swing-oauth-login.md) §7, 2026-05-25) updated the signature: admin's full 4-tuple is the primary session for the new context, impersonation token + target are passed separately and applied via `ClientService.setImpersonation()` post-start. Originally `reconnectAs(impersonationConnectInfo)` was used, which broke renewal because impersonation token went into the regular accessToken slot.
+  - `switchTo(User target)` ([PRD 051](done/051-switch-user-with-oauth.md)) → `logoutSignal.next(NextSession.switchTo(adminFullInfo, impersonationToken, targetUsername))`. Phase 5 ([PRD 029](done/029-swing-oauth-login.md) §7, 2026-05-25) updated the signature: admin's full 4-tuple is the primary session for the new context, impersonation token + target are passed separately and applied via `ClientService.setImpersonation()` post-start. Originally `reconnectAs(impersonationConnectInfo)` was used, which broke renewal because impersonation token went into the regular accessToken slot.
   - `switchBack()` → `logoutSignal.next(NextSession.switchBack())`. Launcher restores `savedAdminInfo` (4-tuple including provider routing) so post-restart Keycloak refresh works even when admin's access token expired during impersonation.
   - "Exit Rapla" → `logoutSignal.next(NextSession.exit())` to break `main()`'s loop.
 - Refactor `SpringRaplaClient.main()`:

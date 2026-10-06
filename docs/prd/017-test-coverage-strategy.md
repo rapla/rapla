@@ -319,6 +319,17 @@ Shipped: JaCoCo behind `coverage` profile, surefire `forkCount=1` (JaCoCo agent 
 11. **Permission predicates** ✅ — `PermissionMatrixTest` (rapla-server, tier-2, 12 tests, 5 s). Tier-2 instead of pure tier-1 because the real user/group/permission graph is more readable than mocks. `RaplaDefaultPermissionImpl` → 45 / 24 %; `PermissionController` → 30 / 22 %. Time-bound permission paths NOT covered (no time-bound perms in fixture) — follow-up if area churns.
 12. **XML round-trip** ✅ — `XmlRoundTripTest` (rapla-server, tier-2, 6 tests, 3.5 s). Uses `operator.saveData()` → `disconnect()` → `connect()` (less plumbing than driving `RaplaMainReader`/`Writer` directly). `org.rapla.storage.xml` 41 → 68 % instr, ~30 → 58 % branch. No drift bugs.
 
+### Phase 6 — Tests carried from PRDs closed 2026-10-06
+
+- [ ] [PRD 012](done/012-dhbwrapla-client-migration.md): `ExternalEventImportWizardConditionalTest` (Phase 4)
+- [ ] [PRD 036](done/036-external-idp-oauth-login.md): `DiscoveryWithAllFourTest`, `KeycloakTokenIntegrationTest` (Phase 2, deferred)
+- [x] [PRD 045](done/045-end-user-deployment-and-db-config.md): verify the Phase 4 manifest test exists — `PackagedJarShapeTest`
+- [ ] [PRD 050](done/050-external-auth-user-lifecycle.md): `ApiResolveSideEffectArchitectureTest` (7d)
+- [ ] [PRD 055](done/055-graphql-events-read-api.md): restriction round-trip tier-3 test (§ 10)
+- [ ] [PRD 079](done/079-graphql-grouped-aggregates.md): block spanning a week boundary; § 12 bucket-key suppression for unreadable rooms
+- [ ] [PRD 089](done/089-server-side-recents-favorites.md): tier-2 delete-then-reread; § 16 "search leaves prefs untouched"
+- [ ] [PRD 113](done/113-graphql-permission-model.md): `DynamicTypeDefaultPermissionsGoldenMasterTest` (§ 5g)
+
 ## Tests
 
 This PRD is mostly *adding* tests; "tests" here means invariants that prove

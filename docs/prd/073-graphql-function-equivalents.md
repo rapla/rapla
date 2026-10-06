@@ -98,7 +98,7 @@ staying client-side or server-template-only.
 analysis; a phased proposal for the gaps worth closing on the GraphQL read API.
 
 **Out of scope:** implementing the closures (each lands as its own PRD/phase);
-GraphQL mutations (write API — PRDs [056](056-graphql-events-write-api.md)/[057](done/057-graphql-dt-mutations-v1.md)/[061](061-graphql-dt-mutations-v2.md)/[063](063-graphql-allocatables-write-api.md)); the Swing/iCal nameformat
+GraphQL mutations (write API — PRDs [056](done/056-graphql-events-write-api.md)/[057](done/057-graphql-dt-mutations-v1.md)/[061](061-graphql-dt-mutations-v2.md)/[063](done/063-graphql-allocatables-write-api.md)); the Swing/iCal nameformat
 engine itself (unchanged — Functions remain the templating language there).
 
 ## Equivalence table
@@ -123,7 +123,7 @@ belong on a read/query API).
 | 13 | `appointmentBlocks` | navigation | `Appointment.blocks(from:,to:): [AppointmentBlock!]!` (same recurrence expansion) | ✅ |
 | 14 | `number` (block seq #) | projection | none on `AppointmentBlock` | ❌ |
 | 15 | `lastchanged` | projection | `Reservation.lastModifiedAt`, `Allocatable.lastModifiedAt` (`DateTime`/offset) | ✅ |
-| 16 | `events(obj)` | navigation | `Query.reservations(filter:{ allocatableIdsIn / allocatableMatching })` ([PRD 066](066-graphql-reservation-allocatable-matching.md)) | ✅ |
+| 16 | `events(obj)` | navigation | `Query.reservations(filter:{ allocatableIdsIn / allocatableMatching })` ([PRD 066](done/066-graphql-reservation-allocatable-matching.md)) | ✅ |
 | 17 | `resources(obj)` | navigation | `Appointment.allocatables: [Allocatable!]!`, `Reservation.allocations` | ✅ |
 | 18 | `filter(list,pred)` | collection | `allocatables(filter:{ where<TypeKey> })` ([PRD 059](done/059-graphql-typed-where-predicates.md)); reservations via `ReservationFilter` | ◐ |
 | 19 | `sort(list,cmp)` | collection | no server sort (results unordered); client sorts | ❌ |
@@ -681,7 +681,7 @@ predicate truly runs** — see [PRD 074](074-graphql-declarative-views.md).
    request-context values (deployment id, locale) the nameformat `env()` exposes?
 4. **Pagination/sort (rows 3/19/20)** — split into a dedicated cursor-pagination +
    `orderBy` PRD rather than per-function patches? (Recommended.)
-5. **Cross-check** against [PRD 028](done/028-angular-power-search.md) (power search) and [PRD 069](069-graphql-resource-access-read-api.md) (resource-access) so
+5. **Cross-check** against [PRD 028](done/028-angular-power-search.md) (power search) and [PRD 069](done/069-graphql-resource-access-read-api.md) (resource-access) so
    new filters compose with `searchText`/`matchKind` and the access-by-target
    selectors rather than duplicating them.
 6. **Admin-defined saved GraphQL table views (follow-on PRD).** The strategic

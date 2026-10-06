@@ -4,7 +4,7 @@
 **Related:** [PRD 074](074-graphql-declarative-views.md) (declarative GraphQL views — the stored-view + `@view` mechanism this reuses),
 [PRD 077](077-calendar-model-graphql.md) (calendar-model & saved views over GraphQL — render-modes, saved-view persistence),
 [PRD 078](078-spa-graphql-view-renderer.md) (SPA view renderer), [PRD 030](030-server-side-view-rendering.md) (server-side view rendering — `CalendarLayoutEngine`, parks
-the "HTML autoexport → engine" migration this PRD's grid phase would consume), [PRD 095](095-month-grid-render-mode.md) (SPA
+the "HTML autoexport → engine" migration this PRD's grid phase would consume), [PRD 095](done/095-month-grid-render-mode.md) (SPA
 month-grid — proves GraphQL feeds a calendar grid, but layout in TS not a template),
 [PRD 011](done/011-spring-boot-4-jackson-3.md) (Jackson 3 — the runtime is Jackson-2-free, which constrains engine choice),
 [PRD 098](done/098-server-artifact-store.md) (server artifact store, DONE 2026-07-08 — templates are stored as kind=TEMPLATE artifacts
@@ -171,7 +171,7 @@ a *dialogless one-click* download turns out to be a hard requirement — see OQ2
 
 ### Out of scope
 - Rendering the SPA's *interactive* calendar surfaces through Mustache. Phase 7 drips in the static
-  parts only; drag-create/drag-move/selection/popups stay TS (PRDs [094](094-spa-main-view-actions-and-popups.md)/[095](095-month-grid-render-mode.md)/[100](100-spa-block-renderer-unification.md)/[101](101-transpose-anchors-move-copy-paste.md)).
+  parts only; drag-create/drag-move/selection/popups stay TS (PRDs [094](094-spa-main-view-actions-and-popups.md)/[095](done/095-month-grid-render-mode.md)/[100](100-spa-block-renderer-unification.md)/[101](101-transpose-anchors-move-copy-paste.md)).
 - New anonymous/publish URL shapes for documents — Phase 8, deliberately last (see "Authorization").
 - Server-side PDF generation (openhtmltopdf/PDFBox) — explicitly rejected.
 - Any expression-language / sandboxed-eval engine (Thymeleaf, FreeMarker, liqp-with-custom-filters).
@@ -476,7 +476,7 @@ no code, no migration). The platform's only hard opinions remain the security on
 - [x] Seed templates proving the contract end-to-end (landed 2026-07-14 as the test-pinned
       copy-paste starters in `docs/templates.md` + `CalendarTemplateRenderingTest`; the JAR's
       starters stay docs, not store content — deployment-specific artefacts go through the
-      [PRD 112](112-deployment-patch.md) patch directory since 2026-09-02):
+      [PRD 112](done/112-deployment-patch.md) patch directory since 2026-09-02):
       **Tagesliste** (needs NO Phase-5 fields), **Wochenprogramm** (timeslot × day matrix,
       grouped `timeslot` bands incl. empty ones, Mo–Fr via `weekdays`), **week** and **month** —
       covering **both authoring shapes**: one unified `seed_kalender` view rendered through week
@@ -725,7 +725,7 @@ Retained regardless of the OQ10 outcome:
 > hybrid rendering creates two sources of geometry truth, and admin-editable DOM under hard-coded
 > interaction wiring makes the test matrix (interactions × arbitrary DOM) untestable by
 > construction. Interactive behaviour (drag-create/move, selection, popups, undo — PRDs
-> [094](094-spa-main-view-actions-and-popups.md)/[095](095-month-grid-render-mode.md)/[100](100-spa-block-renderer-unification.md)/[101](101-transpose-anchors-move-copy-paste.md)) stays TypeScript, with chip content author-controlled via
+> [094](094-spa-main-view-actions-and-popups.md)/[095](done/095-month-grid-render-mode.md)/[100](100-spa-block-renderer-unification.md)/[101](101-transpose-anchors-move-copy-paste.md)) stays TypeScript, with chip content author-controlled via
 > [PRD 100 D8](100-spa-block-renderer-unification.md#decisions-locked) (data, not markup).
 > What SURVIVES is the read-only half:
 

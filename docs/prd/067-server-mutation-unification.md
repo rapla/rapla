@@ -1,6 +1,6 @@
 # PRD 067 — Facade split: sync explicit-user core + Swing client facade
 
-**Status:** draft — opened 2026-06-10; D1–D11 locked (see "Decisions locked" + D11). **Nothing implemented** as of 2026-09-13 — no `EntityLifecycle` in the code, the three GraphQL mutation controllers still build entities by hand. Phase 1+2 written up as an implementation-ready work package ([§ WP A](#wp-a--phase-12-implementation-spec-2026-09-13)). Independent of [PRD 113](113-graphql-permission-model.md) (user ruling 2026-09-13: 113 is API design, 067 is server internals).
+**Status:** draft — opened 2026-06-10; D1–D11 locked (see "Decisions locked" + D11). **Nothing implemented** as of 2026-09-13 — no `EntityLifecycle` in the code, the three GraphQL mutation controllers still build entities by hand. Phase 1+2 written up as an implementation-ready work package ([§ WP A](#wp-a--phase-12-implementation-spec-2026-09-13)). Independent of [PRD 113](done/113-graphql-permission-model.md) (user ruling 2026-09-13: 113 is API design, 067 is server internals).
 
 ## Goal
 
@@ -223,7 +223,7 @@ appointment re-id on copy) is written as ordinary spec tests of
 `EntityLifecycle`, not bug-regression locks; (b) controller internals can be
 replaced wholesale — what must survive is the **API contract** pinned by the
 existing `*MutationControllerTest`s (verb names, validation, error codes/paths
-from PRDs [056](056-graphql-events-write-api.md)/[063](063-graphql-allocatables-write-api.md)), which stay green through the swap; (c) the only delicate
+from PRDs [056](done/056-graphql-events-write-api.md)/[063](done/063-graphql-allocatables-write-api.md)), which stay green through the swap; (c) the only delicate
 step in the whole plan is **phase 1** — `FacadeImpl` is live under the Swing
 client, so the extraction must be a behavior-identical delegation refactor with
 golden-master tests, done as the smallest possible diff. Everything after
@@ -234,7 +234,7 @@ The Swing import wizard (and its `/api/externaleventimport/*` REST contract)
 lives only as long as the Swing client needs it. Its internals migrate to
 `EntityLifecycle` (cheap, shared), but **no investment in the REST endpoint
 shape** — the replacement is an Angular wizard driving GraphQL mutations
-(future PRD; the external-event-import metadata-driven contract from PRD [003](done/003-custom-deployments-after-spring-migration.md)/[012](012-dhbwrapla-client-migration.md)
+(future PRD; the external-event-import metadata-driven contract from PRD [003](done/003-custom-deployments-after-spring-migration.md)/[012](done/012-dhbwrapla-client-migration.md)
 can inform the GraphQL schema). Same reasoning applies to other Swing-serving
 import REST endpoints (iCal import) as their SPA successors arrive.
 
@@ -249,7 +249,7 @@ and notifies the new owner (nothing appears silently in someone's name, with
 their request-approval rights attached). Every legitimate flow
 (responsible-person setup, bulk migration, admin UI) composes from create +
 changeOwner with a better audit trail. Consequences: the `ownerId` input on
-GraphQL `createAllocatable` is **removed** (unshipped, D7 — amend [PRD 063](063-graphql-allocatables-write-api.md)); the
+GraphQL `createAllocatable` is **removed** (unshipped, D7 — amend [PRD 063](done/063-graphql-allocatables-write-api.md)); the
 ownership-privilege gate lives in exactly one place, `changeOwner`
 (`lifecycle.changeOwner(entity, newOwner)` — currently `isAdmin`; widen to
 admin-or-group-admin per the `canAdminUsers` convention only when a real
@@ -481,7 +481,7 @@ Three controllers in `rapla-app/src/main/java/org/rapla/server/spring/graphql/`;
 | Controller | Hand-rolled today | Becomes |
 |---|---|---|
 | `ReservationMutationController` | `new ReservationImpl(now, now)` + `setOwner(caller)` + `copyPermissions` + `setResolver` (two sites: create and the template-instantiate path); manual `.clone()` for update; `createIdentifier` + `setOwner(caller)` + appointment re-id in `copyReservations`; `draft.setOwner(newOwner)` in `changeReservationOwner`; `operator.dispatch(event)` | `lifecycle.newReservation(cls)` (template path: `getLifecycle(caller, templateId)`), `lifecycle.edit(r)`, `lifecycle.copyReservations(...)`, `lifecycle.changeOwner(r, newOwner)`, `lifecycle.storeAndRemove(...)`. The `UpdateEvent` assembly + `dispatch` moves into the lifecycle `store` |
-| `AllocatableMutationController` | `new AllocatableImpl(now, …)` + `setOwner(owner)` + `copyPermissions`; the admin-only `ownerId` override block | `lifecycle.newAllocatable(cls)`; the `ownerId` block goes with the schema field (D10 / PRD 063 amendment; the API-side yes/no is [PRD 113 OQ 14](113-graphql-permission-model.md#4-open-questions-for-the-user)) |
+| `AllocatableMutationController` | `new AllocatableImpl(now, …)` + `setOwner(owner)` + `copyPermissions`; the admin-only `ownerId` override block | `lifecycle.newAllocatable(cls)`; the `ownerId` block goes with the schema field (D10 / PRD 063 amendment; the API-side yes/no is [PRD 113 OQ 14](done/113-graphql-permission-model.md#4-open-questions-for-the-user)) |
 | `DynamicTypeMutationController` | `operator.createIdentifier(DynamicType.class, 1)` / `(Attribute.class, 1)` + manual field setup | `lifecycle.newDynamicType(classificationType)` / `newAttribute(attributeType)`; store via `lifecycle.store` |
 
 Phase-2 verification items already named in D10/D7: owner-change enforced at operator dispatch, not only in the verb; permission parity (§12) + copy-appointment-fresh-id tier-3 tests. After Phase 2 an arch-test may forbid `new ReservationImpl` / `new AllocatableImpl` / `createIdentifier` in `*/graphql/*` controllers.

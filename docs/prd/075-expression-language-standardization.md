@@ -47,7 +47,7 @@ introspection constraints as gates.
 - **Export / template formatting** — iCal (`Export2iCalController` / `CalendarPageController`),
   CSV, `AllocatableExporter`.
 - **Attribute validation constraints** — expression-based field rules.
-- **External-import field mapping** — Dualis import wizard source→attribute mapping ([PRD 068](068-dualis-import-wizard-redesign.md)).
+- **External-import field mapping** — Dualis import wizard source→attribute mapping ([PRD 068](done/068-dualis-import-wizard-redesign.md)).
 - (Watching brief) notification / mail templates (`MailInterface`) — dynamic text; conditional
   permission / conflict-exemption rules if rapla ever expresses these as expressions.
 
@@ -256,7 +256,7 @@ the formalized-rapla-DSL baseline. Source-verified where claimed (e.g. `ParsedTe
 | **SPA / query search** | **Neither — it's a ranked fuzzy-matcher** (`SearchMatcher`, Levenshtein) | **No EL applies.** Scoring/ranking algorithm, not boolean/scalar eval. Wrong tool category for every candidate. |
 | **Export / template formatting (iCal, CSV, AllocatableExporter)** | **rapla Functions** | **No.** Already routes through `KEY_NAME_FORMAT_EXPORT`; same text-composition weakness sinks CEL/JMESPath; SpEL/JEXL are lateral. |
 | **Attribute validation constraints** | **CEL** (capability) / **SpEL** (zero-dep pragmatics) | **Yes — narrowly, greenfield.** No incumbent rapla expression facility exists. CEL is the best-fit tool (non-Turing + cost budget = the k8s CRD-validation idiom); SpEL `forReadOnlyDataBinding` is the zero-new-dep pragmatic pick. rapla Functions *could* back booleans but the surface doesn't exist yet. |
-| **External-import field mapping (Dualis, [PRD 068](068-dualis-import-wizard-redesign.md))** | **JSONata / SpEL / JMESPath** (per-field transform) | **Partial.** JSONata's home turf (JSON→target reshaping) but needs a hardened profile; SpEL greenfield per-field infix is cleanest given zero new dep. Even here a small bounded mapping DSL may beat pulling in a dependency. Pure-expression core only — orchestration stays outside any EL. |
+| **External-import field mapping (Dualis, [PRD 068](done/068-dualis-import-wizard-redesign.md))** | **JSONata / SpEL / JMESPath** (per-field transform) | **Partial.** JSONata's home turf (JSON→target reshaping) but needs a hardened profile; SpEL greenfield per-field infix is cleanest given zero new dep. Even here a small bounded mapping DSL may beat pulling in a dependency. Pure-expression core only — orchestration stays outside any EL. |
 
 ### Overall recommendation — **keep rapla Functions for all composition/export/view surfaces; reconsider a bounded EL only for the two greenfield predicate/transform surfaces**
 
@@ -281,7 +281,7 @@ the hard non-Turing safety gate. SpEL is the most CVE-laden EL on the JVM and is
 fragile configuration.
 
 **The defensible exception — a deliberate, narrow second engine for two greenfield surfaces:**
-(1) **attribute validation constraints** and (2) **Dualis import field-mapping ([PRD 068](068-dualis-import-wizard-redesign.md))**. Both
+(1) **attribute validation constraints** and (2) **Dualis import field-mapping ([PRD 068](done/068-dualis-import-wizard-redesign.md))**. Both
 have **no incumbent rapla-Function usage** and **no SDL-introspection requirement**, so adopting a
 bounded EL there costs near-zero migration and introduces no parity burden on the stored-expression
 corpus. For validation, **CEL** is the best-fit tool (bounded + cost budget); for both, **restricted

@@ -25,7 +25,7 @@ too, but only if the amortized session-refresh measurably hurts (today it does n
 - Wired in `LocalAbstractCachableOperator` (`permissionIndex()`, `readableAllocatableIds`, `informationOnlyAllocatableIds`), flip-gated by `isReadModelAuthoritative()`; `RequestContextInstrumentation` puts the caller's readable set into every GraphQL request context, `StructuralTypeFetchers` reads it.
 - Invalidation in `updateReadModel`, the seam for local writes and other pods' changes (`refresh` → `updateIndizes` → `updateReadModel`): user added/changed/removed → that user's entry; category, allocatable or dynamic type added/changed/removed → all entries; reservation changes → none. Built lazily per user on first request (`computeIfAbsent` over all allocatables); `clear()`/`remove()` wait for a running build and drop its result (ConcurrentHashMap bin lock). Active when `rapla.readmodel.authoritative` (default true). Source: rapla-permission, 2026-10-05.
 - Not built: the inverted `access_grant` structure (avoids the once-per-user full scan), world-readable / READ_TYPE union (PRD 087), owner-based reservation scoping. AQ1–AQ5 below still apply to that structure.
-- [PRD 129](129-cached-permission-groups.md) (cached permission groups, uncommitted) is the caller-context cache this Part sketches: the index build reads groups from `UserGroupsCache`, cleared at the same seam before the index (build per location admin 300–680 ms → 40–63 ms). That answers **AQ5** in favour of the per-user cache (not principals in the JWT).
+- [PRD 129](done/129-cached-permission-groups.md) (cached permission groups, uncommitted) is the caller-context cache this Part sketches: the index build reads groups from `UserGroupsCache`, cleared at the same seam before the index (build per location admin 300–680 ms → 40–63 ms). That answers **AQ5** in favour of the per-user cache (not principals in the JWT).
 
 **Problem.** At large instances a user may read only *part* of the store, and `canRead` checks are a
 read-path bottleneck — the measured untyped `allocatables({})` = 155 ms is dominated by
@@ -122,7 +122,7 @@ sets; existing §12 MockMvc leak tests stay green. The flattening must reproduce
 - **AQ3** — Reservations vs allocatables: reuse `access_grant`, or a separate owner-based index for the
   reservation `canModify` path.
 - **AQ4** — Closure home: app-side cached `category → ancestors` map vs an in-engine closure table.
-- **AQ5** — Caller principals in the JWT (no cache, ≤TTL stale) vs the per-user cache. *Resolution (2026-10-05):* per-user cache — [PRD 129](129-cached-permission-groups.md) `UserGroupsCache`.
+- **AQ5** — Caller principals in the JWT (no cache, ≤TTL stale) vs the per-user cache. *Resolution (2026-10-05):* per-user cache — [PRD 129](done/129-cached-permission-groups.md) `UserGroupsCache`.
 
 ---
 
@@ -232,7 +232,7 @@ All three are **id-set operations over [PRD 082](082-storage-memory-model.md)'s 
 
 ## Part B decisions (2026-10-05)
 
-- **B-D1 — Group or hierarchy change → `resync` (user, 2026-10-05).** A change of the caller's user entity (groups) or of any category since `since` answers `resync: true`; the SPA reloads its scope. Rare, and it avoids needing the inverted `access_grant` index for Part B: the delta is small, so the relevance filter runs `PermissionController` directly on it, with the [PRD 129](129-cached-permission-groups.md) group cache. SQ2 likewise: a changed dynamic type or the caller's preferences → `resync`.
+- **B-D1 — Group or hierarchy change → `resync` (user, 2026-10-05).** A change of the caller's user entity (groups) or of any category since `since` answers `resync: true`; the SPA reloads its scope. Rare, and it avoids needing the inverted `access_grant` index for Part B: the delta is small, so the relevance filter runs `PermissionController` directly on it, with the [PRD 129](done/129-cached-permission-groups.md) group cache. SQ2 likewise: a changed dynamic type or the caller's preferences → `resync`.
 - **B-D2 — `eventsChangedForOwners` (user, 2026-10-05).** User chips scope by owner (`ownerIn`, PRD 123 D10); an owner's event on resources the view does not show would otherwise go unnoticed. Owner ids of new/changed/deleted events the caller can read; §12 as for the other arms.
 - **B-D3 — Wire names follow PRD 116:** `resourceId`, not `allocatableId`.
 - **B-D4 — SPA consumer (to be built, part of Phase 1).** One poller calls `changesSince`; on a hint it reloads what is affected: the lean resource list (`resourcesChanged`; then `FilterStore.reconcile` runs), the current view when a hint hits its scope (resource chips, `ownerIn`), and the PRD 128 conflict/request counts when the Prüfen context is loaded (any event hint). `resync` → reload everything in scope. Also on tab `visibilitychange` → visible.

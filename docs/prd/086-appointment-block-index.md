@@ -1,7 +1,7 @@
 # PRD 086 — appointment block index (in-memory `IntervalIndex` over blocks, dual-API)
 
 **Status:** draft — 2026-06-24 (**pivoted to in-memory** — the H2 design below was built, measured, and lost; see *The H2 detour*)
-**Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — the in-memory index catalog + shared `IntervalIndex`/`BucketIndex` kinds + the put/remove maintenance seam this builds on; the H2 pivot is recorded there), [PRD 064](064-graphql-conflicts-read-api.md) (GraphQL conflicts read API), PRD [079](079-graphql-grouped-aggregates.md)/[080](done/080-typed-entity-stats.md) (grouped aggregates / typed-entity stats — `appointmentBlockStats`), [PRD 055](055-graphql-events-read-api.md) (GraphQL events read), `docs/architecture/locking.md`
+**Related:** [PRD 082](082-storage-memory-model.md) (storage memory model — the in-memory index catalog + shared `IntervalIndex`/`BucketIndex` kinds + the put/remove maintenance seam this builds on; the H2 pivot is recorded there), [PRD 064](done/064-graphql-conflicts-read-api.md) (GraphQL conflicts read API), PRD [079](done/079-graphql-grouped-aggregates.md)/[080](done/080-typed-entity-stats.md) (grouped aggregates / typed-entity stats — `appointmentBlockStats`), [PRD 055](done/055-graphql-events-read-api.md) (GraphQL events read), `docs/architecture/locking.md`
 
 **Split from [PRD 082](082-storage-memory-model.md), then pivoted from H2 to in-memory.** The appointment index is the largest piece
 of the storage read-path modernization, and — unlike the classification ([PRD 087](087-classification-type-indices.md)), permission (PRD
@@ -140,7 +140,7 @@ The index is at the **operator** level (`queryAppointmentsSync`, conflict detect
 | Surface | Read entry | Conflict entry | Maps to |
 |---|---|---|---|
 | **Old RemoteStorage** (`/api/storage`, Swing/`RemoteOperator`) | `queryAppointments` | `getConflicts`, `getFirst/AllAllocatableBindings`, `getNextAllocatableDate` | `queryAppointmentsSync` / `getConflictsSync` |
-| **GraphQL** (SPA) | `appointmentBlocks` / `appointmentBlockStats` | conflicts read API ([PRD 064](064-graphql-conflicts-read-api.md)) | same operator methods |
+| **GraphQL** (SPA) | `appointmentBlocks` / `appointmentBlockStats` | conflicts read API ([PRD 064](done/064-graphql-conflicts-read-api.md)) | same operator methods |
 
 Because both surfaces funnel through the same operator methods, changing the index **necessarily
 changes both** — which is why this PRD owns the old-API behavioral guarantee (the record/replay test
@@ -420,7 +420,7 @@ safe to commit. (A `DBOperator`-on-hsqldb-copy variant — the exact server back
 - Layer 2 record/replay (Phase 0/1) — behavioral + persisted-data parity across the migration.
 - Stage-Y differential oracle — engine conflict sets == `appointmentMap` conflict sets over a
   generated corpus.
-- Existing GraphQL tier-3 (PRD [064](064-graphql-conflicts-read-api.md)/[079](079-graphql-grouped-aggregates.md)/[080](done/080-typed-entity-stats.md)) + §12 leak tests stay green (the GraphQL surface).
+- Existing GraphQL tier-3 (PRD [064](done/064-graphql-conflicts-read-api.md)/[079](done/079-graphql-grouped-aggregates.md)/[080](done/080-typed-entity-stats.md)) + §12 leak tests stay green (the GraphQL surface).
 - Write-path JMH benchmark (Phase 2 gate).
 
 ## Open Questions

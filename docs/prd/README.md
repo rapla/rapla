@@ -1,6 +1,6 @@
 # PRD index
 
-89 active PRDs in this directory, 34 done under `done/`, 7 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
+50 active PRDs in this directory, 73 done under `done/`, 7 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
 
 Each active PRD below carries a generated header (status, locked decisions, dependencies, governed code) plus a keyword line in German and English so that agents and search find it from either language. When a PRD's status or decisions change, update its header here in the same edit (wrap-up checklist).
 
@@ -11,29 +11,17 @@ Each active PRD below carries a generated header (status, locked decisions, depe
 
 ### Auth / OAuth / IdP
 
-### 029-swing-oauth-login.md
+### 030-server-side-view-rendering.md
 
-Large multi-phase PRD (Phases 1-5 largely shipped through 2026-05-25) adding browser-based OAuth 2.0 PKCE login to the Swing client via SwingOAuthLoginFlow, alongside and eventually replacing the username/password LoginDialog. Covers auto-OAuth-on-launch, refresh-token bootstrapping via TokenStore (JNLP PersistenceService/dotfile/NoOp fallback chain), remember-me cookies, admin-selectable legacy login toggles (Phase 3), a Keycloak sign-in dropdown (Phase 4), and Phase 5's major credential-lifecycle cleanup slimming ConnectInfo to a token-only 4-tuple, converting LoginCredentials.password to char[], deleting the dead RemoteAuthentificationService interface, and fixing dual-slot impersonation across client-restart. Legacy HMAC TokenHandler/RemoteSessionImpl paths were deleted 2026-06-24 (JWT-only now). Depends on/supersedes PRD 031 (refresh mechanics, API namespace), PRD 072 (server-side login dialog, superseded several Phase 4/5 mechanisms), PRD 036 (external IdP), PRD 052 (client clean restart); setup doc is docs/authentication.md. Governs rapla-client SwingOAuthLoginFlow, LoginDialog, RaplaClientServiceImpl, ConnectInfo, MyCustomConnector, and rapla-server OAuthConfigController.
+In-progress PRD (Phases 1-6 landed 2026-05-12; Phase 7-9 migrate Swing table views) moving every read-side render decision — calendar layout, table-row projection, CSV export — to the server so clients become thin viewers receiving pre-projected records instead of full entity graphs. Introduces TableViewEngine + TableRow (rapla-core), /table/reservations, /table/appointments, /table/config REST endpoints, a shared BlockColors helper, and /export/csv, aiming to cut wire payload ~10x and eventually delete the rapla-server→rapla-client back-edge (PRD 005 D3). A 2026-07-07 correction notes the calendar-layout core (CalendarLayoutEngine, RenderedBlock, CalendarPage) was deleted 2026-05-27 as unused — only BlockColors survives, now consumed by PRD 095. Cross-references PRD 020 (admin panel pattern), PRD 024 (server-side edit services, calendar layout prior art), PRD 026 (Angular, primary consumer), PRD 028 (power search), PRD 009 (bulk storage REST). Governs org.rapla.plugin.tableview, TableViewController, CalendarViewController, ExportController, RaplaTableColumn, ReservationTableViewFactory in rapla-core/rapla-server/rapla-client.
 
-*Keywords:* Swing OAuth, PKCE, PRD 029, SwingOAuthLoginFlow, LoginDialog, ConnectInfo, TokenStore, RaplaClientServiceImpl, MyCustomConnector, Anmeldung, Login, remember-me, Keycloak, impersonation, refresh token, JWT, PRD 072, PRD 036, OAuthConfigController
-
-### 036-external-idp-oauth-login.md
-
-Large in-progress PRD adding external OIDC identity-provider login (Microsoft Entra ID, Google, later Keycloak) alongside rapla's embedded Spring Authorization Server, via a multi-issuer JwtDecoder (IssuerAwareJwtDecoder) and a single provider-agnostic ExternalUserResolver keyed on rapla username (upn/preferred_username/email lookup, then auto-provision) rather than a per-provider stable id — a 2026-05-21 pivot after DHBW pilot failures. Swing stays rapla-SAS-only (deprecated in favor of PRD 026's Angular SPA); Angular gets a configurable LoginPickerComponent driven by discovery's providers[]/picker fields. Phase 2 (shipped) adds Keycloak as a provider and documents Shibboleth-via-Keycloak SAML brokering (zero rapla code, contrasted with native SAML in PRD 037). Phase 3 (shipped 2026-06-24) generalizes external providers from three fixed config fields to a Map<String,ProviderDef> keyed by registrationId, fixing a bug where an arbitrary provider key was silently dropped. Depends on PRD 029 (Swing OAuth plumbing reused), PRD 031 (URL/refresh conventions), feeds PRD 037 (Shibboleth reverse-proxy alternative). Governs ExternalProvidersProperties, ExternalUserResolver, JwtConfig, OAuthConfigController, ProviderConfig, ProviderDef in rapla-server.
-
-*Keywords:* external IdP, PRD 036, Microsoft Entra, Google OAuth, Keycloak, ExternalUserResolver, IssuerAwareJwtDecoder, ExternalProvidersProperties, ProviderDef, LoginPickerComponent, SSO, Anmeldung, Berechtigung, Shibboleth, auto-provision, registrationId, OIDC, picker.mode
+*Keywords:* server-side rendering, TableViewEngine, PRD 030, CalendarLayoutEngine, RenderedBlock, BlockColors, table view, CSV export, PRD 005 D3, Tabelle, Kalenderansicht, TablePage, TableColumnConfig, back-edge, RaplaBuilder, Swing table, CellExtractor
 
 ### 043-api-keys-jwt-pat.md
 
 PRD 043, status in-progress (server-side + docs complete, Angular UI shipped 2026-06-27, Swing deferred), designs GitHub-PAT-style API keys for rapla: server generates a fresh asymmetric keypair (RSA-2048 or Ed25519) per key, signs one JWT with it, stores only the public key/JWK in RaplaKeyStorage's multi-slot APIKEY prefs role, and discards the private key so nobody can mint another JWT for that key. Endpoints POST/GET/DELETE /api/auth/api-keys; ApiKeyJwtDecoder dispatches by JWT typ claim alongside the access/refresh decoder. Supersedes PRD 031's API-key section; the legacy TokenHandler/SignedToken HMAC path this coexisted with has since been fully deleted (update note). Angular UI (ApiKeysDialogComponent) adds scopes and grace-window rotation per PRD 076. Related to PRD 041 (RefreshSessionService pattern) and PRD 035/060 (MCP token consumers).
 
 *Keywords:* API-Key, Personal Access Token, JWT, RaplaKeyStorage, ApiKeyController, ApiKeyJwtDecoder, Ed25519, RS256, kid, thumbprint, Bearer token, PRD 043, PRD 031, PRD 041, PRD 076, Widerruf, revoke, Schlüssel, Anmeldedaten, Rotation
-
-### 050-external-auth-user-lifecycle.md
-
-PRD 050 defines rapla's external-auth (Keycloak/LDAP/SAML) user lifecycle: a persisted authenticationSource marker on User blocks self/admin password, name, and email changes for externally-managed users, with a one-way admin-only disconnect. Status: in-progress, Phases 1-6 and re-opened Phases 7-8 landed 2026-05-28, extracting provisioning off the read path (AGENTS.md §16) into UserProvisioner/DefaultUserProvisioner at OAuth/JNDI login seams (ExternalUserResolver made pure). Related to PRD 036 (OAuth login), PRD 037 (SAML), PRD 049 (controller interface dedup), PRD 053 (cross-repo coordination pattern). Governs UserImpl, ExternalUserResolver, AuthenticationStore, RaplaAuthentificationService, RemoteStorage endpoints, Swing UserOption/UserEditUI, and the Angular EditAccountDialogComponent. The dispatch path enforces the same authenticationSource rule (security audit F6-1).
-
-*Keywords:* externe Authentifizierung, Keycloak, LDAP, SAML, Passwort ändern, Benutzer, authenticationSource, ExternalUserResolver, UserProvisioner, disconnect, Provisioning, AGENTS.md §16, JNDI, DhbwUserProvisioner, IdentityClaims, User lifecycle, Namensänderung, E-Mail ändern
 
 ### 076-scoped-api-keys-self-rotation.md
 
@@ -48,18 +36,6 @@ PRD 102 defines how rapla contains its browser session credential (access_token/
 *Keywords:* CSP, Sandbox, Cookie, Zugriffstoken, access_token, Sicherheit, Same-Origin, Capability-Token, Berechtigung, GraphiQL, Refresh-Token, PRD 072, PRD 076, PRD 097, XSS, Formular speichern, write-capability, opaque origin
 
 
-### 126-swing-sso-auto-login.md
-
-Implemented and committed 2026-10-04 (e47923557), live on DHBW app1: silent reauth from the stored refresh token before every start, SSO auto-start (DHBW runs the default mode now, D11: browser at once, Abort → password/SSO combo; legacy mode auto-starts only when the last login was SSO, not after a logout, D1–D3), consent before storing the refresh token (Phase 2: `ConsentingTokenStore`, once per machine, asked after the session load, logout asks again), dialog language from the discovery field `language`, login abort when provisioning is refused (`OidcLoginSuccessHandler.abortLogin`, reason shown). Open: Swing SSO login on app1 confirmed by a user.
-
-*Keywords:* Swing, SSO, Keycloak, auto login, silent reauth, refresh token, TokenStore, KEY_LOGIN_METHOD, swing-legacy-login, swing-legacy-show-sso-button, RaplaClientServiceImpl, startLogin, runOauthLogin, DHBW, PRD 029, PRD 072, PRD 126
-
-### 127-picker-accordion-type-order.md
-
-Implemented 2026-10-05 (1fcccd51a, on dhbw-test): the SPA resource picker is one accordion (Favoriten, Zuletzt, Ressourcen, Personen, Benutzer; at most one section open, lower heads sticky, draggable rail divider, own search field) with Swing-style type folders, replacing the chips and "Typ ▾" (overturns PRD 123 D3/D9, PRD 119 D1); search stays flat, grouped by type, parent shown below each hit. Type order becomes configurable via an `order` annotation on the type (ordered types first, the rest in creation order as today), edited by drag in the admin type tree; in-type order comes from the server's SortedClassifiableComparator. Answers rapla/rapla#598.
-
-*Keywords:* Picker, Akkordeon, accordion, Typ-Reihenfolge, type order, order annotation, DynamicTypeAnnotations, DynamicTypeComperator, SortedClassifiableComparator, Favoriten, Zuletzt, Benutzer, resource-picker, #598, PRD 119, PRD 120, PRD 123
-
 ### 128-picker-conflicts-requests-chip-model.md
 
 Implemented 2026-10-05 (c3ddea7a0/c72cdcff1, on dhbw-test): conflicts and resource requests as VIEWS in the view list (D7 — the view decides what is queried, the renderer how it is drawn; red badges with active counts; left pane switches to the conflict/request tree), GraphQL conflicts(filter:)/conflictStats/resourceRequests(filter:) with an open-request index, anonymous "nicht sichtbar" calendar blocks of unreadable reservations on readable resources like Swing (no clashes/slots), and the chip model behind them — chips contribute scope (what loads) and/or focus (what is drawn normally, the rest pale, like Swing's RaplaBuilder); conflict and request become own chip kinds; two selection contexts Planen (resources, users) and Prüfen (conflicts, requests). Needs user-scoped all-conflicts / all-requests queries (PRD 064 deferred allConflicts). Builds on PRD 127.
@@ -67,24 +43,6 @@ Implemented 2026-10-05 (c3ddea7a0/c72cdcff1, on dhbw-test): conflicts and resour
 *Keywords:* Konflikte, conflicts, Ressourcenanfragen, resource requests, Chip, scope, focus, Fokus, blass, Planen, Prüfen, allConflicts, ConflictImpl.getMap, getRequestMap, RaplaBuilder, filter-store, PRD 064, PRD 078, PRD 127
 
 ### GraphQL API
-
-### 055-graphql-events-read-api.md
-
-PRD 055 defines and ships the GraphQL read API for reservations/events (Reservation, Appointment, RepeatingRule, AppointmentBlock, Allocation), a child of PRD 035 foundations and sibling to PRD 056 (write API). Status: in-progress but core read resolvers shipped 2026-05-29 including a Tier-1 LightDataFetcher performance migration; the restriction-round-trip tier-3 test is deferred. Key locked decisions: Reservation named not Event; two-shape allocation exposure (Reservation.allocations[] restriction-aware for the editor vs Appointment.allocatables[] pre-resolved for everyone else, Option C); RepeatingRule.exceptions as LocalDate; eager canModify; firstDate/lastDate convenience fields; conflicts deferred. Governs ReservationGraphQLController, schema.graphqls Reservation/Appointment/Allocation types, StructuralTypeFetchers, and AGENTS.md §12 leak filtering; feeds PRD 056 (writes mirror this typed-classification surface, β²) and referenced by domain-model.md.
-
-*Keywords:* GraphQL, Reservation, Termin, Appointment, Allocation, Restriktion, Buchung, Serie, RepeatingRule, AppointmentBlock, Sichtbarkeit, canModify, ReservationGraphQLController, PRD 035, PRD 056, classification, LightDataFetcher, Ressource
-
-### 056-graphql-events-write-api.md
-
-PRD 056 designs and largely ships the GraphQL write API for reservations: createReservation, updateReservation, changeReservationOwner, moveReservations, copyReservations, deleteReservations, and the generic applyChanges batch escape hatch, sibling to PRD 055 (reads). Status: in-progress; v1 controller/schema landed 2026-05-29 (ReservationMutationController, 9 tier-3 tests); revised 2026-09-07 per PRD 113 to merge Create/UpdateReservationInput into one ReservationInput. Locked decisions include named-verb API style, full-state (not patch) updates, ATOMIC-only bulk mode, mandatory client-supplied ids with checkIdIntegrity guards (ID_COLLISION), and typed per-DynamicType classification inputs (β² symmetry with reads). moveReservations/copyReservations/moveAppointment sections are superseded by PRD 101 (transpose anchors). Governs ReservationMutationController, LocalAbstractCachableOperator.checkIdIntegrity, UpdateEvent.createReferences; feeds into PRD 062 (robustness), PRD 101, PRD 096 (type-change editing), PRD 113.
-
-*Keywords:* GraphQL Mutation, Reservation erstellen, Termin ändern, createReservation, updateReservation, applyChanges, ChangeOp, moveReservations, copyReservations, deleteReservations, ID_COLLISION, checkIdIntegrity, expectedLastChanged, Berechtigung, PRD 101, PRD 113, Klassifikation, ReservationMutationController, optimistic concurrency
-
-### 058-graphql-key-spec-migration.md
-
-PRD 058 is a done, shipped one-shot startup migration renaming every DynamicType/Attribute/Category key containing non-GraphQL-spec characters (umlauts, hyphens, etc.) to deterministic ASCII-safe keys, replacing the ad-hoc sanitizeTypeName band-aid in the SDL generator. Landed 2026-05-28 with universal write- and load-path validators (Tools.isSpecCompliant, checkGraphqlKeySpecCompliance, assertCacheSpecCompliant) enforcing spec compliance everywhere. Later updates: 2026-06-24 relaxed the user-groups Category subtree to a legacy key rule (Option A, isLegacyKey) since group keys never needed the strict spec; 2026-08-28 fixed a boot crash where user-groups roots still reached the SDL generator via CATEGORY VALUE_LIST attributes; 2026-08-29 added reserved-suffix-word rules (Classification/Where/Enum/Rapla) to prevent generated-type-name collisions. Governs GraphqlKeyMigration, DynamicTypeImpl.checkKey, ClassificationSdlGenerator, and dhbwrapla's dualis importer key generation. Tracks against PRD 035 (Cut C).
-
-*Keywords:* GraphQL Key Migration, Schlüssel, Umlaute, DynamicType, Attribute, Category, Gruppe, user-groups, isSpecCompliant, toSpecKey, makeValidKey, ClassificationSdlGenerator, GraphqlKeyMigration, dualis import, Namenskollision, reserved suffix, checkGraphqlKeySpecCompliance, PRD 035
 
 ### 060-graphql-mcp-foundations.md
 
@@ -103,30 +61,6 @@ PRD 061 is a draft follow-up (opened 2026-05-29) to PRD 057's v1 DynamicType Gra
 PRD 062 (renumbered from 058 due to a collision with the key-spec migration PRD) is a draft placeholder/parking-lot cataloguing GraphQL API robustness patterns rapla deliberately defers given its low current traffic: in-flight idempotency locks for concurrent retries, idempotency-key TTL/cache eviction, rate limiting (including a 2026-08-12 per-user read-concurrency-limit design tied to PRD 106), query/mutation complexity limits, request timeout and read-cancellation-on-disconnect (also tied to PRD 106), and distributed tracing on mutations. Explicitly not slated for implementation; each pattern lists a concrete production-evidence "defer trigger" before promotion to its own PRD. Depends on PRD 035 (foundations), sibling to PRD 056/057/061 (mutation surfaces); the shipped lean idempotency baseline (client UUIDs, ID_COLLISION) lives in PRD 056 itself, not here.
 
 *Keywords:* API Robustness, Idempotenz, Rate Limiting, Idempotency Lock, TTL Cache, Query Complexity, Timeout, Cancellation, Distributed Tracing, WebGraphQlInterceptor, PRD 106, concurrency limit, StoredViewInterceptor, DoS, Multi-Tenant, parking lot, graphql-java
-
-### 063-graphql-allocatables-write-api.md
-
-PRD 063 designs and implements the GraphQL write API for Allocatables (resources/persons): createAllocatable, updateAllocatable, deleteAllocatables, plus ChangeOp batch variants, mirroring PRD 056's (events) named-verb pattern and reusing PRD 055/056's typed per-DynamicType classification inputs. Status: in-progress, opened 2026-05-29; owner-at-create override was later removed per PRD 067 D10 (audit-erasure concern — owner is always the caller, transfers go through an explicit changeOwner verb); type-change-on-update was later accepted per PRD 096 (client-side remap preview). Revision 2026-09-07 per PRD 113 merges Create/UpdateAllocatableInput into one AllocatableInput and folds this PRD's deferred OQ2 (permission editing) into PRD 113 as a nullable permissions field. Governs AllocatableMutationController, mirrors ReservationMutationController's exception/error-code machinery. Open/deferred: shared GraphQlMutationException extraction, allocatable bulk-owner-change verb.
-
-*Keywords:* GraphQL Mutation, Ressource, Allocatable, createAllocatable, updateAllocatable, deleteAllocatables, Berechtigung, Eigentümer, owner, ChangeOp, PRD 056, PRD 067, PRD 113, AllocatableMutationController, Klassifikation, Person, Raum, typeKey
-
-### 064-graphql-conflicts-read-api.md
-
-PRD 064 defines the GraphQL read API for rapla's scheduling-conflict detection: a `Query.conflicts(reservationId)` field returning a `Conflict` type carrying both reservations, both appointments, and the shared allocatable. Status: in-progress, opened 2026-05-29, parent PRD 035 (done), sibling PRD 055 (Events Read API) and PRD 060 (MCP foundations, separate compute-op concern). Locks §12 no-leak invariants: anonymous/unknown/unreadable reservation returns empty list; if the OTHER reservation or the allocatable isn't caller-readable, the conflict is dropped rather than partially exposed. Defers the per-Reservation `conflicts` field, `allConflicts` admin overview, and `checkConflicts` dry-run. Governs `ConflictGraphQLController` in rapla-app's `org.rapla.server.spring.graphql` package, using `operator.getConflicts`.
-
-*Keywords:* Konflikt, Conflict, GraphQL, conflicts query, Reservation, Appointment, Allocatable, PRD 064, PRD 055, PRD 060, canRead, Sichtbarkeit, Termin, Buchungskonflikt, ConflictGraphQLController, Berechtigung
-
-### 066-graphql-reservation-allocatable-matching.md
-
-PRD 066, in-progress with Phases 1+2 landed 2026-05-29, closes a two-roundtrip gap in the GraphQL calendar query pattern: it adds `idIn: [ID!]` to `AllocatableFilter` (explicit id-selection, unioned with type-bucket results) and `allocatableMatching: AllocatableFilter` to `ReservationFilter`, letting the SPA send a whole resource-tree selection (type checkboxes + per-type where rules + individually ticked resources) in one GraphQL round-trip instead of two. Locks semantic invariants: `idIn` always wins over filter narrowing but never bypasses §12 `canRead`. Depends on PRD 055 (done, Events Read API — the resolver this extends), PRD 059 (done, typed where predicates), and pairs with PRD 028 (Power Search). Phase 3 (doc migration to `dhbwrapla/docs/graphql.md`) partially done. Governs `AllocatableFilter`/`ReservationFilter` Java records and `ClassificationGraphQLController`/`ReservationGraphQLController` resolvers.
-
-*Keywords:* Ressourcenbaum, AllocatableFilter, ReservationFilter, allocatableMatching, idIn, GraphQL, Termin, Ressource, Kalenderbaum, canRead, Berechtigung, PRD 066, PRD 055, PRD 059, typeKeyIn, whereRoom, one round-trip
-
-### 069-graphql-resource-access-read-api.md
-
-PRD 069 (in-progress, v1 landed 2026-06-17) adds an admin-scoped GraphQL reverse-lookup: 'which resources (Allocatables) and events (Reservations) may this user or group read/edit?' Extends `allocatables(filter:)` and `reservations(filter:)` with `accessibleByUsername`/`accessibleByUserId`/`accessibleByGroup` (exactly one XOR'd) plus `accessLevel: AccessLevel` (mirroring `Permission.AccessLevel`). Caller must be admin-scoped over the target (`canAdminUser`/`canAdminGroup`); out-of-scope or unknown targets get a uniform forbidden error (§12 no existence leak). Distinguishes user-target (owner-aware canRead/canModify, folds in ownership) from group-target (permission-list scan, no owner shortcut) resolution, and notes reservations derive access differently (owner, event-type permissions, `read-events-from-others`, admin) than resources (explicit per-entity permission list). Adds `UserFilter.inGroup` follow-up. Governs `PermissionController`, `AccessTargetFilter`, `ClassificationGraphQLController`/`ReservationGraphQLController`.
-
-*Keywords:* Zugriffsrecht, AccessLevel, accessibleByUsername, accessibleByGroup, PermissionController, Gruppe, Berechtigung, admin-scoped, canAdminUser, canAdminGroup, PRD 069, GraphQL Filter, Ressourcenzugriff, Sichtbarkeit, Eigentümer, canRead, canModify
 
 ### 073-graphql-function-equivalents.md
 
@@ -154,32 +88,13 @@ Draft/in-progress PRD replacing the legacy Swing CalendarModel/saved-calendars w
 
 *Keywords:* CalendarModel, SavedView, Kalender, Wochenansicht, Monatsansicht, Termin, Serie, Banner, week grid, WeekGridComponent, week-lanes.ts, PRD 074, PRD 078, PRD 095, PRD 097, worktime, CalendarOptions, Ansicht wechseln, render-mode
 
-### 079-graphql-grouped-aggregates.md
-
-PRD for GraphQL grouped/bucketed utilization analytics (Auslastung), carved out of PRD 074's table-view work. Status: Shape A (a dedicated typed query field, not directive-based) chosen and v1 implemented 2026-06-21. Adds Query.appointmentBlockStats(filter, groupBy, aggregate, limit) grouping by date/allocatables/custom expr and aggregating duration metrics (SUM/COUNT/MEAN/MIN/MAX), §12-safe and cost-guarded (window + 5000-bucket cap). Deferred: in-expression arithmetic needing PRD 073's number-model. Complements PRD 074's global totals (already shipped) and depends on the compute-expr engine (PRD 073) and allocatables(filter) from PRD 074. Governs ReservationGraphQLController's stats resolver and StructuralTypeFetchers.computeBlockExpr.
-
-*Keywords:* appointmentBlockStats, Auslastung, groupBy, BlockAggregate, BlockStatBucket, Aggregation, Gruppierung, PRD 074, PRD 073, PRD 080, ISO_WEEK, Raum-Auslastung, durationMinutes, expr, Stunden, Statistik, computeBlockExpr
-
 ### 081-graphql-omnibox-multisearch.md
 
 PRD for the SPA omnibox's unified, typed, ranked, §12-scoped GraphQL search across resources/events/occurrences/groups/users. Phase 1 (RESOURCE+EVENT+USER kinds) landed 2026-06-21/24 via a new search(query,kinds,limit) resolver returning kind-bucketed SearchGroup/SearchHit types (ResourceHit/EventHit/GroupHit/UserHit); EVENT is edit-gated (canModify, stricter than read) and windowless (a true name index, not date-scoped); RESOURCE search is FUZZY-enabled, EVENT is SUBSTRING/PREFIX-only. GroupHit exposes an opaque memberFilter so deployment-specific hierarchy knowledge stays server-side. Mandatory §12 leak tests (data-leak-prevention skill) verify no existence leak. Phases 2 (groups) and 3 (occurrences/SAVED_VIEW) are planned. Consumed by PRD 078's SPA; depends on PRD 028's allocatable evaluator and PRD 077's group model.
 
 *Keywords:* Omnibox, Suche, search resolver, SearchHit, ResourceHit, EventHit, GroupHit, UserHit, memberFilter, canModify, FUZZY, §12, PRD 028, PRD 077, PRD 078, Gruppe, Person suchen, scope chip, windowless search, existence leak
 
-### 113-graphql-permission-model.md
-
-PRD 113 designs exposing rapla's permission model (Permission rows: principal, level, window) as readable and writable GraphQL fields, since today only resolution results (accessibleBy*) exist and Swing is the only editor. Status: implemented and committed 2026-09-14, no open questions; OQ 10 note corrected 2026-10-01 (READ_NO_ALLOCATION expands in readable reservations, catalog stays at canRead). Locked decisions include the entity/level matrix (Resource, Reservation, EventTemplate, Period, DynamicType), the DynamicType two-list split (typeAccess vs instanceDefaults), promoting EventTemplate to a full API entity, merging create/update inputs (landed under WP1), three typed permission inputs with oneOf principals, writing permissions inside existing save mutations (shape D, null=untouched vs empty list=replace), and full principal expansion for canAdmin callers. Depends on permissions.md, ADR 0003, PRD 090, PRD 069, PRD 063, PRD 083, PRD 035, PRD 061. Governs GraphQL schema Permission and PermissionPrincipal types, SecurityManager, PermissionController.
-
-*Keywords:* PRD 113, Berechtigung, permission, GraphQL, canAdmin, canRead, PermissionController, SecurityManager, DynamicType, typeAccess, instanceDefaults, EventTemplate, Period, AccessLevel, principal, Gruppe, group, Sichtbarkeit, Zugriffsrecht, Reservation
-
-
 ### REST API / server architecture
-
-### 009-server-bulk-storage-rest-api.md
-
-In-progress PRD porting all 23 legacy RemoteStorage methods (change password/name/email, resource/event sync, dispatch, conflicts, allocatable bindings, merge, restart, identifier reservation) to a single new RemoteStorageController under /storage/*, so the Swing client's initial sync and save path stop 404ing post-Spring-Boot-migration. Decision: keep the /storage/* URL shape unchanged (mirrors client's @HttpExchange interface) rather than splitting per-concern; reuse legacy inner-class DTOs (PasswordPost, MergeRequest, etc.). Phases 0-4 implemented; Phase 5 (centralized @RestControllerAdvice exception->HTTP-status mapping, DTO renaming) pending, with a 5-item endpoint-sweep findings table (missing-arg->400 vs missing-resource->404 conflation). Key risk already partially hit: UpdateEvent Jackson roundtrip needed @JsonIgnore on ReferenceHandler.getResolver(). Hard prerequisite: PRD 001; coordinates with PRD 008 (sync operator methods) and feeds PRD 003 (dhbw needs every RemoteStorage op).
-
-*Keywords:* RemoteStorage, RemoteStorageController, PRD 009, dispatch, getResources, refreshSync, createIdentifier, getConflicts, allocatable bindings, doMerge, changePassword, changeEmail, Buchung, Sync, Swing client sync, SwingClientStartIntegrationTest, RaplaExceptionHandler, Jackson roundtrip, UpdateEvent
 
 ### 020-server-driven-admin-panels.md
 
@@ -187,35 +102,11 @@ In-progress PRD (foundation plus most phases done) replacing per-plugin Swing Pl
 
 *Keywords:* PreferencesAdminService, PreferencesPanel, PRD 020, FieldRenderer, PanelDefinition, ServerDrivenSettingsDialog, admin panels, Einstellungen, Berechtigung admin, TerminalPreferencesPanel, MoradaPreferencesPanel, LdapRoleMappingsPreferencesPanel, DualisPreferencesPanel, PluginOptionPanel, AdminPanelsScanConfig, isAdmin, Vorlage server-driven
 
-### 030-server-side-view-rendering.md
-
-In-progress PRD (Phases 1-6 landed 2026-05-12; Phase 7-9 migrate Swing table views) moving every read-side render decision — calendar layout, table-row projection, CSV export — to the server so clients become thin viewers receiving pre-projected records instead of full entity graphs. Introduces TableViewEngine + TableRow (rapla-core), /table/reservations, /table/appointments, /table/config REST endpoints, a shared BlockColors helper, and /export/csv, aiming to cut wire payload ~10x and eventually delete the rapla-server→rapla-client back-edge (PRD 005 D3). A 2026-07-07 correction notes the calendar-layout core (CalendarLayoutEngine, RenderedBlock, CalendarPage) was deleted 2026-05-27 as unused — only BlockColors survives, now consumed by PRD 095. Cross-references PRD 020 (admin panel pattern), PRD 024 (server-side edit services, calendar layout prior art), PRD 026 (Angular, primary consumer), PRD 028 (power search), PRD 009 (bulk storage REST). Governs org.rapla.plugin.tableview, TableViewController, CalendarViewController, ExportController, RaplaTableColumn, ReservationTableViewFactory in rapla-core/rapla-server/rapla-client.
-
-*Keywords:* server-side rendering, TableViewEngine, PRD 030, CalendarLayoutEngine, RenderedBlock, BlockColors, table view, CSV export, PRD 005 D3, Tabelle, Kalenderansicht, TablePage, TableColumnConfig, back-edge, RaplaBuilder, Swing table, CellExtractor
-
-### 031-api-namespace-redesign.md
-
-In-progress PRD (Phases 1-5 done 2026-05-12/15) restructuring rapla's URL layout: dropping the legacy /rapla/ servlet context-path, mounting the Angular SPA at /app/, moving all REST under a literal /api/ prefix (enforced per-controller and checked by ApiPrefixArchitectureTest, AGENTS.md §15), and preserving six legacy iCal/calendar URLs under /rapla/ for external subscribers. Phase 5 splits the OpenAPI spec into auth/client/rest/exports groups via SpringDocGroupsConfig for scoped codegen. Outstanding: SecurityConfig's rememberMe() re-enable is owed to PRD 029. Depends on/supersedes PRD 001 (introduced the old context-path) and feeds PRD 026 (Angular frontend, needs clean URL layout); PRD 027 is cited for the MockMvc test-rename fallout. Governs SecurityConfig, every @RestController's class-level @RequestMapping, matching @HttpExchange interfaces in rapla-core, IndexPageController/RaplaSpaEntry, and SpringDocGroupsConfig in rapla-app.
-
-*Keywords:* API namespace, PRD 031, /api/ prefix, context-path, SecurityConfig, ApiPrefixArchitectureTest, AGENTS.md §15, SpringDocGroupsConfig, OpenAPI groups, URL redesign, Angular /app/, iCal, rememberMe, RaplaSpaEntry, IndexPageController, PRD 029, PRD 026
-
 ### 041-openapi-runtime-removal.md
 
 PRD 041, status in-progress (Phase 1 done 2026-05-16, Phase 2 deferred), moves OpenAPI spec generation from runtime SpringDoc reflection to build-time capture (OpenApiSpecCaptureTest), removing Jackson 2 (SwaggerJacksonConfig) from rapla-app's production classpath; springdoc becomes test-scope only, served via StaticOpenApiController at runtime. Also documents substantial adjacent OAuth-refresh consolidation work (2026-05-16) that landed in the same session: RefreshSessionService as single source of truth for refresh tokens, custom Spring Authorization Server providers, never-rotate refresh policy, deletion of /api/auth/login and AuthController in favor of /oauth2/token and /oauth2/revoke. Spun off from PRD 035 and feeds into PRD 043 (API keys). Phase 2 (per-plugin endpoint tagging + runtime filter) is deferred pending a plugin-id tagging mechanism.
 
 *Keywords:* OpenAPI, SpringDoc, Jackson 2, Jackson 3, RefreshSessionService, /oauth2/token, /oauth2/revoke, OAuth, Refresh Token, Scalar, Swagger UI, PRD 041, PRD 043, PRD 031, PRD 035, Anmeldung, Login, API-Dokumentation, build-time spec
-
-### 048-eliminate-server-container-context.md
-
-PRD 048, status in-progress (Phases 1-2 done and verified in rapla 2026-05-18; Phase 3 dhbwrapla migration done source-side, pending cross-repo build verification), removes the pre-Spring ServerContainerContext bag and its LegacyServerBridgeConfig bridge, replacing its facets (DataSource map, dead shutdownService stub, dead mailSession, services/patchScript) with proper Spring beans and direct RaplaServerProperties reads. Implements a working ReloadService that performs a logical reload (operator disconnect()+connect(), clearing LocalCache and re-arming schedulers) instead of a JVM restart, fixing the previously non-functional Swing 'restart server' menu action. Requires coordinated lockstep changes in dhbwrapla (DualisViewLoader, DhbwNtlmAuthStore, RaplaPruefungen). Also folds in an adjacent cleanup replacing commons-collections4 (DualHashBidiMap/DualTreeBidiMap) with in-tree TwoWayMap/IndexedSortedMap helpers in LocalAbstractCachableOperator.
-
-*Keywords:* ServerContainerContext, LegacyServerBridgeConfig, ReloadService, ShutdownService, reload, restart, LocalCache, CachableStorageOperator, dhbwrapla, DualisViewLoader, commons-collections4, TwoWayMap, IndexedSortedMap, PRD 048, PRD 045, Neustart, Cache leeren, Scheduler
-
-### 049-controller-interface-deduplication.md
-
-PRD 049, status in-progress (Phases 0-1 and 3-6 landed 2026-05-21, Phase 2 partially landed), collapses rapla's REST layer so every endpoint group is one class: a Spring @RestController implementing the corresponding @HttpExchange interface from rapla-core, eliminating separate *Impl/*RestPage/*PageGenerator delegate classes that duplicated routing metadata and added a permission-check hop. Covers Pattern A (*Impl delegates, e.g. RemoteStorageController/RemoteStorageImpl worked example), Pattern B (*RestPage for resources/events/dynamictypes), Pattern C (*PageGenerator for index/status/JNLP/calendar/iCal export), and Pattern D cleanup (deletes jakarta.ws.rs-api entirely from the reactor, RESTEasy provider classes). Surfaced a drift audit requiring PII to move out of query params into request bodies (ChangeNamePost/ChangeEmailPost DTOs) and extends ApiPrefixArchitectureTest to enforce the interface-implements pattern. Related to PRD 009, 031, 041.
-
-*Keywords:* REST-Controller, HttpExchange, RemoteStorageController, RemoteStorageImpl, RestPage, PageGenerator, ApiPrefixArchitectureTest, jakarta.ws.rs, ChangeNamePost, PII in query params, PRD 049, PRD 009, PRD 031, PRD 041, Endpoint, Delegation, Architekturtest
 
 ### 067-server-mutation-unification.md
 
@@ -235,19 +126,6 @@ PRD 105 gives the Swing pre-save reservation warning checks (missing name, no re
 
 *Keywords:* Speicherprüfung, Warnung, Konflikt, Feiertag, Duplikat, Ressource fehlt, reservationChecks, ReservationChecker, EventCheck, Reservierung prüfen, Vorabprüfung, Bestätigungsdialog, PRD 091, REQUEST_PENDING, CalendarOptionsImpl, Swing-Parität
 
-### 106-query-request-lifecycle.md
-
-PRD 106 is an umbrella/collector PRD addressing overload from rapid SPA date-navigation (e.g. clicking next-week repeatedly fires many uncancelled GraphQL queries), collecting three mitigations: (A) client-side switchMap+throttle on the view-query trigger (built here, part of PRD 078 Phase 5), (B) server-side graphql-java execution cancellation on disconnect (deferred design, recorded in PRD 062 §5), (C) server-side per-user read-concurrency limiting (deferred design, PRD 062 §3). Status: in progress; the client slice (A) is implemented and tested, reducing ten rapid clicks to two actual HTTP requests. Decisions locked: D1 scopes all three mitigations to queries only, never mutations; D2 keeps switchMap local to each call site rather than a central cancellation registry; D3 picks a 250ms leading+trailing throttle over debounce; D4 rejects result caching/prefetching for now. Governs rapla-angular ViewHostComponent's query effect (deletes the old reqToken staleness-check pattern). One open question (OQ1) about whether Spring GraphQL's MVC handler runs async blocks promoting mitigation B.
-
-*Keywords:* Anfrage-Lebenszyklus, Überlastschutz, throttle, switchMap, reqToken, Abbruch, GraphQL-Anfrage, Fensternavigation, Ratenbegrenzung, rate limiting, ViewHostComponent, PRD 078, PRD 062, Query Cancellation, Klick-Burst
-
-### 108-changes-history-timestamp-convention.md
-
-PRD 108 fixes a legacy in-place-migration bug where Rapla 3 wrote the CHANGES.CHANGED_AT history-table timestamp as a UTC wall-clock value instead of true local wall-clock time (unlike every other timestamp column and unlike Rapla 2), causing recently-migrated Rapla 2 MariaDB history rows to appear to be from the future and get replayed over newer Rapla 3 writes on every cache refresh — discovered when it broke the PRD 058 key-migration's cache-consistency assertion. Status: implemented (Option A) 2026-08-28. The root cause traced to an unintentional Date-to-LocalDateTime mechanical substitution in a 2026-05-09 refactor commit (OQ1), not a deliberate PRD 054 choice. Decision D1 locked: fix the convention at the root — bind CHANGED_AT writes/reads/cleanup through the same AbstractTableStorage.setTimestamp/getTimestamp helper every other column uses, restoring parity with Rapla 2's original behavior; a null-connection-timestamp NPE found during redeploy (Phase 2a) was also fixed in the shared helper. Governs rapla-server RaplaSQL.HistoryStorage and AbstractTableStorage. Depends on PRD 058 (which surfaced the bug) and references PRD 054.
-
-*Keywords:* CHANGES-Tabelle, Zeitstempel, Migration, Rapla 2 zu Rapla 3, In-Place-Migration, MariaDB, CHANGED_AT, Historie, HistoryStorage, setTimestamp, UTC, Zeitzone, PRD 058, PRD 054, cache replay, GraphqlKeyMigration
-
-
 ### Frontend / SPA
 
 ### 117-graphql-administration-entities.md
@@ -262,35 +140,17 @@ Draft 2026-09-15 (direction decided by the user after two clickable prototypes):
 
 *Keywords:* resource picker, Ressourcenauswahl, ResourceSelection, omnibox, Suche, one search field, chips, Typ-Chips, Baum, resource tree, TreeFactoryImpl, categorization, belongsTo, packages, Gruppen, Gebäude, Studiengang, recents, favorites, event search, Terminsuche, PRD 119
 
-### 120-resource-hierarchy-parents-children.md
-
-Implemented 2026-10-03 (d38a499fa, 4dd0f02fd): fixed GraphQL fields `Resource.parents` / `Resource.children` read from the server's dependency graph (`LocalCache.graph`, direct-neighbour read), §12-filtered with a leak test; the SPA picker nests resources under their parents in every chip, also under categorization groups (D8/D9), a resource node stands for its subtree (toggle, no count, no "alle wählen", D7). One store-time check over belongsTo and package with normalised direction rejects cycles (D3/D4) and chains longer than 10 edges (D10); the old load-time check that deleted cyclic resources is gone — loading now logs an ERROR per cycle or too-deep chain (OQ5). Nested `idIn` walks up over all parents with a visited set. Open: signed build + deploy to dhbw-test, own message for "hierarchy too deep" (OQ8).
-
-*Keywords:* Ressourcenhierarchie, resource hierarchy, parents, children, Eltern, Kinder, belongsTo, gehört zu, package, gruppiert, Zyklus, cycle check, Tiefenlimit, MAX_HIERARCHY_LEVELS, logResourceCyclesOnLoad, removeInconsistentEntities, alle wählen, Favoriten, Zuletzt, checkBelongsTo, checkPackages, LocalCache graph, GraphNode, getDependent, DependencyIndex, Gebäude, Raum, Kursgruppe, picker tree, PRD 119, PRD 082
-
 ### 121-rapla2-rapla3-shared-database.md
 
 Draft 2026-09-30, number reserved: Rapla 2.1 and Rapla 3 on one shared database during the transition. The planning record (schema comparison, six legacy patches, BL1 BCrypt rehash, OQ1 keep DENIED, OQ3 bootstrap timezone offset, OQ6) lives in the private dhbwrapla docs; rapla carries only the stub plus the Rapla 3 side (bootstrap timezone offset 12fb1bfb4, DENIED rows kept on write cec7a8f54).
 
 *Keywords:* Rapla 2, Rapla 2.1, legacy, shared database, gemeinsame Datenbank, Übergang, migration, timezoneOffset, DENIED, BCrypt, EntityHistory, PREFERENCE, dhbwrapla
 
-### 122-spa-new-resource.md
-
-Implemented 2026-10-01 (D1–D9): "+ Neu" in the resource rail opens the create dialog directly (ruling B1 dropped the picker) with the active type chip preselected, else the first creatable type; the dialog seeds attribute defaults from `resourcePrototype`, keeps typed input, groups the type select "Ressourcen" then "Personen" (ruling A3, D9), titles "Neue Person" for person types; `createResource` and the `updateResource` type change accept only RESOURCE/PERSON types of the same kind (§12-identical answers for internal/event/unknown types). Reviewed, all findings fixed.
-
-*Keywords:* neue Ressource, new resource, Neu, createResource, newResourceOptions, resourcePrototype, reservationPrototype, ResourceEditDialogComponent, NewEventPickerComponent, newEventOptions, canCreate, Attribut-Defaults, attribute defaults, type chip, Typ-Chips, preselect, Ressourcenvorlagen, PRD 063, PRD 096, PRD 104, PRD 107, PRD 119, PRD 122
-
-### 123-spa-unified-resource-picker.md
-
-Implemented 2026-09-30/10-01: the rail's list, chips, group tree and "Weitere…" live in `ResourcePickerComponent`; the event sheet reuses it in assign mode (click assigns and collapses, ctrl-click keeps it open); Omnibox Enter asks the rail to step the first shown row (one row semantic); search term survives a reload; arrow keys skip group rows; availability requests are chunked to the server cap of 200 ids. Phase C (f6d01be31): "alle wählen" for the current list (Swing root-node parity), a Benutzer chip with "meine" degradation, and `ownerIn` (users OR resources) replacing `ownerEq`. Open: tier-7 e2e for both the picker and the Benutzer chip, live `ownerIn` probe.
-
-*Keywords:* Ressourcenauswahl, resource picker, ResourcePickerComponent, Omnibox, resource-selection, assign mode, Zuordnen, alle wählen, select all, chips, Weitere, MAX_CANDIDATE_IDS, availability chunks, Benutzer chip, ownerIn
-
 ### 124-spa-i18n.md
 
 Draft 2026-09-30, concept only: the SPA is hard-wired German (`LOCALE_ID de-DE`, ~285–350 literal strings in 47–66 files, hand-rolled weekday arrays, partly English strings). D1 locked: runtime catalogue from the server — the SPA loads all texts of the user's language in one `/api/locale` request (existing `RemoteLocaleController`, Swing properties keys, English fallback server-side) plus a new `SpaResources` bundle translated via the PRD 103 process; dates via `Intl`/`LOCALE_ID`. Rejected: build-time `@angular/localize` and runtime `$localize`. Open: language precedence without user preference, per-user GraphQL names, Angular locale data loading, the `org.rapla.language` vs `org.rapla.locale` system-preference mismatch in `ServerLocaleResolver`, key naming; caching of `/api/locale` moved to PRD 125. Estimate 4–6 days.
 
-Implemented 2026-10-06 (uncommitted, live on demo + the customer test instance): OQ3 variant A — the server delivers entity names, attribute labels (`DynamicType.attributeNames { key name values { key name } }`, SDL spellings), built-in view titles and search headings in the request language (`RequestLanguage`, ThreadLocal per execution); the SPA overlays attribute labels from that query over the SDL shape; OQ5 — one language chain for API and login page: cookie → user preference → configured server language (`org.rapla.locale`, else `org.rapla.language`) → browser `Accept-Language` → JVM; stock categories get names in every shipped language at `createDefaultSystem`. Open: user-group names via `GroupGraphQLController` `Locale.getDefault()` (+ sibling sites A/B), OQ2.
+Implemented 2026-10-06 (committed ba3c0d3d7/adedeec5e/e0a69ea33, live on demo + the customer test instance): OQ3 variant A — the server delivers entity names, attribute labels (`DynamicType.attributeNames { key name values { key name } }`, SDL spellings), built-in view titles and search headings in the request language (`RequestLanguage`, ThreadLocal per execution); the SPA overlays attribute labels from that query over the SDL shape; OQ5 — one language chain for API and login page: cookie → user preference → configured server language (`org.rapla.locale`, else `org.rapla.language`) → browser `Accept-Language` → JVM; stock categories get names in every shipped language at `createDefaultSystem`. Group names follow the request language too (ba3c0d3d7). Open: sibling sites A/B, OQ2.
 
 *Keywords:* i18n, Internationalisierung, Übersetzung, translation, Sprache, language, locale, LOCALE_ID, attributeNames, Accept-Language, browser language, RequestLanguage, ServerLocaleResolver.configured, ViewTexts, createDefaultSystem, Benutzergruppen, Intl, DatePipe, @angular/localize, $localize, RemoteLocaleService, RemoteLocaleController, LocalePackage, ResourceBundleList, SpaResources, RaplaResources, org.rapla.language, org.rapla.locale, ServerLocaleResolver, MatPaginatorIntl, Wochentage, Caching, Cache-Control, PRD 103, PRD 026, PRD 072, PRD 124
 
@@ -318,12 +178,6 @@ In-progress PRD for the Angular SPA's GraphQL view renderer: a generic ViewHostC
 
 *Keywords:* ViewHostComponent, extensions.view, graphql.service.ts, Scope-Gate, buildVariablesByType, Omnibox, Sichtbarkeit, view.window, PRD 074, PRD 077, PRD 079, PRD 081, PRD 106, GraphiQL, SPA, Ansicht, Ressourcenauswahl, resource chip, cookie auth, monaco-graphql
 
-### 089-server-side-recents-favorites.md
-
-PRD 089, in progress (Phases 1, 3, 4 landed 2026-06-27; Phase 2 deliberately deferred), moves the SPA's 'recents' and 'favorites' resource/user lists from cross-account-leaking localStorage into per-user server Preferences storage, adds REST endpoints (/api/recents, /api/favorites), and boosts search ranking for favorited/recent hits in SearchGraphQLController. Locked decisions D1-D6 cover storing opaque {id,kind,ts} JSON (not entity references, so deletion never blocks), live-resolve-and-skip on read (D3, reusing the calendar-model 'selected' pattern), in-bucket re-rank without a new bucket (D4), two separate Preferences keys (D5), and write-time compaction instead of a delete-path sweep (D6). Depends on PRD 081 (omnibox), 078, 074/077, 067, 049, 072. Governs UserListsService, RecentsController/FavoritesController, RefreshSessionService-style JSON prefs storage, and the Angular RecentsFavoritesService/ScopedStorage.
-
-*Keywords:* Favoriten, Zuletzt verwendet, recents, favorites, Preferences, UserListsService, localStorage, Suche, Ranking, SearchGraphQLController, §12, Sichtbarkeit, RefreshSessionService, per-user storage, Omnibox, PRD 081, Löschung, auto-cleanup, ScopedStorage
-
 ### 091-spa-reservation-edit-and-availability.md
 
 PRD 091 is a large, actively evolving draft (updated through 2026-07-08) bringing reservation editing to the Angular SPA plus a new GraphQL resource-availability API, with the equipment-lending archetype as the first target. Phase 1 (resourceAvailability/potentialConflicts GraphQL queries) and most of Phase 2 (event-sheet skeleton, mutations, undo/redo D5, recurrence editor Phase 4.0-4.5) are done; Phase 3 (finder) and parts of Phase 4 (convert-to-single) remain open. Key locked decisions: D1 GraphQL-only availability API, D2 free-time search split to PRD 092, D3 client-generated ids (id-first drafts), D4 unified Conflict type, D5 in-sheet memento-based undo (pre-save only, contrasted with PRD 094's command-pattern post-save undo), D6 permanently deferred block-level/occurrence-granular availability detail. Depends on/relates to PRD 024, 026, 056/057/063, 060, 067, 077/078, 086, and spun off PRD 092 (free-slot search), 093 (loan lifecycle), 094 (main-view actions/undo), 096 (classification editor, closes §2.4 deferral). Governs AvailabilityGraphQLController, ReservationMutationController, event-draft.ts, event-sheet.component.ts, draft-history.ts, repeating-edit.ts in rapla-angular and rapla-app.
@@ -342,18 +196,6 @@ PRD 094 is a draft (updated 2026-07-09) giving the SPA main view (table lens, la
 
 *Keywords:* Kontextmenü, row menu, Rückgängig, undo, redo, Command Pattern, SpaCommand, UndoToastService, Löschen, delete scope, RowContext, MenuItemProvider, moveAppointment, Duplizieren, Neu, Toast, PRD 091, PRD 101, PRD 093, Tabellenansicht
 
-### 095-month-grid-render-mode.md
-
-PRD 095, in progress (Phases 1+2 shipped, Phase 3a drag-create shipped, Phase 3b drag-move done 2026-07-08), adds a real month calendar grid (6x7, Monday-first) as a client render mode of the existing builtin 'Termine' view, with a new §12-gated AppointmentBlock.color field (delegating to the existing BlockColors helper, D2/D3: null the color rather than drop the block on unreadable contributors) as the only server addition. It uses spanning bars (EventCalendar-inspired, MIT-attributed) rather than per-day chips (OQ1 resolved). Locked decisions D1-D6 cover no-new-view (reusing rapla_appointments/ReservationFilter), ephemeral per-render-mode window derivation (D4), and an in-house implementation referencing Swing DraggingHandler/HTMLMonthViewPage/BlockColors plus EventCalendar for pointer mechanics only (D5, per PRD 032). Drag-move (D6) was superseded by PRD 101's transpose/anchor move verbs. Depends on PRD 077, 078, 074, 094, 032, 100, 101. Governs MonthGridComponent, ViewCatalogService.BUILTIN_VIEWS, AppointmentBlock GraphQL resolver in rapla-app/rapla-angular.
-
-*Keywords:* Monatsansicht, month grid, Kalenderraster, AppointmentBlock, color, BlockColors, §12, Termine view, spanning bars, drag-create, drag-move, moveReservations, ViewHostComponent, PRD 077, PRD 101, PRD 094, EventCalendar, Chip, Fensterberechnung
-
-### 096-spa-classification-editor.md
-
-PRD 096 is a draft with Phases 1-4 landed (2026-07-07/08) building one reusable Angular component, <app-classification-edit>, that renders and edits DynamicType-driven classification attributes for both Reservations and Allocatables, replacing PRD 091 §2.4's type+name-only slice. It introduces ClassificationSchemaService (D1: parses SDL from /api/graphql/schema per the PRD 055 β schema-as-data decision, no new descriptor query), a controlled/stateless component (D2, precondition for PRD 091 D5 memento undo), the v1 widget-mapping table from PRD 035 §5 (D3), an @editView(title|additional|no-view) directive deriving prominent 'title' fields from the nameformat (D5, revised from an earlier @title directive), and non-clearable enum selects (D4). Server prerequisite (Phase 0, in-place type change for updateReservation/updateAllocatable) landed. Consumers: the SPA event sheet (Phase 3) and a new allocatable editor dialog (Phase 4). Phase 5 (2026-10-01) adds a tree-category picker (CategoryTreeDialogComponent, fixed depth 5, clearable per Swing useNull — OQ4), Category.hasChildren, and server-side input checks (OQ6): category ids only below the attribute root, new resource references only when readable and of @expectedType, stored references pass unchanged. Open: OQ2, OQ3. Includes ride-along bugfixes for server-locale name resolution (ServerLocaleResolver) and a false CONCURRENT_MODIFICATION from timestamp-fraction stripping. Depends on PRD 091, 035 §5, 055, 056, 063.
-
-*Keywords:* Klassifikation, classification editor, Kategoriebaum, tree category, CategoryTreeDialogComponent, hasChildren, rootCategory, Gruppierung, Attribut, DynamicType, ClassificationSchemaService, app-classification-edit, SDL, @editView, Titel, nameformat, Allocatable Editor, AllocatableEditDialogComponent, ServerLocaleResolver, Widget-Mapping, PRD 091, PRD 055, PRD 035, type change, remapValues, expectedLastChanged
-
 ### 100-spa-block-renderer-unification.md
 
 PRD 100 unifies the SPA's month-grid and week-grid block renderers to match Swing's shared block-rendering model (SwingRaplaBlock/RaplaBuilder/BlockColors), fixing chip text-color duplication and week-lane grouping divergence. Status: in progress, Phases 1-2 shipped (shared block-style.ts module, black chip text, week-lane parity with fixed/compact modes and 5-min collision floor via week-lanes.ts), Phase 5 (server-computed lane matching via matchedBy field) mostly landed, Phase 3 (zoom/worktime options) and Phase 4 polish (rich chip content, auto-scroll) partly open. Key decisions D1-D8 cover always-black chip text, shared block-style module, Swing-parity week lanes, rows-per-hour as zoom, immediate selection-to-creation (deliberate Swing divergence), double-click-to-edit, matchedBy provenance field with no argument, and view-columns-driven chip content (D8, linking PRD 097). Governs rapla-angular/src/app/views/ (block-style.ts, week-lanes.ts, MonthGridComponent, WeekGridComponent). Depends on/relates to PRD 077, 095, 032, 094.
@@ -366,24 +208,11 @@ PRD 101 designs and partly implements the reservation move/copy/paste/template-i
 
 *Keywords:* Verschieben, Kopieren, Einfügen, Serie, Termin verschieben, Ausnahme, Wiederholung, moveReservations, splitOccurrence, exchangeAllocatable, keepTime, Anker, Drag and Drop, Resize, PRD 056, PRD 094, Zwischenablage, EVENT SERIE SINGLE
 
-### 103-i18n-language-coverage.md
-
-PRD 103 measures and decides which of rapla's nine UI languages (de, cs, es, fi, fr, nl, pl, pt plus English base) to bring to full translation coverage, triggered by an i18n pass on the combined login page. Status: in-progress; Phase 1 (filling gaps via LLM-assisted translation) done 2026-07-21 for all seven non-German/English languages, raising coverage to 99.5-100%; native-speaker review of the machine translations is still outstanding, as is deciding a keep-or-drop policy for the stray one-key NotificationResources_da.properties (Danish, not a real supported language). No decisions are yet formally locked (document still says none). Includes a regeneration script (Python, key-diff against the English base) for verifying coverage percentages. Governs rapla-core/rapla-client/plugin *.properties resource bundles (RaplaResources, plugin bundles like ExchangeConnectorResources, NotificationResources, etc.); does not cover the Angular SPA's separate i18n mechanism.
-
-*Keywords:* Sprache, Übersetzung, i18n, Lokalisierung, Properties-Datei, RaplaResources, Sprachabdeckung, Deutsch, Login-Seite, Plugin-Bundle, LLM-Übersetzung, coverage, Bundle, PRD 072, Fallback
-
 ### 104-spa-template-picker.md
 
 PRD 104 builds the SPA's unified 'Neu' (New) dialog for picking event types and event templates (rapla:template Allocatables, many hundreds in a deployment), replacing Swing's multi-level BalancedHierarchicalMenu with one flat searchable/scrollable list plus recents (D1/D6). It also carries the generic external-event reconciliation worklist ("Halde" staging store, PRD 068 sibling) design of record — worklist-not-wizard, Verknüpfen/Aus-Vorlage/Ignorieren resolution paths, channel-decoupled staging (D12), booking-rights scope, blueprint time-source rules — after a 2026-09-13 cleanup moved every deployment-specific detail (Dualis-Abgleich UI history, org-hierarchy scoping, corpus-derived conventions) out to dhbwrapla PRD 004 per AGENTS.md §17. Status: in-progress; Phases 1-4 (server path/grouping, SPA picker dialog, instantiation via reservationsFromTemplate) done 2026-07-24; Phase 5 (grouping config) and Phase 6 (multi-reservation import matching) deferred/in design. Locked decisions D1-D10 cover flat-list-plus-path (no tree), server-side grouping via TemplatePathBuilder, localStorage recents, unified type+template dialog, drag-create picker, reservationsFromTemplate reuse, deferred multi-reservation instantiation, and import matchKey-based matching. Governs rapla-angular src/app/event/ (NewEventPickerComponent) and src/app/import/ (worklist), plus rapla-app TemplatePathBuilder; deployment-specific implementation lives in dhbwrapla PRD 004.
 
 *Keywords:* Neu-Dialog, Vorlage, Ereignisvorlage, Termin anlegen, Dualis-Sync, Import, Abgleich, Parkstreifen, Halde, Verknüpfen, TemplatePathBuilder, newEventOptions, reservationsFromTemplate, Semestervorlage, Kurs, Unitcode, PRD 068, PRD 107, externalEventWorklist
-
-### 107-reservation-prototype-prefill.md
-
-PRD 107 introduces a side-effect-free reservationPrototype(typeKey) GraphQL query returning the server-computed default classification for a new event type, so the SPA can prefill new-event drafts with the same defaults Swing/the server silently applies at create time (DynamicTypeImpl.newClassification()). Status: implemented, Phases 1-4 done 2026-07-08, Phase 5 (newEventOptions query, first slice of the later template-picker work) done 2026-07-22; template instantiation itself deferred to PRD 104. Ride-along fixes: added Swing-missing copyPermissions on GraphQL reservation create (Phase 1), and null-vs-omitted input semantics so explicit null clears a defaulted attribute while omission keeps the default (Phase 2). Nine decisions locked (D1-D6 plus template design constraints D6): prototype is a query not a persisted draft or mutation (D1), ids stay client-minted (D2), no @defaultValue SDL directive (D3), permissions are a create-seed not a live type binding (D4), type change stays save-time-only (D5), template instantiation design constraints recorded but not built (D6, later realized in PRD 104). Governs rapla-app ReservationGraphQLController/ClassificationInputMapper and rapla-angular ClassificationSchemaService. Depends on/feeds PRD 096, 056, 090, 104.
-
-*Keywords:* Standardwerte, Vorschau, reservationPrototype, newClassification, Klassifikation, Attribut-Vorbelegung, Berechtigungen kopieren, copyPermissions, newEventOptions, Neuer Termin, Typwechsel, null-Semantik, PRD 104, PRD 096, PRD 056, VALUE_LIST enum
-
 
 ### Documents / templates / event content
 
@@ -438,18 +267,6 @@ PRD 087 is a draft (2026-06-24) split from PRD 082's Workstream A, defining Grap
 
 *Keywords:* Klassifikation, Typ-Index, GraphQL, ClassificationGraphQLController, typeKeyEq, typeKeyIn, H2, LocalCache, getAllocatables, Ressource, Reservierung, Berechtigung, canRead, PRD 082, PRD 086, PRD 083, Attribut-Index, WhereEvaluator, AttributeType, Suche
 
-### 088-spec-graph-formalization.md
-
-PRD 088 is a draft (2026-06-24, condensed with D6/D7 added 2026-06-27) proposing a lightweight, git-versioned spec graph and CI-enforced linkability layer on top of rapla's existing PRD/architecture-doc corpus, plus an AI-maintained-by-conversational-diff approach for architecture/admin/developer docs. It explicitly rejects adopting any SDD framework (OpenSpec, Spec Kit, Kiro) as a tool (D1), targeting spec-as-review-gate plus executable conformance rather than code generation (D2). Locked decisions D1-D7 cover YAML front-matter, dangling-ref CI lint, capability-spec extraction starting with REST/GraphQL/permissions, and dogfooding via ADR 0004. Depends on/references PRD 049, 035, 022, 067, 082-087, and ADRs 0001/0002/0004. Plan has four phases (linkability, doc dogfood, spec graph materialization, capability-spec pilot), none yet executed beyond design.
-
-*Keywords:* Spec-Driven Development, PRD-Graph, spec graph, OpenSpec, ADR, CI Lint, dangling reference, capability spec, AI-maintained docs, conversational diff, docs/prd, architecture docs, PRD 049, PRD 035, MADR, Mermaid, REST-Endpoint-Katalog, Dokumentation, Wissensgraph
-
-### 129-cached-permission-groups.md
-
-Implemented 2026-10-05 (0d3467cf3, reviewed): recomputing the caller's groups incl. parents (UserImpl.getGroupsIncludingParents) was 91 % of the pure permission time for location admins with 30–45 groups on a production-sized store. The server operator now caches them per resident user (readmodel.UserGroupsCache): a user change drops only that user, a category change drops all, drafts are never served from the cache; query and write paths share it. Identical answers, 8–13× less permission time (resource list 440–580 → 34–53 ms). No resource × user memo, no reverse index, no micro-optimisation (0–8 %). Implementation uncommitted.
-
-*Keywords:* Berechtigung, Performance, Cache, Gruppen, PermissionController, getGroupsIncludingParents, UserGroupsCache, StorageOperator, LocalAbstractCachableOperator, updateReadModel, RaplaDefaultPermissionImpl, PermissionExtension, canModify, canAdmin, SecurityManager, async-profiler, PRD 090, PRD 082, PRD 128
-
 ### 090-additive-permission-resolution.md
 
 PRD 090, done except cleanup (Phases 1-4 landed 2026-06-28, Phase 4 closed 2026-09-30; Phase 5 parked while Rapla 2 shares databases, PRD 121), replaces rapla's USER>GROUP>WORLD precedence permission resolution with a purely additive max-over-all-matching-rows model, abolishing DENIED and soft-deny (user-row-below-group) semantics (D1, D2, revises ADR 0003). A one-shot migration freezes a tiny (production-audit-measured, a handful of entities) worklist of true-escalation allocatables into a system preference; an admin REST endpoint plus SPA dialog let admins acknowledge/resolve findings (D4: prune DENIED, accept soft-deny). Option A (flip-then-migrate, D3) was chosen over a gated flip. Governs RaplaDefaultPermissionImpl, PermissionController, PermissionIndex, PermissionContainer.Util, the new PermissionMigrationService/Controller and SPA PermissionMigrationDialogComponent. The SPA migration dialog is the effective-access display. Since 2026-10-01 GraphQL never exposes DENIED (output enum without it, PermissionDto skips the rows) and every permission write keeps stored DENIED rows (PermissionInputMapper). Related: ADR 0003, docs/architecture/permissions.md, PRD 063 OQ2, PRD 069.
@@ -477,18 +294,6 @@ PRD 042, status draft (2026-05-15), rewrites the currently broken org.rapla.plug
 
 *Keywords:* iCal Import, Reservation, Termin-Import, Synchronisation, IcalSyncSource, IcalFeedParser, Mode 1, Mode 2, KEY_EXTERNALID, KEY_EXTERNAL_SYNC_SOURCE, PRD 038, PRD 039, PRD 042, RaplaICalImport, read-only sync, Import, Buchung, Kalender
 
-### 068-dualis-import-wizard-redesign.md
-
-PRD 068 (in-progress, sync flow implemented and live-verified 2026-06-12) redesigns dhbw's Dualis external-event import so the rapla Swing client stays generic/vanilla (no dhbw-specific code), with the server contributing only classification mapping of the raw Dualis data. Client flow: loadEvents fetches raw ImportItems with opaque `sourceData`; user selects rows; createReservations returns un-persisted `List<ReservationImpl>` built from a template, mapped server-side to classification; client resolves and edits them before save. A separate `syncClassification` contract (new, dedicated) binds an existing reservation to a Dualis event via classification-only merge, applied through an undoable `changeClassificationUndoable` command — deliberately not applying allocatable ids client-side. Relates to PRD 003/012 (original no-dhbw-client-code mandate), PRD 067 (independent — no EntityLifecycle needed here), PRD 104 (multi-reservation template matching). Governs `ExternalEventImportService`, `ImportItem`, dhbwrapla's `mapSyncClassification`/`createReservations`.
-
-*Keywords:* Dualis, Import, Veranstaltung, Pruefung, Klassifikation, Vorlage, Template, syncClassification, ImportItem, ExternalEventImportService, PRD 068, sourceData, createReservations, Synchronisieren, dhbwrapla, ImportStatus, Campusnet
-
-### 070-restore-exchange-connector-wiring.md
-
-PRD 070 (in-progress) restores the Exchange (EWS) connector's server wiring, broken by an incomplete Spring Boot migration: the Swing 'Exchange Connector' dialog returned 404 and the scheduled sync never ran because `SynchronisationManager` was never registered as a Spring bean and its controller was dropped. Fixes: wires `SynchronisationManager` and its full dependency graph as an always-present `@Bean` on every deployment (so the GUI works everywhere), restores `ExchangeConnectorController implements ExchangeConnectorRemote`, and splits scheduling onto a new `ExchangeSchedulerTrigger` bean gated by `@ConditionalOnProperty(rapla.exchange.enabled)` so the `@Scheduled` sync only runs on the dedicated sync deployment — distinct from the runtime `ENABLED_BY_ADMIN` kill switch. References PRD 019 (lifecycle migration), PRD 049 (controller dedup), PRD 048 (server container elimination), PRD 038 (Graph backend, additive, not a replacement), PRD 069 (blocking unrelated GraphQL schema WIP). Governs `ServerServiceConfig`, `SynchronisationManager`, `ExchangeSchedulerTrigger`, `ExchangeConnectorController`.
-
-*Keywords:* Exchange Connector, EWS, SynchronisationManager, rapla.exchange.enabled, ExchangeSchedulerTrigger, ExchangeConnectorController, Multi-Pod, Scheduler, PRD 070, Spring Boot Migration, 404 Whitelabel, ENABLED_BY_ADMIN, Mailbox, dhbw sync, @Scheduled, @ConditionalOnProperty
-
 ### 114-exchange-sync-per-mailbox-lock.md
 
 PRD 114 redesigns rapla's Exchange calendar sync to replace the single global EXCHANGE write lock with per-mailbox locks, turn the task queue into re-resolved intents, and separate the 6-second poll from the hourly full sweep so one broken mailbox or a long sweep cannot block or corrupt other mailboxes. Status: in-progress, Phase 1 hotfix (v1-v11 plus hunk14) live in production since 2026-09-09, Phases 2/2b/3/4 open. Triggered by a production incident analysis finding mailbox-mapping misses, an accessError break aborting all remaining tasks for a user, and RxJava worker contention stalling the poll behind the sweep. Locked decisions: D1 per-mailbox locks (not one global lock), D2 the EXCHANGE lock stays only as the poll's watermark/cursor, D3 tasks carry intents only so gaps become deletes not silent discards. Documents a long incident/hotfix history (private-item deletion bugs, recurring-master detection, weekly-pattern export bug, duplicate items from old series occurrences) and a backport table to the legacy master/WAR branch. Depends on PRD 070 (Exchange wiring/scheduler), PRD 038 (Graph backend), docs/architecture/locking.md and exchange-sync.md; site-specific data lives in gitignored dhbwrapla docs. Governs SynchronisationManager, AppointmentSynchronizer, EWSConnector, ExchangeSchedulerTrigger.
@@ -504,30 +309,11 @@ Draft 2026-09-14: a public Rapla 3 demo built from four locked use cases — U1 
 
 *Keywords:* Demo, Beispieldaten, demo data, data.xml, Screenshots, Playwright, Webseite, rapla/site, Hochschule, Stundenplan, Ausleihe, Leihschein, Seminarhaus, Einsatzplan, Schichtplan, Features-Seite, dynamische Typen, Demo-Instanz, Docker, PRD 118
 
-### 012-dhbwrapla-client-migration.md
-
-In-progress PRD migrating dhbwrapla's 14 Swing-client classes out of the fork into vanilla rapla or server-rendered pages. Two small admin-config panels (DhbwAuthPluginOptionPanel, TerminalOption) become super-admin-gated server-rendered HTML pages in the dhbwrapla server jar (superseded later by PRD 020's generic admin-panel mechanism). The 12-class dualisimport wizard is generalized and moved to rapla-core/rapla-client as org.rapla.plugin.externaleventimport, with a metadata-driven wire contract (getMetadata/uploadCsv/createReservations, ImportItem/HierarchyLevel/ResultColumn DTOs) so vanilla rapla carries zero DHBW-specific terminology; activation gated by rapla.externalevents.enabled. Rapla-side carve-out fully landed 2026-05-10 (12-file move, ExternalEventImportResources, ExternalEventImportServiceContractTest); dhbwrapla server-side adapter (DualisEventsLoaderImpl -> ExternalEventImportService) still pending under PRD 003 D2/E. Strict rule: vanilla rapla never depends on dhbwrapla. Depends on PRD 001, 003, 009.
-
-*Keywords:* dhbwrapla, externaleventimport, dualisimport, PRD 012, ExternalEventImportService, ExternalEventImportWizard, DualisEventsLoaderImpl, TerminalOption, DhbwAuthPluginOptionPanel, Vorlage, Termin-Import, Dualis, Morada, wire contract metadata, ConditionalOnProperty, super-admin gate, Studiengang, Fakultät
-
-### 045-end-user-deployment-and-db-config.md
-
-PRD 045, status in-progress (Phases 1-3 landed 2026-05-18, Phase 4 planned, plugin contract Phases 5-6 merged from former PRD 046), defines how an operator installs, configures, and extends the Spring Boot rapla fat JAR: externalized application.yml config, a production-sane bundled config (dev DEBUG logging and localhost URLs moved to application-local.yml), database configuration (wiring RaplaServerProperties db-datasources map to real DataSource beans via DatasourceConfiguredCondition, canonical key 'rapladb', HSQLDB bundled/PostgreSQL+MariaDB external in ./lib/), and a drop-in server plugin model using Spring Boot's AutoConfiguration.imports aggregation plus PropertiesLauncher with loader.path=lib/,plugins/ (no operator flags needed). Distinguishes itself from PRD 003's legacy full-custom-deployable model (dhbwrapla migration is a follow-up). Frontend plugin counterpart is PRD 047.
-
-*Keywords:* Deployment, application.yml, Datenbank, DataSource, rapladb, HSQLDB, MariaDB, PostgreSQL, PropertiesLauncher, loader.properties, Plugin, drop-in, fat JAR, PRD 045, PRD 003, PRD 047, Konfiguration, Installation, systemd, WinSW
-
 ### 052-client-clean-restart.md
 
 PRD 052 designs a clean in-JVM restart of the Swing desktop client on logout/login so no cached entities, UI state, or RxJava subscriptions leak between users (e.g. admin menus surviving into a non-admin session). Status: draft, 2026-05-21, no shipped phases recorded here. Selected approach: full ApplicationContext close+recreate (Option A) over a parent/child context split (B) or an explicit SessionScoped contract (C, rejected), driven by a BlockingQueue<NextSession> signal from RaplaClientServiceImpl to a loop in SpringRaplaClient.main(). Phase 1a removes a JVM-global AWT EventQueue exception handler in favor of per-site SwingSafe.invokeLater; Phase 1b adds RaplaEventBus disposal. Aligns with PRD 051 (switch-user-with-oauth) and PRD 029 (Swing OAuth login). Governs rapla-client Swing lifecycle: SpringRaplaClient, RaplaClientServiceImpl, RaplaMenuBar, CalendarSelectionModel, RaplaEventBus.
 
 *Keywords:* Swing Client, Neustart, Logout, Login, Speicherleck, RxJava, RaplaEventBus, ApplicationContext, SpringRaplaClient, RaplaClientServiceImpl, SwingSafe, AWT EventQueue, Benutzerwechsel, switch user, PRD 051, clean restart, heap leak, JVM
-
-### 112-deployment-patch.md
-
-PRD 112 covers seeding deployment-specific stored views, documents and type annotations from files next to the JAR instead of manual template-editor pasting, so customer-specific content stays outside the JAR. Option A (declarative front-matter file patches in data/patch/, using YAML headers inside Mustache/GraphQL comments, timestamp-based update rule A2) was implemented on user instruction 2026-09-02: FrontMatter, ArtifactPatchLoader, RaplaServerProperties.patchDir, system-scoped save overloads. Option B (a patch JAR with a DataPatch interface, applied-list bookkeeping, Flyway-style once-only semantics) is a designed but not-yet-built later extension, compatible with and building on Option A's save path. Depends on PRD 098 (artifact store, builtins stay in JAR), PRD 097 (documents), PRD 111 (documents annotation), PRD 090 (migration marker protocol), docs/architecture/locking.md. Governs org.rapla.server.spring.patch package, ArtifactCatalogService, ViewCatalogService, DocumentCatalogService.
-
-*Keywords:* PRD 112, Patch, Seed, deployment, Vorlage, ArtifactPatchLoader, FrontMatter, data/patch, DataPatch, ArtifactCatalogService, ViewCatalogService, DocumentCatalogService, Auslieferung, PRD 097, PRD 098, PRD 111, multi-pod, writeLockIfLoaded, Leihschein
-
 
 ### Testing / quality / process
 
@@ -543,37 +329,11 @@ PRD defining rapla's layered test pyramid (later codified in AGENTS.md §10) and
 
 *Keywords:* Test Coverage, PRD 017, FacadeTestSupport, JaCoCo, Tag db e2e, testdefault.xml, AppointmentBlocksExpansionTest, PermissionMatrixTest, XmlRoundTripTest, ConflictFinderViaFacadeTest, Testpyramide, storeAndRemoveAsync, MONTHLY repeat, Serie, Konflikt, Berechtigung, DbOperatorBootTest, coverage profile
 
-### 022-architecture-documentation.md
-
-In-progress short PRD establishing a new docs/architecture/ reference directory (README, overview, domain-model, dynamic-types, conflicts-and-events, reservation-edit, permissions, extension-points, flows) so new contributors and AI agents can build a correct mental model without code archaeology. Explicitly a reference not a tutorial, not a user manual, and not ADRs (decisions stay in PRDs). Uses docs/conflict-detection.md conventions (path:line refs, tables, no images); plans to land all eight docs in one commit and move this PRD to docs/prd/done/ once shipped, with per-doc updates thereafter not needing new PRDs. Maintenance rule: PRDs landing structural changes should update affected docs/architecture/*.md as part of their closing checklist. Open questions (non-blocking): Mermaid diagrams and auto-generated plugin/extension-point catalogs, deferred. Referenced by PRD 023 (its 'house pattern' diagram belongs in docs/architecture/mvp-pattern.md per this PRD).
-
-*Keywords:* architecture documentation, PRD 022, docs/architecture, domain-model, dynamic-types, permissions.md, extension-points.md, flows.md, conflict-detection.md, reference documentation, mvp-pattern.md, Dokumentation, Architektur, AGENTS.md, PRD-driven development
-
 ### 023-presenter-view-extraction.md
 
 Large in-progress PRD carving pure-Java decision/computation logic out of Swing god-classes (AppointmentController, AllocatableSelection, ClassifiableFilterEdit, ReservationInfoEdit) into rapla-core, both to make the logic unit-testable (tier-1, no Swing) and to give the future Angular client (PRD 026/028) reusable business rules via REST (PRD 024) instead of reimplementing scheduling semantics. Explicitly not building a production Presenter/View MVP split for the reservation-edit dialog (dropped 2026-05-11 once Angular's UI was confirmed to differ substantially from Swing). Phases 1-3, 5, 7-12 landed: RepeatingRuleProjector/Model/Validator/Writer, AllocationConflictModel, ClassificationFilterOperators, name-search (NameSearchMatcher), action-policy carve-outs (PasswordChangePolicy, RaplaObjectActionPolicy), EventCheck carve-outs (ReservationWarning DTOs), ExceptionListMutator, and opportunistic singles (EventTimeStatus, HolidayWarningModel, WorktimeRange fixing a PRD-014 bug). Phase 4 (calendar block layout) superseded - already pure. Phase 6 re-aimed to ongoing opportunistic carve-outs (6a/6c/6e done, 6b skipped, 6d/6f open). Established the house pattern documented in docs/architecture/mvp-pattern.md and the NoSwingInRaplaCoreClientEditTest architecture gate. Cross-references PRD 020 (pattern precedent), 024 (REST consumer), 017 (coverage), 025 (headless test harness), 026/028 (Angular).
 
 *Keywords:* Presenter, MVP pattern, PRD 023, RepeatingRuleValidator, RepeatingRuleModel, AllocationConflictModel, AppointmentController, AllocatableSelection, ClassificationFilterOperators, NoSwingInRaplaCoreClientEditTest, mvp-pattern.md, PasswordChangePolicy, RaplaObjectActionPolicy, NameSearchMatcher, Serie, Konflikt, Berechtigung, HeadlessPresenterTestSupport, AllocatableRowStatusModel
-
-### 025-headless-client-test-harness.md
-
-Draft PRD proposing a HeadlessPresenterTestSupport test harness (peer of FacadeTestSupport) so presenter and pure-model classes carved out by PRD 023 can be unit-tested without booting Swing, the EDT, or a Spring context. Scope: a tier-2 base class reusing FacadeTestSupport's fixture wiring plus a MutableClock and i18n stub, and a reflective RecordingView<P> test double replacing hand-rolled boolean-flag view mocks, with fluent assertCalled/assertNeverCalled assertions. Explicitly excludes GUI test frameworks, async testing utilities, and mocking libraries. Depends on and is consumed by PRD 023 (presenter/view extraction, primary consumer), references PRD 020's FieldRendererTest precedent, PRD 017 (test coverage strategy pyramid), and PRD 022 (architecture docs for the pattern). Governs rapla-server/src/test/java/org/rapla/test/util/ test infrastructure for rapla-client presenter classes.
-
-*Keywords:* HeadlessPresenterTestSupport, FacadeTestSupport, RecordingView, PRD 025, PRD 023, Presenter, MVP pattern, Swing, tier-2 test, MutableClock, test harness, presenter test, RaplaFacade, Testabdeckung, Mock, AGENTS.md §10
-
-### 027-mock-framework-policy.md
-
-Adopted decision PRD (2026-05-11) establishing rapla's mock-framework policy for tests: default is no mocking of internal rapla types (RaplaFacade, LocalCache, PermissionController, ConflictFinder, entities) — use real FacadeTestSupport at tier 2 and real Spring context + MockMvc at tier 3, since rapla's harnesses make 'real' cheap and mocks have historically hidden shipped bugs (Jackson 3 final-field bugs, silent no-op stubs, MONTHLY semantics, permission leaks). Narrow allowed exceptions: Servlet-API types (HttpServletRequest/Response) and external integrations behind one rapla-owned interface (MailInterface, EWS client). Grandfathers RaplaJNLPPageGeneratorTest as the canonical Mockito example. This policy became AGENTS.md §13 and constrains test-writing in PRDs 024 (server-side edit services) and 025 (headless client test harness); cites PRD 007 (build/test performance, context-cache) and PRD 017 (test coverage strategy).
-
-*Keywords:* Mockito, Mock, mock-framework policy, PRD 027, AGENTS.md §13, FacadeTestSupport, MockMvc, RaplaFacade, PermissionController, LocalCache, ConflictFinder, Testrichtlinie, no mocks, SpringBootTest, MockBean, RecordingView
-
-### 034-ci-baseline-workflow.md
-
-Active PRD (Phases 1–3 implemented 2026-09-14) for the GitHub Actions workflow `.github/workflows/ci.yml`: nightly (01:17 UTC) + on-demand `workflow_dispatch`, no push/PR trigger. Jobs: `java` (default test lane + `package -Psign-jks`, display-dependent `@Tag("swing")` tests excluded), `slow-tests` (`db`/`e2e`/`perf`), `angular` (lint + Vitest), `docker` (image build on every branch, no push). Red tests are reported, never block the build. The workflow publishes nothing: since 2026-09-14 (user ruling) the nightly JAR, `ghcr.io/rapla/rapla:nightly` and releases from 3.0 on come from the separate owners-only repository `rapla/rapla-releases` (renamed from `rapla-nightly`), after the environment + PAT approach inside rapla/rapla was rejected. Closed: OQ2 retention, OQ4 Node pin (24.15.0), OQ5 registry. Open: OQ1 nightly time, OQ3 PR trigger. Cross-references PRD 017 (test pyramid), AGENTS.md §5, docs/development.md § CI, docs/deployment.md § Nightly image.
-
-*Keywords:* CI, GitHub Actions, PRD 034, ci.yml, nightly, workflow_dispatch, schedule, surefire, @Tag swing, slow-tests, Angular lint, Vitest, docker build, rapla-releases, rapla-nightly, ghcr, attestation, Node 24.15.0, -Psign-jks
-
-
 
 ## Done
 
@@ -587,31 +347,69 @@ Active PRD (Phases 1–3 implemented 2026-09-14) for the GitHub Actions workflow
 - [005-multi-module-split.md](done/005-multi-module-split.md)
 - [008-server-sync-client-async-facade-split.md](done/008-server-sync-client-async-facade-split.md)
 - [008-server.md](done/008-server.md)
+- [009-server-bulk-storage-rest-api.md](done/009-server-bulk-storage-rest-api.md)
 - [010-jackson-field-based-wire-format.md](done/010-jackson-field-based-wire-format.md)
 - [011-spring-boot-4-jackson-3.md](done/011-spring-boot-4-jackson-3.md)
+- [012-dhbwrapla-client-migration.md](done/012-dhbwrapla-client-migration.md)
 - [013-date-script-collateral-damage.md](done/013-date-script-collateral-damage.md)
 - [014-appointment-long-to-java-time.md](done/014-appointment-long-to-java-time.md)
 - [015-finish-date-migration-rapla-client.md](done/015-finish-date-migration-rapla-client.md)
 - [016-pre-checkin-deletion-audit.md](done/016-pre-checkin-deletion-audit.md)
 - [019-spring-boot-lifecycle-migration.md](done/019-spring-boot-lifecycle-migration.md)
+- [022-architecture-documentation.md](done/022-architecture-documentation.md)
+- [025-headless-client-test-harness.md](done/025-headless-client-test-harness.md)
+- [027-mock-framework-policy.md](done/027-mock-framework-policy.md)
 - [028-angular-power-search.md](done/028-angular-power-search.md)
+- [029-swing-oauth-login.md](done/029-swing-oauth-login.md)
+- [031-api-namespace-redesign.md](done/031-api-namespace-redesign.md)
 - [031-token-refresh-and-api-keys.md](done/031-token-refresh-and-api-keys.md)
 - [032-angular-ui-library-evaluation.md](done/032-angular-ui-library-evaluation.md)
 - [033-playwright-mcp-browser-testing.md](done/033-playwright-mcp-browser-testing.md)
+- [034-ci-baseline-workflow.md](done/034-ci-baseline-workflow.md)
 - [035-graphql-foundations.md](done/035-graphql-foundations.md)
+- [036-external-idp-oauth-login.md](done/036-external-idp-oauth-login.md)
 - [044-playwright-agents.md](done/044-playwright-agents.md)
+- [045-end-user-deployment-and-db-config.md](done/045-end-user-deployment-and-db-config.md)
+- [048-eliminate-server-container-context.md](done/048-eliminate-server-container-context.md)
+- [049-controller-interface-deduplication.md](done/049-controller-interface-deduplication.md)
+- [050-external-auth-user-lifecycle.md](done/050-external-auth-user-lifecycle.md)
 - [051-switch-user-with-oauth.md](done/051-switch-user-with-oauth.md)
 - [053-replace-rapla-logger-with-slf4j.md](done/053-replace-rapla-logger-with-slf4j.md)
+- [055-graphql-events-read-api.md](done/055-graphql-events-read-api.md)
+- [056-graphql-events-write-api.md](done/056-graphql-events-write-api.md)
 - [057-graphql-dt-mutations-v1.md](done/057-graphql-dt-mutations-v1.md)
+- [058-graphql-key-spec-migration.md](done/058-graphql-key-spec-migration.md)
 - [059-graphql-typed-where-predicates.md](done/059-graphql-typed-where-predicates.md)
+- [063-graphql-allocatables-write-api.md](done/063-graphql-allocatables-write-api.md)
+- [064-graphql-conflicts-read-api.md](done/064-graphql-conflicts-read-api.md)
+- [066-graphql-reservation-allocatable-matching.md](done/066-graphql-reservation-allocatable-matching.md)
+- [068-dualis-import-wizard-redesign.md](done/068-dualis-import-wizard-redesign.md)
+- [069-graphql-resource-access-read-api.md](done/069-graphql-resource-access-read-api.md)
+- [070-restore-exchange-connector-wiring.md](done/070-restore-exchange-connector-wiring.md)
 - [071-web-security-hardening.md](done/071-web-security-hardening.md)
 - [072-server-side-login-dialog.md](done/072-server-side-login-dialog.md)
+- [079-graphql-grouped-aggregates.md](done/079-graphql-grouped-aggregates.md)
 - [080-typed-entity-stats.md](done/080-typed-entity-stats.md)
+- [088-spec-graph-formalization.md](done/088-spec-graph-formalization.md)
+- [089-server-side-recents-favorites.md](done/089-server-side-recents-favorites.md)
+- [095-month-grid-render-mode.md](done/095-month-grid-render-mode.md)
+- [096-spa-classification-editor.md](done/096-spa-classification-editor.md)
 - [098-server-artifact-store.md](done/098-server-artifact-store.md)
 - [099-spa-table-selection.md](done/099-spa-table-selection.md)
+- [103-i18n-language-coverage.md](done/103-i18n-language-coverage.md)
+- [106-query-request-lifecycle.md](done/106-query-request-lifecycle.md)
+- [107-reservation-prototype-prefill.md](done/107-reservation-prototype-prefill.md)
+- [108-changes-history-timestamp-convention.md](done/108-changes-history-timestamp-convention.md)
+- [112-deployment-patch.md](done/112-deployment-patch.md)
+- [113-graphql-permission-model.md](done/113-graphql-permission-model.md)
 - [115-exchange-sync-hotfix-2026-09.md](done/115-exchange-sync-hotfix-2026-09.md)
 - [116-graphql-allocatable-to-resource-rename.md](done/116-graphql-allocatable-to-resource-rename.md)
-
+- [120-resource-hierarchy-parents-children.md](done/120-resource-hierarchy-parents-children.md)
+- [122-spa-new-resource.md](done/122-spa-new-resource.md)
+- [123-spa-unified-resource-picker.md](done/123-spa-unified-resource-picker.md)
+- [126-swing-sso-auto-login.md](done/126-swing-sso-auto-login.md)
+- [127-picker-accordion-type-order.md](done/127-picker-accordion-type-order.md)
+- [129-cached-permission-groups.md](done/129-cached-permission-groups.md)
 
 ## Won't fix
 

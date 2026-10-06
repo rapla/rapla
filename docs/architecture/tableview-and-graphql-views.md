@@ -145,7 +145,7 @@ was what previously forced `@flatten`/`@column(order:)` — an artifact, now gon
 - **`CalendarModel` filters → query variable** (`$filter: ReservationFilter!`). The saved
   GUI filter — reservation type (`typeKeyEq`), *neue Regel für* classification rules (the
   generated `where<TypeKey>` predicates, AND/OR/NOT, [PRD 059](../prd/done/059-graphql-typed-where-predicates.md) — richer than a flat type
-  list), the resource-tree selection (`resourceMatching`, [PRD 066](../prd/066-graphql-reservation-allocatable-matching.md)), and the date range
+  list), the resource-tree selection (`resourceMatching`, [PRD 066](../prd/done/066-graphql-reservation-allocatable-matching.md)), and the date range
   (`from`/`to`) — is **user state**, carried in the root's `filter: $filter`.
 
 ```graphql

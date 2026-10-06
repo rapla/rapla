@@ -7,7 +7,7 @@
 
 ### Shipped
 
-- **Server** — `ImpersonationController` + `UsersController` ([PRD 049](../049-controller-interface-deduplication.md)
+- **Server** — `ImpersonationController` + `UsersController` ([PRD 049](049-controller-interface-deduplication.md)
   `@HttpExchange` pattern), `JwtConfig.JwtIssuer.issueImpersonationToken`,
   `AuthorizationServerConfig.jwtTokenCustomizer` injecting
   `preferred_username` + `name` on rapla-SAS tokens so the SPA's user
@@ -62,7 +62,7 @@ clients so an admin can view rapla as another user without their
 password, work in their context, and switch back with one click. The
 feature shipped pre-[PRD 041](../041-openapi-runtime-removal.md) via `/api/auth/login`'s `connectAs` field;
 [PRD 041](../041-openapi-runtime-removal.md) deleted that endpoint when consolidating onto `/oauth2/token`,
-and the OAuth2 password grant has no equivalent. With [PRD 036](../036-external-idp-oauth-login.md) +
+and the OAuth2 password grant has no equivalent. With [PRD 036](036-external-idp-oauth-login.md) +
 Keycloak, rapla no longer mints the token for external-IdP logins at
 all, so even reintroducing `connectAs` wouldn't cover the dominant SSO case.
 
@@ -124,7 +124,7 @@ all, so even reintroducing `connectAs` wouldn't cover the dominant SSO case.
   1. Decode the Bearer via the multi-issuer `JwtDecoder` (any
      accepted issuer).
   2. Resolve actor → rapla `User` via `SpringSecurityRemoteSession.resolveJwtOrThrow`
-     (username-as-identity per [PRD 036](../036-external-idp-oauth-login.md)).
+     (username-as-identity per [PRD 036](036-external-idp-oauth-login.md)).
   3. Resolve `target_username` → rapla `User` via case-insensitive
      lookup. 404 if not found.
   4. `PermissionController.canAdminUser(actor, target)` — same rule as
@@ -238,7 +238,7 @@ side as the check.
 ### Load-bearing principle: rapla can mint tokens for any rapla user
 
 Rapla's embedded Spring Authorization Server controls its own
-RSA-signing key (`RaplaKeyStorage`, per [PRD 029](../029-swing-oauth-login.md) Phase 1) and can sign
+RSA-signing key (`RaplaKeyStorage`, per [PRD 029](029-swing-oauth-login.md) Phase 1) and can sign
 a JWT for any rapla user identity provided server-side rules allow.
 External IdPs **cannot** do this — they only issue tokens whose `sub`
 is the human who authenticated to them.
@@ -255,7 +255,7 @@ impersonation token (RFC 8693 strict, RFC 7523 user-assertion,
 `act_as:` scopes) is rejected: they only work when IdP policy
 cooperates, and rapla deployments don't control external IdP realm
 policy. Token swap is the **only** option that works for the
-IdP-replaceable architecture PRD 031 + [PRD 036](../036-external-idp-oauth-login.md) established.
+IdP-replaceable architecture PRD 031 + [PRD 036](036-external-idp-oauth-login.md) established.
 
 ### Why a rapla-namespaced endpoint, not a SAS extension
 
@@ -476,7 +476,7 @@ clears `impersonation_override`.
    with usernames + UUIDs.
 4. **Client: `ImpersonationClient`** (new) in
    `rapla-core/src/main/java/org/rapla/storage/dbrm/`. `@HttpExchange`
-   interface paired with the controller ([PRD 049](../049-controller-interface-deduplication.md) pattern).
+   interface paired with the controller ([PRD 049](049-controller-interface-deduplication.md) pattern).
 5. **Client: impersonation override storage.** One field in
    `AuthService` (Angular) / `RaplaClientServiceImpl` (Swing):
    `{ accessToken, target, expAt }`. In-memory by default. No
@@ -493,7 +493,7 @@ clears `impersonation_override`.
 9. **Documentation.** `docs/authentication.md`: new section "Admin
    impersonation ('switch to user')" with wire format, audit log
    shape, "no impersonation refresh anywhere" + "no admin password
-   stored" properties. Cross-ref [PRD 036](../036-external-idp-oauth-login.md) § "Out of scope" → "Admin
+   stored" properties. Cross-ref [PRD 036](036-external-idp-oauth-login.md) § "Out of scope" → "Admin
    impersonation".
 
 ## Tests

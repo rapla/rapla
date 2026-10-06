@@ -109,7 +109,7 @@ Browser flows verified on first run, captured in the skill. No ongoing suite com
 
 - [PRD 026 — Angular frontend](../026-angular-frontend.md): the SPA
   this would test.
-- [PRD 031 — API namespace redesign](../031-api-namespace-redesign.md):
+- [PRD 031 — API namespace redesign](031-api-namespace-redesign.md):
   the OAuth + URL layout the test sequence walks.
 - [PRD 017 — Testing pyramid](../017-test-coverage-strategy.md): Playwright
   tests sit at tier 4 (E2E). Most testing stays at tiers 1-3.
