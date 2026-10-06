@@ -5056,14 +5056,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         CategoryImpl groupsCategory = new CategoryImpl(now, now);
         groupsCategory.setKey("user-groups");
         groupsCategory.setResolver(store);
-        setName(groupsCategory.getName(), groupsCategory.getKey());
+        setStockCategoryName(groupsCategory.getName(), groupsCategory.getKey());
         setNew(groupsCategory);
         store.put(groupsCategory);
 
         CategoryImpl periodsCategory = new CategoryImpl(now, now);
         periodsCategory.setKey("periods");
         periodsCategory.setResolver(store);
-        setName(periodsCategory.getName(), periodsCategory.getKey());
+        setStockCategoryName(periodsCategory.getName(), periodsCategory.getKey());
         setNew(periodsCategory);
         store.put(periodsCategory);
 
@@ -5071,7 +5071,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         holidaysCategory.setKey("holiday");
         holidaysCategory.setResolver(store);
-        setName(holidaysCategory.getName(), holidaysCategory.getKey());
+        setStockCategoryName(holidaysCategory.getName(), holidaysCategory.getKey());
         setNew(holidaysCategory);
         store.put(holidaysCategory);
         periodsCategory.addCategory(holidaysCategory);
@@ -5081,7 +5081,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             CategoryImpl group = new CategoryImpl(now, now);
             group.setKey(catName);
             setNew(group);
-            setName(group.getName(), group.getKey());
+            setStockCategoryName(group.getName(), group.getKey());
             groupsCategory.addCategory(group);
             group.setResolver(store);
             store.put(group);
@@ -5231,6 +5231,28 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Class<T> raplaType = entity.getTypeClass();
         ReferenceInfo<T> id = createIdentifier(raplaType, 1).get(0);
         ((RefEntity) entity).setId(id.getId());
+    }
+
+    /** A stock category carries the bundle text of every shipped language (English included, other languages only when they differ from it), whatever language the server runs in. */
+    private void setStockCategoryName(MultiLanguageName name, String key)
+    {
+        setName(name, key);
+        for (String lang : raplaLocale.getAvailableLanguages())
+        {
+            try
+            {
+                String english = i18n.getString(key, java.util.Locale.ENGLISH);
+                if ("en".equals(lang)) name.setName(lang, english);
+                else
+                {
+                    String translation = i18n.getString(key, new java.util.Locale(lang));
+                    if (!translation.equals(english)) name.setName(lang, translation);
+                }
+            }
+            catch (java.util.MissingResourceException ex)
+            {
+            }
+        }
     }
 
     private void setName(MultiLanguageName name, String to)
