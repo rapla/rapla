@@ -509,6 +509,40 @@ class DbOperatorCacheDriftTest
         return null;
     }
 
+    /**
+     * Halde rows ({@code ExternalSyncEntity}) never ride the update history, so the PRD 054
+     * check reported every staged row as drift ("cache is now stale") — a false alarm per
+     * 100-row block on every Halde fill (dhbw-test 2026-10-07). Like StoredArtifact they are
+     * exempt; a reservation stored in the same dispatch is still checked.
+     */
+    @Test
+    @DisplayName("storing Halde rows logs no PRD054 cache drift")
+    void haldeRowsLogNoCacheDrift() throws Exception
+    {
+        final ch.qos.logback.classic.Logger log = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(DBOperator.class);
+        final ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender = new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        log.addAppender(appender);
+        try
+        {
+            final org.rapla.entities.storage.internal.ExternalSyncEntityImpl row = new org.rapla.entities.storage.internal.ExternalSyncEntityImpl();
+            row.setId(org.rapla.plugin.externaleventimport.server.ExternalEventStagingConstants.idOf("v:4711"));
+            row.setExternalSystem("TEST");
+            row.setDirection(org.rapla.entities.storage.ImportExportDirections.IMPORT);
+            row.setContext(org.rapla.plugin.externaleventimport.server.ExternalEventStagingConstants.CONTEXT_EVENT_STAGING);
+            row.setData("{}");
+
+            operator.storeAndRemove(java.util.List.of(row), java.util.List.of(), getAdmin());
+
+            assertTrue(appender.list.stream().noneMatch(e -> e.getFormattedMessage().contains("post-save cache drift")),
+                    "a Halde row must not be reported as cache drift");
+        }
+        finally
+        {
+            log.detachAppender(appender);
+        }
+    }
+
     private User getAdmin() throws Exception
     {
         for (User u : facade.getUsers())

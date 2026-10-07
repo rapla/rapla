@@ -861,6 +861,11 @@ import java.time.LocalDateTime;
         return tableMap;
     }
 
+    private static boolean isOutsideHistory(Class<?> type)
+    {
+        return type == StoredArtifact.class || type == ExternalSyncEntity.class;
+    }
+
     public void dispatch(UpdateEvent evt) throws RaplaException
     {
         RaplaLock.WriteLock writeLock = writeLockIfLoaded("Dispatching " + evt.toString());
@@ -901,15 +906,16 @@ import java.time.LocalDateTime;
                     final List<String> missing = new ArrayList<>();
                     for (Entity stored : storeObjects)
                     {
-                        // StoredArtifact is read-through and never in the history replay (PRD 098)
-                        if (stored.getTypeClass() != StoredArtifact.class && !refreshedIds.contains(stored.getId()))
+                        // StoredArtifact is read-through (PRD 098) and Halde rows (ExternalSyncEntity) are read
+                        // from the DB on every access — neither is ever in the history replay
+                        if (!isOutsideHistory(stored.getTypeClass()) && !refreshedIds.contains(stored.getId()))
                         {
                             missing.add(stored.getId());
                         }
                     }
                     for (ReferenceInfo removed : removeObjects)
                     {
-                        if (removed.getType() != StoredArtifact.class && !refreshedIds.contains(removed.getId()))
+                        if (!isOutsideHistory(removed.getType()) && !refreshedIds.contains(removed.getId()))
                         {
                             missing.add(removed.getId());
                         }
