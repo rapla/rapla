@@ -147,7 +147,26 @@ public class ExternalEventStagingService
         return result;
     }
 
+    /** PRD 004 OQ6 refresh: re-reads only the named source item ids; a named id the source no
+     *  longer delivers is removed, unnamed rows are never touched. No meta lock — the diff is
+     *  idempotent, so a race with a full run is repaired by the next one. */
+    public StagingReconcileResult reconcileIds(Collection<String> sourceItemIds) throws RaplaException
+    {
+        final Set<String> scope = new HashSet<>();
+        for (String sourceItemId : sourceItemIds)
+        {
+            scope.add(ExternalEventStagingConstants.idOf(sourceItemId));
+        }
+        return applySnapshot(provider.readByIds(sourceItemIds), clock.getAsLong(), scope);
+    }
+
     private StagingReconcileResult applySnapshot(Collection<ImportItem> snapshot, long now) throws RaplaException
+    {
+        return applySnapshot(snapshot, now, null);
+    }
+
+    private StagingReconcileResult applySnapshot(Collection<ImportItem> snapshot, long now, Set<String> scope)
+            throws RaplaException
     {
         final String timestamp = Instant.ofEpochMilli(now).toString();
         final Map<String, ExternalSyncEntity> existing = readStagingRows();
@@ -195,7 +214,7 @@ public class ExternalEventStagingService
 
         for (Map.Entry<String, ExternalSyncEntity> entry : existing.entrySet())
         {
-            if (seen.contains(entry.getKey()))
+            if (seen.contains(entry.getKey()) || (scope != null && !scope.contains(entry.getKey())))
             {
                 continue;
             }

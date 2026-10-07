@@ -108,7 +108,7 @@ class ExternalEventWorklistLeakTest extends FacadeTestSupport
         final WorklistView view = assembler.assemble(nonAdmin, operator.getPermissionController(), bothGroups(), null);
 
         assertThat(view.groups()).hasSize(1);
-        assertThat(view.groups().get(0).allocatableId()).isEqualTo(openGroup.getId());
+        assertThat(view.groups().get(0).resourceId()).isEqualTo(openGroup.getId());
         assertThat(view.counts().total()).isEqualTo(1);
 
         final String rendered = view.toString();

@@ -25,4 +25,14 @@ public interface ExternalEventSnapshotProvider extends ExternalEventAttribution
      * run.
      */
     Collection<ImportItem> readAll() throws RaplaException;
+
+    /**
+     * The current source rows of exactly these source item ids (PRD 004 OQ6 refresh). A missing
+     * id means the source no longer has it. Must either return every requested row or throw.
+     */
+    default Collection<ImportItem> readByIds(Collection<String> sourceItemIds) throws RaplaException
+    {
+        final java.util.Set<String> ids = new java.util.HashSet<>(sourceItemIds);
+        return readAll().stream().filter(item -> ids.contains(item.getSourceItemId())).toList();
+    }
 }

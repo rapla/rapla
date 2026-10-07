@@ -304,6 +304,88 @@ class ExternalEventStagingServiceTest extends FacadeTestSupport
         assertThat(stagingRows()).hasSize(2);
     }
 
+    /** PRD 004 OQ6 — a refresh re-reads only the named ids: a changed one is updated. */
+    @Test
+    void reconcileIdsUpdatesANamedChangedItem() throws Exception
+    {
+        provider.items.add(item("1", "Programmieren I", "SoSe 2026"));
+        service.reconcile(true);
+        provider.items.clear();
+        provider.items.add(item("1", "Programmieren I (neu)", "SoSe 2026"));
+
+        final StagingReconcileResult result = service.reconcileIds(List.of("v:1"));
+
+        assertThat(result.changed()).isEqualTo(1);
+        assertThat(row("v:1").getData()).contains("Programmieren I (neu)");
+    }
+
+    @Test
+    void reconcileIdsInsertsANamedNewItem() throws Exception
+    {
+        provider.items.add(item("1", "Programmieren I", "SoSe 2026"));
+
+        final StagingReconcileResult result = service.reconcileIds(List.of("v:1"));
+
+        assertThat(result.created()).isEqualTo(1);
+        assertThat(row("v:1")).isNotNull();
+    }
+
+    /** A named id without a source row is gone — its row is removed. */
+    @Test
+    void reconcileIdsRemovesANamedItemMissingFromTheSource() throws Exception
+    {
+        provider.items.add(item("1", "Programmieren I", "SoSe 2026"));
+        service.reconcile(true);
+        provider.items.clear();
+
+        final StagingReconcileResult result = service.reconcileIds(List.of("v:1"));
+
+        assertThat(result.deleted()).isEqualTo(1);
+        assertThat(row("v:1")).isNull();
+    }
+
+    /** A deletion report for an id the source still delivers changes nothing (the view is the truth). */
+    @Test
+    void reconcileIdsKeepsANamedItemTheSourceStillDelivers() throws Exception
+    {
+        provider.items.add(item("1", "Programmieren I", "SoSe 2026"));
+        service.reconcile(true);
+
+        final StagingReconcileResult result = service.reconcileIds(List.of("v:1"));
+
+        assertThat(result.deleted()).isZero();
+        assertThat(result.stored()).isZero();
+        assertThat(row("v:1")).isNotNull();
+    }
+
+    /** A refresh never touches ids it did not name — not even ones the source dropped. */
+    @Test
+    void reconcileIdsLeavesUnnamedRowsAlone() throws Exception
+    {
+        provider.items.add(item("1", "Programmieren I", "SoSe 2026"));
+        provider.items.add(item("2", "Datenbanken", "SoSe 2026"));
+        service.reconcile(true);
+        provider.items.clear();
+        provider.items.add(item("1", "Programmieren I (neu)", "SoSe 2026"));
+
+        service.reconcileIds(List.of("v:1"));
+
+        assertThat(row("v:2")).isNotNull();
+        assertThat(row("v:2").getData()).contains("Datenbanken");
+    }
+
+    @Test
+    void repeatingAReconcileIdsStoresNothing() throws Exception
+    {
+        provider.items.add(item("1", "Programmieren I", "SoSe 2026"));
+        service.reconcileIds(List.of("v:1"));
+
+        final StagingReconcileResult result = service.reconcileIds(List.of("v:1"));
+
+        assertThat(result.stored()).isZero();
+        assertThat(result.unchanged()).isEqualTo(1);
+    }
+
     private class StubProvider implements ExternalEventSnapshotProvider
     {
         private final List<ImportItem> items = new ArrayList<>();
