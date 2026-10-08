@@ -23,3 +23,8 @@ body {
     overflow: visible !important;
   }
 }
+
+/* WP23x C4: the Dualis details popover needs more than the menu default of 280 px */
+.mat-mdc-menu-panel.staged-details-menu {
+  max-width: min(560px, 92vw);
+}

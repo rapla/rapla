@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { ChangedFieldsComponent } from './changed-fields.component';
 import { TPipe } from '../i18n/i18n.service';
 
 export interface BindConfirmDialogData {
@@ -7,6 +8,10 @@ export interface BindConfirmDialogData {
   targetName: string;
   /** Extra consequence line (e.g. "das geparkte Duplikat wird gelöscht"). */
   note?: string;
+  /** "Übernehmen": shows the changed-fields block (H5a, same component as the ⓘ details). */
+  changedSince?: string | null;
+  /** Label of the confirm button; defaults to "verknüpfen". */
+  confirmLabel?: string;
 }
 
 /**
@@ -17,7 +22,7 @@ export interface BindConfirmDialogData {
  */
 @Component({
   selector: 'app-bind-confirm-dialog',
-  imports: [MatDialogModule, TPipe],
+  imports: [MatDialogModule, TPipe, ChangedFieldsComponent],
   template: `
     <h2 mat-dialog-title>{{ 'import_confirm_bind_title' | t }}</h2>
     <mat-dialog-content>
@@ -25,13 +30,18 @@ export interface BindConfirmDialogData {
       <p class="warn">
         {{ 'import_overwrite_warning' | t }}
       </p>
+      @if (data.changedSince) {
+        <app-changed-fields [changedSince]="data.changedSince" />
+      }
       @if (data.note) {
         <p class="warn">{{ data.note }}</p>
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-dialog-close>{{ 'cancel' | t }}</button>
-      <button class="primary" [mat-dialog-close]="true">{{ 'import_bind' | t }}</button>
+      <button class="primary" [mat-dialog-close]="true">
+        {{ data.confirmLabel ?? ('import_bind' | t) }}
+      </button>
     </mat-dialog-actions>
   `,
   styles: `

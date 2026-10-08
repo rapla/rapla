@@ -95,6 +95,53 @@ public class ExternalEventWorklistGraphQLController
         return binder.bind(caller, permissionController, sourceItemId, reservationId);
     }
 
+    public record StagedField(String key, String value)
+    {
+    }
+
+    public record StagedEventDetails(String sourceItemId, String changedSince, java.util.List<StagedField> fields)
+    {
+    }
+
+    @org.springframework.graphql.data.method.annotation.QueryMapping
+    public StagedEventDetails stagedEventDetails(@Argument("sourceItemId") String sourceItemId,
+            DataFetchingEnvironment env) throws RaplaException
+    {
+        final var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        final User caller = UnauthenticatedException.require(rc.caller());
+        final var binder = binders.getIfAvailable();
+        if (binder == null)
+        {
+            return null;
+        }
+        final PermissionController permissionController = rc.permissionController() != null ? rc.permissionController()
+                : operator.getPermissionController();
+        final var details = binder.details(caller, permissionController, sourceItemId);
+        if (details == null)
+        {
+            return null;
+        }
+        final java.util.List<StagedField> fields = new java.util.ArrayList<>();
+        details.fields().forEach(f -> fields.add(new StagedField(f.label(), f.value())));
+        return new StagedEventDetails(details.item().getSourceItemId(), details.changedSince(), fields);
+    }
+
+    @org.springframework.graphql.data.method.annotation.MutationMapping
+    public boolean applyStagedChanges(@Argument("sourceItemId") String sourceItemId, DataFetchingEnvironment env)
+            throws RaplaException
+    {
+        final var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        final User caller = UnauthenticatedException.require(rc.caller());
+        final var binder = binders.getIfAvailable();
+        if (binder == null)
+        {
+            return false;
+        }
+        final PermissionController permissionController = rc.permissionController() != null ? rc.permissionController()
+                : operator.getPermissionController();
+        return binder.apply(caller, permissionController, sourceItemId);
+    }
+
     @QueryMapping
     public WorklistView externalEventWorklist(@Argument("resourceIds") java.util.List<String> allocatableIds,
             @Argument("scopeKey") String scopeKey, DataFetchingEnvironment env) throws RaplaException

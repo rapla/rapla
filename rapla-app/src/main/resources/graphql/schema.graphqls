@@ -2328,12 +2328,24 @@ extend type Query {
     """
     externalEventDefaultTemplates(groupIds: [ID!]!): ExternalEventDefaultTemplates
     """
+    dhbwrapla PRD 004 § H5a — ranked template suggestions for the sync dialog's template menu,
+    best first; kind "v" = lecture, "p" = exam. reason: exact (Kurs path) | parent (Standort /
+    Fakultät level) | generic. Only templates the caller may read (§12); empty without a resolver.
+    """
+    externalEventTemplateSuggestions(groupIds: [ID!]!, kind: String!): [TemplateSuggestion!]!
+    """
     PRD 104 v3 — of the given reservation ids, the subset durably bound to THE deployment's
     import source (ExternalSyncEntity join — NOT the bare `externalid` annotation, which other
     importers like the iCal import also write). Unknown/hidden ids drop silently (§12).
     Empty when no import source is deployed.
     """
     externalEventLinkedReservationIds(reservationIds: [ID!]!): [ID!]!
+}
+
+type TemplateSuggestion {
+    id: ID!
+    name: String!
+    reason: String!
 }
 
 type ExternalEventDefaultTemplates {
@@ -2362,6 +2374,18 @@ extend type Mutation {
     items without a marker are silently not counted.
     """
     dismissStagedChanges(sourceItemIds: [ID!]!): Int!
+
+    """
+    "Übernehmen": re-apply a changed source to the reservation the item is bound to, then clear the
+    "changed" marker. Needs the booking right on the item's group AND the right to change that
+    reservation.
+
+    Returns false for every rejection alike (unknown item, not bound, not changed, no booking
+    right, reservation not changeable, deployment refused) and then leaves the marker in place.
+    True means the reservation was written; if the source changed again meanwhile, the marker stays
+    (with the newer date) so that change is not lost.
+    """
+    applyStagedChanges(sourceItemId: ID!): Boolean!
 }
 
 extend type Query {
@@ -2398,6 +2422,13 @@ extend type Query {
     one are indistinguishable. Empty when no deployment provides a staging source.
     """
     externalEventWorklist(resourceIds: [ID!]!, scopeKey: String): ExternalEventWorklist!
+    """
+    WP23x C4 — the source record of one staged item for the sync dialog's details: labelled
+    fields in display order as key (= label) / value; the deployment picks and labels them,
+    default = every raw source field (list values joined with ", "). Null for unknown and
+    ignored items AND for items on groups the caller may not book (§12: indistinguishable).
+    """
+    stagedEventDetails(sourceItemId: ID!): StagedEventDetails
 }
 
 "Derived state of a staged item — only the timestamps are stored on the row."
@@ -2410,6 +2441,17 @@ enum StagedEventState {
     CHANGED
     "Explicitly ignored by a user."
     IGNORED
+}
+
+type StagedEventDetails {
+    sourceItemId: ID!
+    changedSince: String
+    fields: [StagedField!]!
+}
+
+type StagedField {
+    key: String!
+    value: String
 }
 
 type ExternalEventWorklist {

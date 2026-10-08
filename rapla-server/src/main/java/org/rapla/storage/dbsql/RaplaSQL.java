@@ -427,6 +427,24 @@ class RaplaSQL
         }
     }
 
+    /** One row by its id (FOREIGN_ID = the row id); null when absent. */
+    public ExternalSyncEntity getImportExportEntity(String id, Connection con) throws RaplaException
+    {
+        try
+        {
+            syncEntitiesStorage.setConnection(con, null);
+            return syncEntitiesStorage.load(id).get(id);
+        }
+        catch (SQLException e)
+        {
+            throw new RaplaException("Error reading ImportExportEntry " + id, e);
+        }
+        finally
+        {
+            syncEntitiesStorage.removeConnection();
+        }
+    }
+
     public Collection<ExternalSyncEntity> getAllSyncEntities( Connection con) throws RaplaException
     {
         try

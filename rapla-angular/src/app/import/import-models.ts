@@ -130,13 +130,35 @@ export function currentSemester(now: Date): string {
   return `WiSe ${start}/${String((start + 1) % 100).padStart(2, '0')}`;
 }
 
+/** Chronological index of a semester label ("SoSe 2027" < "WiSe 2027/28"); -1 if unparsable. */
+export function semesterIndex(label: string): number {
+  const m = /^(SoSe|WiSe) (\d{4})/.exec(label);
+  return m ? Number(m[2]) * 2 + (m[1] === 'WiSe' ? 1 : 0) : -1;
+}
+
+/** A date inside the semester `delta` steps away from `label` (same INTERIM rule as
+ *  {@link currentSemester}); feed it to currentSemester / semesterRange. */
+export function shiftSemester(label: string, delta: number): Date {
+  const m = /^(SoSe|WiSe) (\d{4})/.exec(label);
+  if (!m) return new Date();
+  const year = Number(m[2]);
+  const index = year * 2 + (m[1] === 'WiSe' ? 1 : 0) + delta;
+  const y = Math.floor(index / 2);
+  return index % 2 === 1 ? new Date(y, 10, 15) : new Date(y, 5, 15);
+}
+
 /** The date the visible window's semester derives from: its MIDPOINT. A week
  *  straddling a semester boundary (e.g. Mon 29.09. … Mon 06.10.) must count as
  *  the semester of the days it mostly shows — deriving from `from` flipped the
  *  whole sync context to the OLD semester right after jumping to an event at
  *  the boundary (bug 2026-08-12). */
 export function windowSemesterDate(w: { from: string; to: string }): Date {
-  return new Date((Date.parse(w.from) + Date.parse(w.to)) / 2);
+  const from = Date.parse(w.from);
+  const to = Date.parse(w.to);
+  // a range longer than a semester (e.g. a view spanning years) has no meaningful midpoint:
+  // its semester is the one it starts in (user screenshot 2026-10-07: 2026-10..2037-04)
+  if (to - from > 183 * 24 * 3600 * 1000) return new Date(from);
+  return new Date((from + to) / 2);
 }
 
 /** The date range of the semester containing `now` (same INTERIM rule as

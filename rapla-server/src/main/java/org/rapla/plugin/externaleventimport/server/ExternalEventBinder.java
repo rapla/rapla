@@ -52,13 +52,15 @@ public class ExternalEventBinder
     private final ExternalEventStagingReader reader;
     private final ExternalEventCreateService createService;
     private final CachableStorageOperator operator;
+    private final ExternalEventStagingMutator mutator;
 
     public ExternalEventBinder(ExternalEventStagingReader reader, ExternalEventCreateService createService,
-            CachableStorageOperator operator)
+            CachableStorageOperator operator, ExternalEventStagingMutator mutator)
     {
         this.reader = reader;
         this.createService = createService;
         this.operator = operator;
+        this.mutator = mutator;
     }
 
     /**
@@ -213,10 +215,65 @@ public class ExternalEventBinder
             return false;
         }
         final ImportItem item = open.get(0);
-        if (!reader.bookableGroups(caller, permissionController, open).containsKey(sourceItemId))
+        if (!reader.bookableGroups(caller, permissionController, open).containsKey(sourceItemId)
+                || !mayChange(caller, permissionController, reservationId))
         {
             return false;
         }
         return createService.bindStagedItem(caller, item, reservationId);
+    }
+
+    /** WP23x C4 ⓘ details: the staged item's source record, only when the caller may book one of
+     *  its groups — unknown and forbidden are the same null (§12). */
+    public ExternalEventStagingReader.StagedDetails details(User caller, PermissionController permissionController,
+            String sourceItemId) throws RaplaException
+    {
+        if (caller == null || permissionController == null || sourceItemId == null)
+        {
+            return null;
+        }
+        final ExternalEventStagingReader.StagedDetails details = reader.loadDetails(sourceItemId);
+        if (details == null
+                || !reader.bookableGroups(caller, permissionController, List.of(details.item())).containsKey(sourceItemId))
+        {
+            return null;
+        }
+        return details;
+    }
+
+    /** dhbwrapla PRD 004 § H3a "Übernehmen": re-apply a changed source to its bound reservation. */
+    public boolean apply(User caller, PermissionController permissionController, String sourceItemId)
+            throws RaplaException
+    {
+        if (createService == null || mutator == null || caller == null || permissionController == null
+                || sourceItemId == null)
+        {
+            return false;
+        }
+        final List<ExternalEventStagingReader.ChangedBoundItem> changed = reader.loadChangedBoundItems(List.of(sourceItemId));
+        if (changed.isEmpty())
+        {
+            return false;
+        }
+        final ExternalEventStagingReader.ChangedBoundItem target = changed.get(0);
+        if (!reader.bookableGroups(caller, permissionController, List.of(target.item())).containsKey(sourceItemId)
+                || !mayChange(caller, permissionController, target.reservationId())
+                || !createService.bindStagedItem(caller, target.item(), target.reservationId()))
+        {
+            return false;
+        }
+        // the reservation is written; a marker that moved meanwhile (newer source) stays visible
+        mutator.clearChanged(sourceItemId, target.changedSince());
+        return true;
+    }
+
+    /** WP24: stamping writes the reservation, so the caller must be allowed to read and change it.
+     *  Unknown and forbidden answer the same false. */
+    private boolean mayChange(User caller, PermissionController permissionController, String reservationId)
+    {
+        final org.rapla.entities.domain.Reservation reservation = operator.tryResolve(
+                new org.rapla.entities.storage.ReferenceInfo<>(reservationId, org.rapla.entities.domain.Reservation.class));
+        return reservation != null && permissionController.canRead(reservation, caller)
+                && permissionController.canModify(reservation, caller);
     }
 }

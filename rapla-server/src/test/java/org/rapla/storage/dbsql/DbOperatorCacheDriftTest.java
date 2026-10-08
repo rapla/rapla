@@ -543,6 +543,28 @@ class DbOperatorCacheDriftTest
         }
     }
 
+    /** ⓘ details load one staged row by its id with a single-row query (user 2026-10-07: "laden dauert
+     *  sehr lange" — 2 s for the full-system load); unknown id or wrong system → null. */
+    @Test
+    @DisplayName("one import/export row loads by its id")
+    void oneImportExportRowLoadsByItsId() throws Exception
+    {
+        final org.rapla.entities.storage.internal.ExternalSyncEntityImpl row = new org.rapla.entities.storage.internal.ExternalSyncEntityImpl();
+        row.setId(org.rapla.plugin.externaleventimport.server.ExternalEventStagingConstants.idOf("v:4711"));
+        row.setExternalSystem("TEST");
+        row.setDirection(org.rapla.entities.storage.ImportExportDirections.IMPORT);
+        row.setContext(org.rapla.plugin.externaleventimport.server.ExternalEventStagingConstants.CONTEXT_EVENT_STAGING);
+        row.setData("{\"x\":1}");
+        operator.storeAndRemove(java.util.List.of(row), java.util.List.of(), getAdmin());
+
+        final org.rapla.entities.storage.ExternalSyncEntity found = operator.getImportExportEntity("TEST",
+                org.rapla.entities.storage.ImportExportDirections.IMPORT, row.getId());
+        assertNotNull(found);
+        assertEquals("{\"x\":1}", found.getData());
+        assertEquals(null, operator.getImportExportEntity("TEST", org.rapla.entities.storage.ImportExportDirections.IMPORT, "no-such"));
+        assertEquals(null, operator.getImportExportEntity("OTHER", org.rapla.entities.storage.ImportExportDirections.IMPORT, row.getId()));
+    }
+
     private User getAdmin() throws Exception
     {
         for (User u : facade.getUsers())

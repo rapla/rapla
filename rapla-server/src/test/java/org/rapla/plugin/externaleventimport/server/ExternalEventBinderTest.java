@@ -42,7 +42,8 @@ class ExternalEventBinderTest extends FacadeTestSupport
         provider = new StubProvider();
         createService = new StubCreateService();
         final ExternalEventStagingReader reader = new ExternalEventStagingReader(operator, provider);
-        binder = new ExternalEventBinder(reader, createService, operator);
+        binder = new ExternalEventBinder(reader, createService, operator,
+                new ExternalEventStagingMutator(operator, provider, reader, admin));
 
         openGroup = group("open-group");
         restrictedGroup = group("restricted-group");
@@ -88,8 +89,36 @@ class ExternalEventBinderTest extends FacadeTestSupport
     @Test
     void bindsAnOpenItemTheCallerMayBook() throws Exception
     {
-        assertThat(binder.bind(admin, operator.getPermissionController(), "open-item", "r-1")).isTrue();
-        assertThat(createService.bound).containsExactly("open-item->r-1");
+        final String reservationId = storedEvent("Verteilte Systeme").getId();
+        assertThat(binder.bind(admin, operator.getPermissionController(), "open-item", reservationId)).isTrue();
+        assertThat(createService.bound).containsExactly("open-item->" + reservationId);
+    }
+
+    /** WP24: booking the group is not enough — the caller must also be allowed to change the
+     *  reservation that gets stamped. monty may book the open group but not edit homer's event. */
+    @Test
+    void aReservationTheCallerMayNotChangeIsNeverStamped() throws Exception
+    {
+        final org.rapla.entities.domain.Reservation homers = storedEvent("Verteilte Systeme");
+        assertThat(operator.getPermissionController().canModify(homers, nonAdmin)).isFalse();
+        final java.time.LocalDateTime before = facade.getPersistent(homers).getLastChanged();
+
+        assertThat(binder.bind(nonAdmin, operator.getPermissionController(), "open-item", homers.getId())).isFalse();
+        assertThat(binder.bind(admin, operator.getPermissionController(), "open-item", "no-such-reservation")).isFalse();
+
+        assertThat(createService.bound).isEmpty();
+        assertThat(facade.getPersistent(homers).getLastChanged()).isEqualTo(before);
+    }
+
+    private org.rapla.entities.domain.Reservation storedEvent(String name) throws Exception
+    {
+        final org.rapla.entities.dynamictype.DynamicType type = facade.getDynamicTypes(
+                org.rapla.entities.dynamictype.DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0];
+        final org.rapla.entities.domain.Reservation reservation = event(type,
+                java.time.LocalDateTime.of(2026, 10, 12, 10, 0), name);
+        reservation.addAllocatable(openGroup);
+        facade.store(reservation);
+        return facade.getPersistent(reservation);
     }
 
     /** Unknown item, forbidden group and already-bound must be indistinguishable — and none of
@@ -108,8 +137,7 @@ class ExternalEventBinderTest extends FacadeTestSupport
     @Test
     void withoutADeploymentServiceNothingBinds() throws Exception
     {
-        final ExternalEventBinder none = new ExternalEventBinder(
-                new ExternalEventStagingReader(operator, provider), null, operator);
+        final ExternalEventBinder none = new ExternalEventBinder(new ExternalEventStagingReader(operator, provider), null, operator, null);
 
         assertThat(none.bind(admin, operator.getPermissionController(), "open-item", "r-1")).isFalse();
     }

@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 
 import { FilterStore } from '../state/filter-store';
 import { TPipe } from '../i18n/i18n.service';
+import { ImportSyncButtonComponent } from '../import/import-sync-button.component';
 
 /**
  * The chip rail — the visible, removable filter (= what the view shows). One
@@ -14,7 +15,7 @@ import { TPipe } from '../i18n/i18n.service';
  */
 @Component({
   selector: 'app-chip-rail',
-  imports: [NgTemplateOutlet, TPipe, MatChipsModule, MatIconModule, MatButtonModule],
+  imports: [NgTemplateOutlet, TPipe, MatChipsModule, MatIconModule, MatButtonModule, ImportSyncButtonComponent],
   template: `
     <div class="rail" [class.is-empty]="store.isEmpty()">
       <span class="rlabel">{{ 'shell_filter_label' | t }}</span>
@@ -75,6 +76,7 @@ import { TPipe } from '../i18n/i18n.service';
           {{ 'shell_clear_all' | t }}
         </button>
       }
+      <app-import-sync-button />
     </div>
   `,
   styles: [

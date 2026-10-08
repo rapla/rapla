@@ -105,6 +105,37 @@ public class ExternalEventCreateGraphQLController
         return resolver == null ? null : resolver.resolveDefaultTemplates(caller, groupIds);
     }
 
+    /** GraphQL shape of a ranked template suggestion. */
+    public record TemplateSuggestion(String id, String name, String reason)
+    {
+    }
+
+    @QueryMapping
+    public List<TemplateSuggestion> externalEventTemplateSuggestions(@Argument("groupIds") List<String> groupIds,
+            @Argument("kind") String kind, DataFetchingEnvironment env) throws RaplaException
+    {
+        final var rc = RequestContextInstrumentation.from(env.getGraphQlContext());
+        final User caller = UnauthenticatedException.require(rc.caller());
+        final ExternalEventTemplateResolver resolver = templateResolvers.getIfAvailable();
+        if (resolver == null)
+        {
+            return List.of();
+        }
+        final org.rapla.storage.PermissionController pc = operator.getPermissionController();
+        final List<TemplateSuggestion> out = new java.util.ArrayList<>();
+        // §12 at the output boundary, whatever the deployment resolver returned
+        for (ExternalEventTemplateResolver.RankedTemplate r : resolver.rankTemplates(caller, groupIds, kind))
+        {
+            final org.rapla.entities.domain.Allocatable template = operator.tryResolve(
+                    new org.rapla.entities.storage.ReferenceInfo<>(r.templateId(), org.rapla.entities.domain.Allocatable.class));
+            if (template != null && pc.canRead(template, caller))
+            {
+                out.add(new TemplateSuggestion(r.templateId(), r.name(), r.reason()));
+            }
+        }
+        return out;
+    }
+
     @MutationMapping
     public List<String> createFromStagedEvents(@Argument("sourceItemIds") List<String> sourceItemIds,
             @Argument("lectureTemplateId") String lectureTemplateId,

@@ -8,6 +8,7 @@ import {
   openItemsOfGroups,
   semesterRange,
   windowSemesterDate,
+  semesterIndex,
   type LinkedEvent,
   type WorklistItem,
 } from './import-models';
@@ -145,3 +146,23 @@ describe('semester helpers', () => {
     });
   });
 });
+
+describe('windowSemesterDate — long ranges (user screenshot 2026-10-07)', () => {
+  it('takes the window start for a range longer than a semester', () => {
+    const w = { from: '2026-10-05T00:00:00', to: '2037-04-14T00:00:00' };
+    expect(currentSemester(windowSemesterDate(w))).toBe('WiSe 2026/27');
+  });
+  it('keeps the midpoint for a week across a semester boundary', () => {
+    const w = { from: '2026-09-28T00:00:00', to: '2026-10-05T00:00:00' };
+    expect(currentSemester(windowSemesterDate(w))).toBe('WiSe 2026/27');
+  });
+});
+
+describe('semesterIndex', () => {
+  it('orders SoSe before the WiSe of the same year', () => {
+    expect(semesterIndex('SoSe 2027')).toBeLessThan(semesterIndex('WiSe 2027/28'));
+    expect(semesterIndex('WiSe 2026/27')).toBeLessThan(semesterIndex('SoSe 2027'));
+    expect(semesterIndex('kaputt')).toBe(-1);
+  });
+});
+

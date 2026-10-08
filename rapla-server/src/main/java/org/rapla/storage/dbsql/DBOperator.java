@@ -1360,6 +1360,21 @@ import java.time.LocalDateTime;
 
     }
 
+    @Override public ExternalSyncEntity getImportExportEntity(String systemId, int importExportDirection, String id)
+            throws RaplaException
+    {
+        try (Connection con = createConnection())
+        {
+            final ExternalSyncEntity row = new RaplaSQL(createOutputContext(cache)).getImportExportEntity(id, con);
+            return row != null && systemId.equals(row.getExternalSystem()) && row.getDirection() == importExportDirection
+                    ? row : null;
+        }
+        catch (SQLException e)
+        {
+            throw new RaplaException(e.getMessage(), e);
+        }
+    }
+
     @Override public Map<String, ExternalSyncEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
     {
         try (Connection con = createConnection())

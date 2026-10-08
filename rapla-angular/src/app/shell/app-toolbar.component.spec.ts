@@ -139,6 +139,18 @@ describe('AppToolbarComponent', () => {
     expect(labels.some((l) => l.includes(t('shell_switch_to_user')))).toBe(false);
   });
 
+  it('while impersonating offers Switch back and Switch to user but no Sign out', () => {
+    configure({ ...LOGGED_IN, impersonating: true, actor: 'testadmin', target: 'homer' }, [
+      { username: 'marge', displayName: 'Marge' },
+    ]);
+    const fixture = TestBed.createComponent(AppToolbarComponent);
+    fixture.detectChanges();
+    const labels = openMenuItems(fixture).map((b) => b.textContent ?? '');
+    expect(labels.some((l) => l.includes(t('shell_switch_back')))).toBe(true);
+    expect(labels.some((l) => l.includes(t('shell_switch_to_user')))).toBe(true);
+    expect(labels.some((l) => l.includes(t('shell_sign_out')))).toBe(false);
+  });
+
   // PRD 090 — the "Permission migration" entry (in the Account settings submenu) is
   // shown only to a global admin AND only when the worklist is non-empty.
   const ADMIN: Identity = { ...LOGGED_IN, admin: true };
@@ -184,79 +196,6 @@ describe('AppToolbarComponent', () => {
     expect(
       openAccountSubmenuLabels(fixture).some((l) => l.includes(t('shell_permission_migration'))),
     ).toBe(false);
-  });
-});
-
-describe('AppToolbarComponent — Dualis-Sync button (0/0 rule, 2026-08-11)', () => {
-  beforeEach(() => TestBed.resetTestingModule());
-
-  function setupImport(over: Record<string, unknown> = {}) {
-    configure(LOGGED_IN, []);
-    TestBed.overrideProvider(ImportWorklistService, {
-      useValue: {
-        sourceName: ngSignal('Dualis'),
-        loadFailed: ngSignal(false),
-        linked: ngSignal([]),
-        worklist: ngSignal(null),
-        windowRange: ngSignal(null),
-        ensureLoaded: () => of(null),
-        ...over,
-      },
-    });
-    const fixture = TestBed.createComponent(AppToolbarComponent);
-    fixture.detectChanges();
-    return fixture;
-  }
-
-  const badge = (fixture: ReturnType<typeof TestBed.createComponent>) =>
-    (
-      fixture.nativeElement.querySelector('.import-sync-badge') as HTMLElement | null
-    )?.textContent?.trim() ?? null;
-
-  it('stays visible with 0/0 when a source exists but nothing is staged', () => {
-    expect(badge(setupImport())).toBe('0/0');
-  });
-
-  it('hides entirely when no import source is deployed', () => {
-    expect(badge(setupImport({ sourceName: ngSignal('') }))).toBeNull();
-  });
-
-  it('shows ! when the load failed — never masquerades as 0/0', () => {
-    expect(badge(setupImport({ loadFailed: ngSignal(true) }))).toBe('!');
-  });
-
-  it('counts linked from the reservations, not the Halde', () => {
-    const linked = ngSignal([
-      {
-        id: 'r1',
-        name: 'Mathe',
-        externalId: 'v:1',
-        firstDate: '2026-04-20T08:00:00',
-        resourceIds: ['g1'],
-      },
-    ]);
-    expect(badge(setupImport({ linked }))).toBe('1/1');
-  });
-
-  it('turns green (done) when everything is linked, never on error', () => {
-    const linked = ngSignal([
-      {
-        id: 'r1',
-        name: 'Mathe',
-        externalId: 'v:1',
-        firstDate: '2026-04-20T08:00:00',
-        resourceIds: ['g1'],
-      },
-    ]);
-    const el = (f: ReturnType<typeof TestBed.createComponent>) =>
-      f.nativeElement.querySelector('.import-sync-badge') as HTMLElement;
-    expect(el(setupImport({ linked })).classList.contains('done')).toBe(true);
-    TestBed.resetTestingModule();
-    expect(el(setupImport({})).classList.contains('done')).toBe(false); // 0/0 is not done
-    TestBed.resetTestingModule();
-    expect(el(setupImport({ linked, loadFailed: ngSignal(true) })).classList.contains('done')).toBe(
-      false,
-    );
   });
 });
 

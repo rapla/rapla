@@ -122,6 +122,14 @@ public interface CachableStorageOperator extends StorageOperator {
     UpdateResult getUpdateResult(LocalDateTime since,User user) throws RaplaException;
 
     Map<String, ExternalSyncEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException;
+
+    /** One import/export row by its id, or null (also for another system or direction). Stores
+     *  with a cheaper single-row access override this; the default reads the whole system. */
+    default ExternalSyncEntity getImportExportEntity(String systemId, int importExportDirection, String id)
+            throws RaplaException
+    {
+        return getImportExportEntities(systemId, importExportDirection).get(id);
+    }
     
     /**
      * Tries to receive the lock for the given id. If another System has the lock, a RaplaException is thrown

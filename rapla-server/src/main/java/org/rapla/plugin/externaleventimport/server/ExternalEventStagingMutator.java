@@ -83,15 +83,36 @@ public class ExternalEventStagingMutator
             return 0;
         }
         final Collection<String> allowed = reader.bookableGroups(caller, permissionController, items).keySet();
+        return clearMarkers(rows.stream()
+                .filter(row -> allowed.contains(StagedRowData.of(json, row).getSource().getSourceItemId())).toList());
+    }
 
+    /** Clears the "changed" marker of one item after its change was applied ("Übernehmen"), but only
+     *  while it is still the marker the applied source was read with — a newer change that arrived
+     *  meanwhile stays visible. The caller has already passed the permission gates. */
+    boolean clearChanged(String sourceItemId, String expectedChangedSince) throws RaplaException
+    {
+        final List<ExternalSyncEntity> rows = new ArrayList<>();
+        for (ExternalSyncEntity row : operator
+                .getImportExportEntities(attribution.systemId(), ImportExportDirections.IMPORT).values())
+        {
+            final StagedRowData data = StagedRowData.of(json, row);
+            if (ExternalEventStagingConstants.CONTEXT_EVENT_STAGING.equals(row.getContext()) && data.getSource() != null
+                    && sourceItemId.equals(data.getSource().getSourceItemId())
+                    && java.util.Objects.equals(expectedChangedSince, data.getChangedSince()))
+            {
+                rows.add(row);
+            }
+        }
+        return clearMarkers(rows) > 0;
+    }
+
+    private int clearMarkers(List<ExternalSyncEntity> rows) throws RaplaException
+    {
         final List<Entity> toStore = new ArrayList<>();
         for (ExternalSyncEntity row : rows)
         {
             final StagedRowData data = StagedRowData.of(json, row);
-            if (!allowed.contains(data.getSource().getSourceItemId()))
-            {
-                continue;
-            }
             data.setChangedSince(null);
             final ExternalSyncEntityImpl clone = (ExternalSyncEntityImpl) row.clone();
             clone.setData(json.toJson(data));

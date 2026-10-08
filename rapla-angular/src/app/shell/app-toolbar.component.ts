@@ -20,21 +20,12 @@ import { newScopedDraft, withScopeAllocations, type EventDraft } from '../event/
 import { NewEventOptionsService } from '../event/new-event-options.service';
 import { NewEventPickerComponent } from '../event/new-event-picker.component';
 import { ImportWorklistService } from '../import/import-worklist.service';
-import {
-  ImportSyncDialogComponent,
-  type ImportSyncDialogData,
-} from '../import/import-sync-dialog.component';
 import { type PickItem } from '../event/new-event-picker-model';
 import { TemplateInstantiationService } from '../event/template-instantiation.service';
 import { ViewStateStore } from '../state/view-state-store';
 import { UndoToastService } from '../actions/undo-toast.service';
 import { FilterStore } from '../state/filter-store';
-import {
-  currentSemester,
-  openItemsOfGroups,
-  semesterRange,
-  windowSemesterDate,
-} from '../import/import-models';
+import { semesterRange, windowSemesterDate } from '../import/import-models';
 import { TPipe, t as tr } from '../i18n/i18n.service';
 
 /**
@@ -79,20 +70,6 @@ import { TPipe, t as tr } from '../i18n/i18n.service';
         >
           <mat-icon>add</mat-icon>
           <span class="new-event-label">{{ 'new' | t }}</span>
-        </button>
-      }
-      @if (importSyncAvailable()) {
-        <button
-          matButton
-          class="new-event"
-          (click)="openImportSync()"
-          [title]="'shell_import_sync_tooltip' | t"
-        >
-          <mat-icon>move_to_inbox</mat-icon>
-          <span class="new-event-label">{{ importSyncLabel() }}</span>
-          <span class="import-sync-badge" [class.done]="importSyncDone()">{{
-            importSyncBadge()
-          }}</span>
         </button>
       }
       <button
@@ -141,7 +118,7 @@ import { TPipe, t as tr } from '../i18n/i18n.service';
             <span>{{ 'shell_account_settings' | t }}</span>
           </button>
 
-          @if (canImpersonate() && !auth.isImpersonating()) {
+          @if (canImpersonate()) {
             <button mat-menu-item (click)="openSwitchToUser()">
               <mat-icon>swap_horiz</mat-icon>
               <span>{{ 'shell_switch_to_user' | t }}</span>
@@ -154,10 +131,12 @@ import { TPipe, t as tr } from '../i18n/i18n.service';
             </button>
           }
 
-          <button mat-menu-item (click)="signOut()">
-            <mat-icon>logout</mat-icon>
-            <span>{{ 'shell_sign_out' | t }}</span>
-          </button>
+          @if (!auth.isImpersonating()) {
+            <button mat-menu-item (click)="signOut()">
+              <mat-icon>logout</mat-icon>
+              <span>{{ 'shell_sign_out' | t }}</span>
+            </button>
+          }
         </mat-menu>
 
         <mat-menu #accountMenu="matMenu">
@@ -272,6 +251,8 @@ export class AppToolbarComponent implements OnInit {
   /** PRD 094 D2 — main-view command history behind the header ↶/↷ buttons. */
   protected readonly undo = inject(UndoToastService);
   private readonly filter = inject(FilterStore);
+  /** Loads the worklist for the sync button in the filter row (dhbwrapla PRD 004 § H5a). */
+  private readonly importWorklist = inject(ImportWorklistService);
 
   /** PRD 104 D6 — creatable event types + templates from newEventOptions
    *  (canCreate-filtered + wizard-plugin-gated server-side). ONE "Neu" button;
@@ -281,71 +262,6 @@ export class AppToolbarComponent implements OnInit {
   protected readonly canCreate = computed(
     () => this.newOptions.eventTypes().length > 0 || this.newOptions.templates().length > 0,
   );
-
-  /** PRD 104 v3 — "Dualis-Sync" next to "Neu" (toolbar = home of global creator
-   *  actions). Visibility (user rule 2026-08-11, sharpened same day): the button
-   *  shows WHENEVER an import source is deployed — an empty selection or a
-   *  semester with nothing to do reads "0/0" instead of vanishing (a hidden
-   *  button is indistinguishable from a broken query). A failed load shows "!". */
-  private readonly importWorklist = inject(ImportWorklistService);
-  private readonly chipIds = computed(() =>
-    this.filter
-      .entries()
-      .filter((c) => c.kind === 'resource')
-      .map((c) => c.id),
-  );
-  private readonly importSyncGroups = computed(() => {
-    const wl = this.importWorklist.worklist();
-    if (!wl) return [];
-    const ids = new Set(this.chipIds());
-    return wl.groups.filter((g) => ids.has(g.id));
-  });
-  protected readonly importSyncAvailable = computed(() => this.importWorklist.sourceName() !== '');
-  /** Open items of the visible semester in the selection (worklist is unscoped). */
-  private readonly importOpenCount = computed(() => {
-    const w = this.viewState.window();
-    const semester = w ? currentSemester(windowSemesterDate(w)) : undefined;
-    return openItemsOfGroups(this.importWorklist.worklist()?.items ?? [], this.chipIds(), semester)
-      .length;
-  });
-  /** "24/27" — linked of total (linked + open) in the selection; "!" = query
-   *  failed (must never masquerade as 0/0). Linked counts come from the
-   *  reservations themselves (durable stamp), not the Halde. */
-  protected readonly importSyncBadge = computed(() => {
-    if (this.importWorklist.loadFailed()) return '!';
-    const linked = this.importWorklist.linked().length;
-    return `${linked}/${linked + this.importOpenCount()}`;
-  });
-  /** All linked, nothing open → the badge turns green (done), never in the
-   *  error case (done and broken must not share a color). */
-  protected readonly importSyncDone = computed(
-    () =>
-      !this.importWorklist.loadFailed() &&
-      this.importOpenCount() === 0 &&
-      this.importWorklist.linked().length > 0,
-  );
-  protected readonly importSyncLabel = computed(() =>
-    tr('shell_sync_label', this.importWorklist.sourceName() || tr('import_default_source')),
-  );
-
-  protected openImportSync(): void {
-    const groups = this.importSyncGroups();
-    const w = this.viewState.window();
-    const data: ImportSyncDialogData = {
-      groupIds: groups.length > 0 ? groups.map((g) => g.id) : this.chipIds(),
-      groupLabel: groups.map((g) => g.name).join(', ') || tr('shell_current_selection'),
-      semester: currentSemester(w ? windowSemesterDate(w) : new Date()),
-      defaultStart: `${(this.viewState.window()?.from ?? new Date().toISOString()).slice(0, 10)}T08:00:00`,
-    };
-    this.dialog
-      .open(ImportSyncDialogComponent, { data, autoFocus: false })
-      .afterClosed()
-      .subscribe((outcome) => {
-        // Post-park flow: nothing is stored yet — just make sure the Parkstreifen
-        // is visible (week render mode); placement happens by drag from there.
-        if (outcome === 'parked') this.viewState.setRenderMode('week');
-      });
-  }
 
   /** Effective user shown in the chip (impersonation target when active, else self). */
   readonly effectiveUsername = computed(() => this.auth.identity()?.username ?? '');

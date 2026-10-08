@@ -49,4 +49,28 @@ public interface ExternalEventAttribution
     {
         return null;
     }
+
+    /** One labelled field of a staged item for the sync dialog's details (WP23x C4). */
+    record DetailField(String label, String value)
+    {
+        /** Display text of a raw source value: lists joined with ", ", null stays null. */
+        public static String text(Object v)
+        {
+            return v == null ? null
+                    : v instanceof java.util.Collection<?> c ? String.join(", ", c.stream().map(String::valueOf).toList())
+                    : String.valueOf(v);
+        }
+    }
+
+    /**
+     * The staged item's fields for the details view, labelled and in display order. Default: every
+     * source field under its raw key (list values joined with ", "); deployments override this to
+     * pick and label the fields their users understand.
+     */
+    default java.util.List<DetailField> detailFields(ImportItem item)
+    {
+        final java.util.List<DetailField> out = new java.util.ArrayList<>();
+        item.getSourceData().forEach((k, v) -> out.add(new DetailField(k, DetailField.text(v))));
+        return out;
+    }
 }

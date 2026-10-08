@@ -86,9 +86,9 @@ public class ExternalEventStagingConfig
     @Bean
     public ExternalEventBinder externalEventBinder(ExternalEventStagingReader reader,
             org.springframework.beans.factory.ObjectProvider<org.rapla.plugin.externaleventimport.ExternalEventCreateService> createService,
-            CachableStorageOperator operator)
+            CachableStorageOperator operator, ExternalEventStagingMutator mutator)
     {
-        return new ExternalEventBinder(reader, createService.getIfAvailable(), operator);
+        return new ExternalEventBinder(reader, createService.getIfAvailable(), operator, mutator);
     }
 
     @Bean

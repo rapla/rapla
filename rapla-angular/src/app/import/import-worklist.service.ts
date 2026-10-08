@@ -3,6 +3,8 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, shareReplay, switchMap, tap } from 'rxjs';
 
 import { GraphqlService } from '../graphql/graphql.service';
+import { ResourceSelectionStore } from '../state/resource-selection-store';
+import { effectiveCourseIds } from './import-sync-scope';
 import { FilterStore } from '../state/filter-store';
 import {
   type BindCandidate,
@@ -136,6 +138,20 @@ function toWorklist(wire: WireWorklist): Worklist {
   return { groups, items };
 }
 
+/** WP23x C4 — the full source record of one staged item (stagedEventDetails). */
+export interface StagedEventDetails {
+  sourceItemId: string;
+  changedSince: string | null;
+  fields: { key: string; value: string | null }[];
+}
+
+/** One ranked template suggestion; reason = exact | parent | generic. */
+export interface TemplateSuggestion {
+  id: string;
+  name: string;
+  reason: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ImportWorklistService {
   private readonly gql = inject(GraphqlService);
@@ -166,12 +182,17 @@ export class ImportWorklistService {
 
   /** Kurs-Scope (2026-08-11 redesign): the worklist is loaded FOR the selected
    *  resource chips — there is no "everything I may book" mode anymore. */
+  private readonly resources = inject(ResourceSelectionStore);
+  /** dhbwrapla PRD 004 § H5a — group chips stand for their Kurse: the query asks for the
+   *  effective Kurse, the same ids the sync button counts. */
   private readonly chipIds = computed(() =>
-    this.filter
-      .entries()
-      .filter((c) => c.kind === 'resource')
-      .map((c) => c.id)
-      .sort(),
+    effectiveCourseIds(
+      this.filter
+        .entries()
+        .filter((c) => c.kind === 'resource')
+        .map((c) => c.id),
+      this.resources.resources(),
+    ).sort(),
   );
 
   /** One-time source-label fetch — independent of chips/window so the button
@@ -316,12 +337,78 @@ export class ImportWorklistService {
          }`,
         { id: sourceItemId, from, to },
       )
-      .pipe(map((resp) => resp.data?.bindCandidates ?? []));
+      .pipe(
+        map((resp) => resp.data?.bindCandidates ?? []),
+        // one failing row must not end the dialog's candidate stream (review round 18 M2)
+        catchError(() => of([] as BindCandidate[])),
+      );
   }
 
   /** "Verknüpfen statt neu": stamp an OPEN item onto an existing reservation.
    *  Emits plain true/false — a false carries NO reason by design (§12: every
    *  denial is indistinguishable); the caller shows one neutral message. */
+  /** WP23x C4 — the item's source record; null when unknown, not visible or on error. */
+  stagedEventDetails(sourceItemId: string): Observable<StagedEventDetails | null> {
+    return this.gql
+      .query<{ stagedEventDetails: StagedEventDetails | null }>(
+        `query ($id: ID!) { stagedEventDetails(sourceItemId: $id) { sourceItemId changedSince fields { key value } } }`,
+        { id: sourceItemId },
+      )
+      .pipe(
+        map((resp) => resp.data?.stagedEventDetails ?? null),
+        catchError(() => of(null)),
+      );
+  }
+
+  /** dhbwrapla PRD 004 § H5a — ranked template suggestions (exact | parent | generic), best first. */
+  templateSuggestions(groupIds: string[], kind: 'v' | 'p'): Observable<TemplateSuggestion[]> {
+    return this.gql
+      .query<{ externalEventTemplateSuggestions: TemplateSuggestion[] }>(
+        `query ($ids: [ID!]!, $kind: String!) { externalEventTemplateSuggestions(groupIds: $ids, kind: $kind) { id name reason } }`,
+        { ids: groupIds, kind },
+      )
+      .pipe(
+        map((resp) => resp.data?.externalEventTemplateSuggestions ?? []),
+        catchError(() => of([] as TemplateSuggestion[])),
+      );
+  }
+
+  /** dhbwrapla PRD 004 § H3a "Übernehmen": re-apply the changed source to its bound reservation.
+   *  Plain true/false like bindStagedEvent (§12). */
+  applyStagedChanges(sourceItemId: string): Observable<'applied' | 'refused' | 'error'> {
+    return this.gql
+      .mutate<{ applyStagedChanges: boolean }>(
+        `mutation ($item: ID!) { applyStagedChanges(sourceItemId: $item) }`,
+        { item: sourceItemId },
+      )
+      .pipe(
+        map((result) =>
+          result.kind !== 'ok' ? 'error' : result.data.applyStagedChanges === true ? 'applied' : 'refused',
+        ),
+        catchError(() => of('error' as const)),
+        tap((outcome) => {
+          if (outcome === 'applied') this.refresh();
+        }),
+      );
+  }
+
+  /** H3a "Verwerfen": clear the "changed" marker only (a human has seen it). */
+  /** @returns rows cleared, or null on a technical error (review round 18 M3). */
+  dismissStagedChanges(sourceItemIds: string[]): Observable<number | null> {
+    return this.gql
+      .mutate<{ dismissStagedChanges: number }>(
+        `mutation ($ids: [ID!]!) { dismissStagedChanges(sourceItemIds: $ids) }`,
+        { ids: sourceItemIds },
+      )
+      .pipe(
+        map((result) => (result.kind === 'ok' ? result.data.dismissStagedChanges : null)),
+        catchError(() => of(null)),
+        tap((n) => {
+          if (n !== null && n > 0) this.refresh();
+        }),
+      );
+  }
+
   bindStagedEvent(sourceItemId: string, reservationId: string): Observable<boolean> {
     return this.gql
       .mutate<{

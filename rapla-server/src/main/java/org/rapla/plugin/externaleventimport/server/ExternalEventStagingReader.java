@@ -66,6 +66,64 @@ public class ExternalEventStagingReader
         return out;
     }
 
+    /** One staged item with its "changed" marker — for the ⓘ details (WP23x C4). */
+    public record StagedDetails(ImportItem item, String changedSince,
+            java.util.List<org.rapla.plugin.externaleventimport.ExternalEventAttribution.DetailField> fields)
+    {
+    }
+
+    /** The staged item for the details view, in any binding state; missing and ignored rows are
+     *  silently absent (null). */
+    public StagedDetails loadDetails(String sourceItemId) throws RaplaException
+    {
+        // by the row id, not by scanning: unknown and forbidden cost the same (review round 19)
+        final ExternalSyncEntity row = operator.getImportExportEntity(attribution.systemId(),
+                ImportExportDirections.IMPORT, ExternalEventStagingConstants.idOf(sourceItemId));
+        if (row == null || !ExternalEventStagingConstants.CONTEXT_EVENT_STAGING.equals(row.getContext()))
+        {
+            return null;
+        }
+        final StagedRowData data = StagedRowData.of(json, row);
+        final ImportItem item = data.getSource();
+        return item == null || data.getIgnoredSince() != null ? null
+                : new StagedDetails(item, data.getChangedSince(), attribution.detailFields(item));
+    }
+
+    /** A bound item whose source changed since it was bound, with the reservation it is bound to
+     *  and the marker it was read with (compare-and-clear, review round 16). */
+    public record ChangedBoundItem(ImportItem item, String reservationId, String changedSince)
+    {
+    }
+
+    /** Staged items that are BOUND and carry the "changed in the source" marker. Missing, ignored,
+     *  open and unchanged rows are silently absent (dhbwrapla PRD 004 § H3a). */
+    public List<ChangedBoundItem> loadChangedBoundItems(Collection<String> sourceItemIds) throws RaplaException
+    {
+        final java.util.Map<String, ExternalSyncEntity> rows = operator.getImportExportEntities(attribution.systemId(),
+                ImportExportDirections.IMPORT);
+        final List<ChangedBoundItem> out = new ArrayList<>();
+        for (String sourceItemId : new LinkedHashSet<>(sourceItemIds))
+        {
+            final ExternalSyncEntity row = rows.get(ExternalEventStagingConstants.idOf(sourceItemId));
+            if (row == null || !ExternalEventStagingConstants.CONTEXT_EVENT_STAGING.equals(row.getContext()))
+            {
+                continue;
+            }
+            final StagedRowData data = StagedRowData.of(json, row);
+            final ImportItem item = data.getSource();
+            if (item == null || data.getIgnoredSince() != null || data.getChangedSince() == null)
+            {
+                continue;
+            }
+            final StagedBinding.Binding binding = StagedBinding.of(operator, attribution, item);
+            if (binding.state() == StagedBinding.State.BOUND)
+            {
+                out.add(new ChangedBoundItem(item, binding.reference().getId(), data.getChangedSince()));
+            }
+        }
+        return out;
+    }
+
     /** §12 gate for the create path: the groups of each item the caller may actually book.
      *  Items without such a group are absent from the result — unknown, unattributable and
      *  forbidden are indistinguishable, and the caller reports "n requested, m created".
