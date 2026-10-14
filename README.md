@@ -1,7 +1,7 @@
 # Rapla
 
-<img src="https://www.karlsruhe.dhbw.de/fileadmin/user_upload/images/content/Einrichtungen/IT.Service-Center/r2_main-week-view.JPG" height="400" alt="Main Window" />
-
+ ![Main Window](https://www.karlsruhe.dhbw.de/fileadmin/user_upload/images/content/Einrichtungen/IT.Service-Center/r2_main-week-view.JPG)
+x
 checkout the rapla website for news on rapla 
 
 http://rapla.org
