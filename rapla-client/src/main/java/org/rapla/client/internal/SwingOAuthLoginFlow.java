@@ -39,6 +39,7 @@ public final class SwingOAuthLoginFlow
     private final BrowserOpener browserOpener;
     private boolean forceLogin = false;
     private Duration callbackTimeout = CALLBACK_TIMEOUT;
+    private String signedInText = "Signed in to the Rapla Java application. You can close this tab and switch to Rapla.";
 
     public SwingOAuthLoginFlow(OAuthConfig config)
     {
@@ -63,6 +64,13 @@ public final class SwingOAuthLoginFlow
     public SwingOAuthLoginFlow forceLogin(boolean force)
     {
         this.forceLogin = force;
+        return this;
+    }
+
+    /** Text of the browser page shown after a successful sign-in, in the client's language. */
+    public SwingOAuthLoginFlow signedInText(String text)
+    {
+        this.signedInText = text;
         return this;
     }
 
@@ -255,7 +263,7 @@ public final class SwingOAuthLoginFlow
                 result.completeExceptionally(new IllegalStateException("OAuth callback missing code or state mismatch"));
                 return;
             }
-            respond(exchange, 200, signedInMessage(config.getAuthorizeUrl()));
+            respond(exchange, 200, escape(signedInText));
             try
             {
                 OAuthTokens tokens = exchangeCodeForTokens(code, "1".equals(params.get("remember")));
@@ -315,13 +323,6 @@ public final class SwingOAuthLoginFlow
         {
             out.write(body);
         }
-    }
-
-    /** Callback page after a successful sign-in: closes nothing itself, links back to the rapla start page. */
-    static String signedInMessage(String authorizeUrl)
-    {
-        String origin = URI.create(authorizeUrl).resolve("/").toString();
-        return "Signed in. You can close this tab or go to <a href=\"" + origin + "\">" + origin + "</a>.";
     }
 
     private static String htmlPage(String message)

@@ -201,6 +201,7 @@ public class SwingOAuthLoginFlowTest
             HttpResponse<String> resp = HttpClient.newHttpClient().send(
                     HttpRequest.newBuilder(URI.create(callback)).GET().build(),
                     HttpResponse.BodyHandlers.ofString());
+            lastCallbackBody = resp.body();
             // even on validation failure the handler responds 400 with HTML; that's fine
             if (resp.statusCode() != 200 && resp.statusCode() != 400)
             {
@@ -215,6 +216,7 @@ public class SwingOAuthLoginFlowTest
     }
 
     private String capturedChallenge;
+    private String lastCallbackBody;
 
     private boolean capturedCodeVerifierMatchesChallenge() throws Exception
     {
@@ -253,10 +255,18 @@ public class SwingOAuthLoginFlowTest
     }
 
     @Test
-    public void signedInPageLinksBackToRaplaStartPage()
+    public void signedInPageShowsTheGivenTextWithoutALink() throws Exception
     {
-        String page = SwingOAuthLoginFlow.signedInMessage("http://localhost:8051/oauth2/authorize");
-        assertTrue(page, page.contains("href=\"http://localhost:8051/\""));
+        OAuthConfig cfg = new OAuthConfig(true, "rapla-client",
+                fakeAuthServerUrl() + "/oauth2/authorize",
+                fakeAuthServerUrl() + "/oauth2/token",
+                List.of("openid"));
+        SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg,
+                (url) -> simulateBrowserLogin(url, "test-code-xyz", null))
+                .signedInText("Sie sind in der Rapla Java-Anwendung angemeldet & fertig.");
+        flow.start().future().get(10, TimeUnit.SECONDS);
+        assertTrue(lastCallbackBody, lastCallbackBody.contains("Sie sind in der Rapla Java-Anwendung angemeldet &amp; fertig."));
+        assertFalse(lastCallbackBody, lastCallbackBody.contains("href="));
     }
 
     @Test

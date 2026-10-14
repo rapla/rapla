@@ -1157,7 +1157,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             {
                 connectionInfo.setLogoutUrl(provider.getLogoutUrl());
             }
-            SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(provider);
+            SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(provider).signedInText(i18n.getString("login.oauth.signed_in_page"));
             // One-shot: set on the fresh context's LogoutSignal by the launcher
             // when the previous session ended in an explicit logout. A field on
             // this bean would NOT survive the context rebuild that logout()
