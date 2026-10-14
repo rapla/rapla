@@ -91,6 +91,9 @@ module.exports = [
       '/server',
       '/index',
       '/graphiql',         // Same-origin GraphiQL in dev (cookie auto-sent).
+      '/app/spa.css',      // PRD 133 — deployment branding + favicon from the
+      '/app/favicon.ico',  // server's data/patch/, not the built-in public/ files.
+      '/favicon.ico',
     ],
     target: TARGET,
     secure: false,
