@@ -170,6 +170,16 @@ import { TPipe, t as tr } from '../i18n/i18n.service';
       .app-title {
         font-weight: 500;
         flex: 0 0 auto;
+        /* PRD 133: --brand-logo: url(...) in data/patch/spa.css replaces the word mark */
+        content: var(--brand-logo, normal);
+      }
+      .new-event {
+        background: var(--new-bg, transparent);
+        --mat-button-text-label-text-color: var(--new-fg, var(--bar-fg, #efefea));
+        --mat-icon-color: var(--new-fg, var(--bar-fg, #efefea));
+        --mat-button-text-container-shape: var(--new-radius);
+        --mat-button-text-container-height: var(--new-height);
+        --mat-button-text-with-icon-horizontal-padding: var(--new-padding-x);
       }
       .toolbar-search {
         flex: 0 1 640px;
@@ -203,8 +213,8 @@ import { TPipe, t as tr } from '../i18n/i18n.service';
         width: 30px;
         height: 30px;
         border-radius: 50%;
-        background: #fff;
-        color: var(--mat-sys-primary, #1565c0);
+        background: var(--avatar-bg, #fff);
+        color: var(--avatar-fg, var(--mat-sys-primary, #1565c0));
         font-size: 0.8rem;
         font-weight: 500;
         display: inline-flex;

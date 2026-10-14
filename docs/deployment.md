@@ -260,6 +260,20 @@ the next request after a change (modification time), no restart:
 
 `login.mustache` is not treated as a stored document by the start-up patch run.
 
+Two more files brand the SPA and the browser tab (PRD 133); they are served on every request,
+so a page reload shows a change:
+
+- `spa.css` — served as `/app/spa.css`, which the SPA loads after its own styles (without the
+  file: an empty stylesheet). It sets variables on `:root`: `--bar-bg`, `--bar-fg`, `--bar-rule`
+  (the `border-bottom` under the toolbar), `--bar-shadow`, `--search-border`, `--avatar-bg`,
+  `--avatar-fg`, for the "New" button `--new-bg`, `--new-fg`, `--new-radius`, `--new-height`,
+  `--new-padding-x`, and `--brand-logo: url(…)`, which replaces the "Rapla" word mark with the
+  image at its intrinsic size (give an SVG `width`/`height`). Unset variables keep today's look.
+- `favicon.ico` — served as `/favicon.ico` (login page), `/images/favicon.ico` (start page, HTML
+  calendars) and `/app/favicon.ico` (SPA); without the file the Rapla icon.
+
+Only these exact names are reachable over HTTP; the other files of the directory are not.
+
 ## Docker
 
 The repo root carries a `Dockerfile` that wraps the fat JAR in

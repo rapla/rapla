@@ -20,12 +20,27 @@ public class SpaResourceConfig implements WebMvcConfigurer
     private static final CacheControl IMMUTABLE = CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable();
     private static final String HASHED_FILE = "{file:[\\w-]+-[\\w-]+\\.(?:js|css)}";
 
-    @Value("${rapla.spa.dev-dir:../rapla-angular/dist/rapla-angular/browser/}")
-    private String devDir;
+    private final String devDir;
+    private final String patchDir;
+
+    public SpaResourceConfig(@Value("${rapla.spa.dev-dir:../rapla-angular/dist/rapla-angular/browser/}") String devDir,
+                             RaplaServerProperties serverProperties)
+    {
+        this.devDir = devDir;
+        this.patchDir = serverProperties.getPatchDir();
+    }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry)
     {
+        // PRD 133: a deployment's data/patch/favicon.ico and spa.css replace the built-in ones. Only
+        // these exact names are reachable — the patch directory also holds stored views and documents.
+        registry.addResourceHandler("/{file:favicon\\.ico}", "/app/{file:favicon\\.ico}", "/images/{file:favicon\\.ico}")
+                .addResourceLocations("file:" + patchDir + "/", "classpath:/static/images/")
+                .setCacheControl(CacheControl.noCache());
+        registry.addResourceHandler("/app/{file:spa\\.css}")
+                .addResourceLocations("file:" + patchDir + "/", "file:" + devDir, "classpath:/static/app/")
+                .setCacheControl(CacheControl.noCache());
         registry.addResourceHandler("/app/" + HASHED_FILE)
                 .addResourceLocations("file:" + devDir, "classpath:/static/app/")
                 .setCacheControl(IMMUTABLE);

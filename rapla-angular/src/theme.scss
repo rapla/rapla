@@ -20,24 +20,26 @@ html {
   ));
 
   // App bar on the logo's slate board, chalk text, gold rule below (same as the rapla.org header).
+  // A deployment re-colours it through the --bar-* variables in data/patch/spa.css (PRD 133).
   @include mat.toolbar-overrides((
-    container-background-color: #35393c,
-    container-text-color: #efefea,
+    container-background-color: var(--bar-bg, #35393c),
+    container-text-color: var(--bar-fg, #efefea),
   ));
 }
 
 @media screen {
   mat-toolbar.appbar {
-    border-bottom: 3px solid #d2af63;
+    border-bottom: var(--bar-rule, 3px solid #d2af63);
+    box-shadow: var(--bar-shadow, none);
     // Buttons and icons on the slate bar take chalk; disabled ones (undo/redo) stay legible as dimmed chalk.
     @include mat.icon-button-overrides((
-      icon-color: #efefea,
-      disabled-icon-color: rgb(239 239 234 / 0.45),
+      icon-color: var(--bar-fg, #efefea),
+      disabled-icon-color: color-mix(in srgb, var(--bar-fg, #efefea) 45%, transparent),
     ));
     @include mat.button-overrides((
-      text-label-text-color: #efefea,
-      text-disabled-label-text-color: rgb(239 239 234 / 0.45),
+      text-label-text-color: var(--bar-fg, #efefea),
+      text-disabled-label-text-color: color-mix(in srgb, var(--bar-fg, #efefea) 45%, transparent),
     ));
-    @include mat.icon-overrides((color: #efefea));
+    @include mat.icon-overrides((color: var(--bar-fg, #efefea)));
   }
 }

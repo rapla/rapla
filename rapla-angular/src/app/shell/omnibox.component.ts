@@ -77,7 +77,8 @@ const SEARCH_THROTTLE_MS = 300;
       .obsearch {
         width: 100%;
         height: 2.5rem;
-        border: 1px solid rgba(0, 0, 0, 0.15);
+        box-sizing: border-box;
+        border: 1px solid var(--search-border, rgba(0, 0, 0, 0.15));
         border-radius: 8px;
         padding: 0 0.9rem;
         font-size: 0.95rem;
