@@ -175,7 +175,7 @@ import { TPipe, t as tr } from '../i18n/i18n.service';
       }
       .new-event {
         background: var(--new-bg, transparent);
-        --mat-button-text-label-text-color: var(--new-fg, var(--bar-fg, #efefea));
+        --mat-toolbar-container-text-color: var(--new-fg, var(--bar-fg, #efefea));
         --mat-icon-color: var(--new-fg, var(--bar-fg, #efefea));
         --mat-button-text-container-shape: var(--new-radius);
         --mat-button-text-container-height: var(--new-height);
