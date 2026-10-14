@@ -11,13 +11,15 @@ A deployment (first: DHBW) brands the SPA toolbar and the favicon of SPA, login 
 
 - `SpaResourceConfig`: resource handlers for exactly `/favicon.ico`, `/app/favicon.ico`, `/images/favicon.ico` (patch dir, then `classpath:/static/images/`) and `/app/spa.css` (patch dir, then the SPA build's empty `spa.css`), `Cache-Control: no-cache`. Spring's resource handler re-reads per request with `Last-Modified`, so no `PatchFile` cache is needed.
 - `SecurityConfig`: `/favicon.ico` permitted (was 401 without a session; the login page has no icon link, so the browser asks for `/favicon.ico`).
-- SPA: `index.html` links `spa.css` and is titled "Rapla"; `public/favicon.ico` = the Rapla icon; `theme.scss` / `app-toolbar` / `omnibox` read the toolbar colours from CSS variables whose defaults are today's values; `.app-title { content: var(--brand-logo, normal) }` swaps the word mark for the logo; the search field is `box-sizing: border-box` (it overflowed its 640 px slot by 30 px).
+- SPA: `index.html` links `spa.css` and is titled "Rapla"; `public/favicon.ico` = the Rapla icon; `theme.scss` / `app-toolbar` / `omnibox` read the toolbar colours from CSS variables whose defaults are today's values; `.app-title { content: var(--brand-logo, normal) }` swaps the word mark for the logo.
+- `proxy.conf.js`: `/app/spa.css`, `/app/favicon.ico`, `/favicon.ico` go to :8051, so `ng serve` shows the server's patch files instead of `public/`.
+- 8051 serves the SPA from `rapla-app/target/classes/static/app` — a `-am compile` restart does not rebuild it; the branding needs a fresh SPA build there.
 - Variables and file names: [docs/deployment.md § Patch directory](../deployment.md#patch-directory--stored-views-and-documents-from-files-prd-112).
-- DHBW templates (variant B, dhbw.de style): dhbwrapla `docs/patch/spa.css`, `docs/patch/favicon.ico` (16/32/48 px from the Keycloak-theme signet).
+- DHBW templates (variant B, dhbw.de style): dhbwrapla `docs/patch/spa.css`, `docs/patch/favicon.ico` (16/32/48 px from the Keycloak-theme signet). The red full-height "New" block was dropped again (user 2026-10-14: "New" as in the classic toolbar, next to the search field); the `--new-*` variables stay available.
 
 ## Goal
 
-With the DHBW files in `data/patch/`: `/favicon.ico` (no cookie), `/app/favicon.ico`, `/images/favicon.ico` return the DHBW icon, `/app/spa.css` the DHBW variables, the toolbar is white with logo and red "New" block; `/app/<view>.graphql` still returns the SPA shell, never a patch file.
+With the DHBW files in `data/patch/`: `/favicon.ico` (no cookie), `/app/favicon.ico`, `/images/favicon.ico` return the DHBW icon, `/app/spa.css` the DHBW variables, the toolbar is white with logo and the classic "New" button next to the search field; `/app/<view>.graphql` still returns the SPA shell, never a patch file.
 
 ## Scope
 
