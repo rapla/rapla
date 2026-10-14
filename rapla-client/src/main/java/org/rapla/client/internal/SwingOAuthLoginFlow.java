@@ -38,6 +38,7 @@ public final class SwingOAuthLoginFlow
     private final HttpClient http;
     private final BrowserOpener browserOpener;
     private boolean forceLogin = false;
+    private Duration callbackTimeout = CALLBACK_TIMEOUT;
 
     public SwingOAuthLoginFlow(OAuthConfig config)
     {
@@ -65,6 +66,13 @@ public final class SwingOAuthLoginFlow
         return this;
     }
 
+    /** Test seam: how long the loopback listener waits for the browser callback. */
+    SwingOAuthLoginFlow callbackTimeout(Duration timeout)
+    {
+        this.callbackTimeout = timeout;
+        return this;
+    }
+
     @FunctionalInterface
     public interface BrowserOpener
     {
@@ -75,12 +83,17 @@ public final class SwingOAuthLoginFlow
     {
         private final CompletableFuture<OAuthTokens> future;
         private final URI redirectUri;
+        private volatile URI authorizeUrl;
 
         Session(CompletableFuture<OAuthTokens> future, URI redirectUri)
         {
             this.future = future;
             this.redirectUri = redirectUri;
+            future.whenComplete((t, e) -> authorizeUrl = null);
         }
+
+        /** The authorize URL the running flow opened; null once the flow has finished. */
+        public URI authorizeUrl() { return authorizeUrl; }
 
         public CompletableFuture<OAuthTokens> future() { return future; }
 
@@ -127,6 +140,8 @@ public final class SwingOAuthLoginFlow
         result.whenComplete((tokens, err) -> server.stop(0));
 
         URI authorize = URI.create(buildAuthorizeUrl(redirectUri, challenge, state));
+        Session session = new Session(result, URI.create(redirectUri));
+        session.authorizeUrl = authorize;
         try
         {
             browserOpener.open(authorize);
@@ -134,11 +149,11 @@ public final class SwingOAuthLoginFlow
         catch (IOException e)
         {
             result.completeExceptionally(e);
-            return new Session(result, URI.create(redirectUri));
+            return session;
         }
 
         scheduleTimeout(result);
-        return new Session(result, URI.create(redirectUri));
+        return session;
     }
 
     private static String discoverWslBridgeIp()
@@ -195,11 +210,11 @@ public final class SwingOAuthLoginFlow
 
     private void scheduleTimeout(CompletableFuture<OAuthTokens> result)
     {
-        CompletableFuture.delayedExecutor(CALLBACK_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
+        CompletableFuture.delayedExecutor(callbackTimeout.toMillis(), TimeUnit.MILLISECONDS)
                 .execute(() -> {
                     if (!result.isDone())
                     {
-                        result.completeExceptionally(new TimeoutException("OAuth login timed out after " + CALLBACK_TIMEOUT));
+                        result.completeExceptionally(new TimeoutException("OAuth login timed out after " + callbackTimeout));
                     }
                 });
     }
@@ -243,7 +258,7 @@ public final class SwingOAuthLoginFlow
             respond(exchange, 200, signedInMessage(config.getAuthorizeUrl()));
             try
             {
-                OAuthTokens tokens = exchangeCodeForTokens(code);
+                OAuthTokens tokens = exchangeCodeForTokens(code, "1".equals(params.get("remember")));
                 result.complete(tokens);
             }
             catch (Exception e)
@@ -252,7 +267,7 @@ public final class SwingOAuthLoginFlow
             }
         }
 
-        private OAuthTokens exchangeCodeForTokens(String code) throws IOException, InterruptedException
+        private OAuthTokens exchangeCodeForTokens(String code, boolean remember) throws IOException, InterruptedException
         {
             String body = "grant_type=authorization_code"
                     + "&code=" + enc(code)
@@ -286,7 +301,8 @@ public final class SwingOAuthLoginFlow
                     access.asString(),
                     refresh != null ? refresh.asString() : null,
                     idToken != null ? idToken.asString() : null,
-                    expires != null ? expires.asLong() : 0L);
+                    expires != null ? expires.asLong() : 0L,
+                    remember);
         }
     }
 

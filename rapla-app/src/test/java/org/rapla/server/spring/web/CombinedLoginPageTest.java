@@ -73,7 +73,7 @@ class CombinedLoginPageTest
         // localized; the provider name part stays as configured
         mockMvc.perform(get("/login").header("Accept-Language", "de"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Anmelden mit Keycloak")))
+                .andExpect(content().string(containsString("Anmelden mit Single Sign-On")))
                 .andExpect(content().string(containsString("Anmelden mit Google")))
                 .andExpect(content().string(not(containsString("Sign in with"))));
     }
@@ -85,7 +85,7 @@ class CombinedLoginPageTest
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("/oauth2/authorization/keycloak")))
                 .andExpect(content().string(containsString("/oauth2/authorization/google")))
-                .andExpect(content().string(containsString("Sign in with Keycloak")))
+                .andExpect(content().string(containsString("Sign in with Single Sign-On")))
                 .andExpect(content().string(containsString("Sign in with Google")));
     }
 

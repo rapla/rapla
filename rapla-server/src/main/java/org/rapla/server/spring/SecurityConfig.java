@@ -1,8 +1,6 @@
 package org.rapla.server.spring;
 
 import org.rapla.facade.RaplaFacade;
-import org.rapla.server.RaplaKeyStorage;
-import org.rapla.server.internal.RaplaTokenRepository;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
 import org.rapla.server.spring.oauth.external.ProviderConfig;
 import org.slf4j.Logger;
@@ -15,7 +13,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -23,10 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
-import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.authentication.rememberme.PersistentTokenBasedRememberMeServices;
-import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -91,13 +85,15 @@ public class SecurityConfig
     @org.springframework.core.annotation.Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http,
                                             ObjectProvider<JwtDecoder> jwtDecoderProvider,
-                                            RememberMeServices rememberMeServices,
                                             ExternalProvidersProperties externalProviders,
                                             LoginRateLimitFilter loginRateLimitFilter,
                                             ObjectProvider<org.springframework.security.oauth2.client.registration.ClientRegistrationRepository> clientRegistrationRepositoryProvider,
                                             ObjectProvider<org.rapla.server.spring.oauth.OidcLoginSuccessHandler> oidcSuccessHandlerProvider,
                                             ObjectProvider<FormLoginSuccessHandler> formLoginSuccessHandlerProvider,
-                                            CookieAuthSupport cookieAuthSupport) throws Exception
+                                            CookieAuthSupport cookieAuthSupport,
+                                            ObjectProvider<JwtUserResolver> jwtUserResolverProvider,
+                                            ObjectProvider<org.rapla.storage.CachableStorageOperator> operatorProvider,
+                                            @Value("${rapla.auth.impersonation.enabled:true}") boolean impersonationEnabled) throws Exception
     {
         JwtDecoder decoder = jwtDecoderProvider.getIfAvailable();
         org.springframework.security.oauth2.client.registration.ClientRegistrationRepository clientRegistrations =
@@ -130,7 +126,7 @@ public class SecurityConfig
                     auth.requestMatchers("/api/users", "/api/users/**").authenticated();
                     // PRD 071 Phase 3: the API-explorer pages (Swagger UI +
                     // GraphiQL) are static HTML that, in a browser, can only be
-                    // gated by the form-login session/remember-me cookie (the
+                    // gated by the form-login session cookie (the
                     // SPA's localStorage Bearer is NOT sent on a navigation GET).
                     // An unauthenticated GET is rejected by the chain's active
                     // authentication entry point — 401 here, because
@@ -151,7 +147,7 @@ public class SecurityConfig
                     // per-resolver §12 gating remains the second layer.
                     auth.requestMatchers("/api/graphql").authenticated();
                     auth.requestMatchers("/api/auth/**", "/", "/index", "/server", "/static/**", "/*.html", "/*.css",
-                            "/images/**", "/webclient/**", "/app/**",
+                            "/favicon.ico", "/images/**","/webclient/**", "/app/**",
                             "/api/logger/**", "/api/ical/timezones/**",
                             "/rapla/calendar", "/rapla/calendar.csv",
                             "/rapla/internal_calendar", "/rapla/internal_calendar.csv",
@@ -203,7 +199,6 @@ public class SecurityConfig
                         form.successHandler(formSuccess);
                     }
                 })
-                .rememberMe(rm -> rm.rememberMeServices(rememberMeServices))
                 .headers(headers -> headers
                         // PRD 071 Phase 2: path-scoped CSP — /api/** and /rapla/**
                         // (calendar pages) get strict ENFORCED default-src 'none';
@@ -268,6 +263,8 @@ public class SecurityConfig
                     oauth.successHandler(successHandler);
                 }
             });
+            http.addFilterBefore(new RememberChoiceFilter(cookieAuthSupport),
+                    org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter.class);
         }
 
         // PRD 072 Phase 1 — pin the AuthenticationEntryPoint explicitly. Adding
@@ -307,48 +304,11 @@ public class SecurityConfig
             // (cookie, no Authorization) request shape.
             http.addFilterAfter(new CookieToBearerFilter(decoder, cookieAuthSupport),
                     org.springframework.security.web.csrf.CsrfFilter.class);
+            // PRD 131 D7/D12: per-tab act-as, right after the bearer filter validated the token.
+            http.addFilterAfter(new ActAsFilter(jwtUserResolverProvider.getObject(), operatorProvider.getObject(), impersonationEnabled),
+                    org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class);
         }
         return http.build();
-    }
-
-    /**
-     * Promoted to an explicit bean so the OIDC logout endpoint in
-     * {@code AuthorizationServerConfig} can wrap it as a {@code LogoutHandler}
-     * — necessary because Spring SAS's {@code OidcLogoutAuthenticationSuccessHandler}
-     * only clears the HttpSession/SecurityContext and does NOT consult
-     * {@code RememberMeServices}. Without this wiring, a successful
-     * {@code /connect/logout} leaves the {@code rapla-remember-me} cookie alive
-     * and the next {@code /oauth2/authorize} silently re-authenticates via the
-     * surviving cookie ("sign out → instantly signed back in" bug).
-     */
-    @Bean
-    public RememberMeServices rememberMeServices(PersistentTokenRepository repo,
-                                                 UserDetailsService userDetailsService,
-                                                 ObjectProvider<RaplaKeyStorage> keyStorageProvider,
-                                                 @Value("${rapla.auth.remember-me-days:30}") int rememberMeDays)
-    {
-        RaplaKeyStorage keyStorage = keyStorageProvider.getIfAvailable();
-        String key = keyStorage != null
-                ? keyStorage.getRootKeyBase64()
-                : "rapla-remember-me-fallback-key-not-persistent";
-        PersistentTokenBasedRememberMeServices services =
-                new PersistentTokenBasedRememberMeServices(key, userDetailsService, repo);
-        services.setTokenValiditySeconds(rememberMeDays * 24 * 60 * 60);
-        services.setParameter("remember-me");
-        services.setCookieName("rapla-remember-me");
-        return services;
-    }
-
-    /**
-     * Server-side store for remember-me tokens, backed by Rapla's system
-     * preferences. A cookie issued before a server restart still validates
-     * after the JVM comes back up — matching the persistent-JWK pattern used
-     * by {@link RaplaKeyStorage}.
-     */
-    @Bean
-    public PersistentTokenRepository rememberMeTokenRepository(RaplaFacade facade)
-    {
-        return new RaplaTokenRepository(facade);
     }
 
     @Bean

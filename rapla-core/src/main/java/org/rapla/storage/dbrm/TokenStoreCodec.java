@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 /**
  * Tiny JSON-object codec for the client-side {@link TokenStore} — a flat
- * {@code {"key":"value",...}} document shared by the file and JNLP backends.
+ * {@code {"key":"value",...}} document of the file backend.
  *
  * <p>Deliberately dependency-free and minimal: every value rapla stores here
  * (an RSA-signed JWT, an ISO language code, an OAuth provider id) is

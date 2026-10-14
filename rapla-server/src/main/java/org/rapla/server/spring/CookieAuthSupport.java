@@ -31,6 +31,9 @@ import java.time.Duration;
  *       (PRD 072 § "Refresh mechanism"). Logout lives there so it can read this
  *       durable credential and revoke even when the access token has expired.</li>
  * </ul>
+ *
+ * <p>PRD 131 D2: both are browser-session cookies (no {@code Max-Age}) unless the user chose to
+ * stay signed in on {@code /login}; the set methods take that decision at every writer.
  */
 public class CookieAuthSupport
 {
@@ -80,6 +83,12 @@ public class CookieAuthSupport
         return null;
     }
 
+    /** Whether the user chose to stay signed in on this device (the login page's tick, {@link #REMEMBER_CHOICE_COOKIE}). */
+    public static boolean isRemembered(HttpServletRequest request)
+    {
+        return "1".equals(readCookie(request, REMEMBER_CHOICE_COOKIE));
+    }
+
     /** Records the login page's "stay signed in" tick for a year; no tick deletes an earlier one. Read back by the login page. */
     public void setRememberChoiceCookie(HttpServletRequest request, HttpServletResponse response, boolean remember)
     {
@@ -97,36 +106,41 @@ public class CookieAuthSupport
                 .toString());
     }
 
-    public void setAccessTokenCookie(HttpServletResponse response, String accessToken, long maxAgeSeconds)
+    /** @param remembered {@code true}: persistent for {@code maxAgeSeconds}; {@code false}: a browser-session cookie (PRD 131 D2) */
+    public void setAccessTokenCookie(HttpServletResponse response, String accessToken, long maxAgeSeconds, boolean remembered)
     {
-        response.addHeader("Set-Cookie", buildAccessCookie(accessToken, maxAgeSeconds).toString());
+        response.addHeader("Set-Cookie", cookie(ACCESS_TOKEN_COOKIE, accessToken, ACCESS_TOKEN_PATH, remembered ? maxAgeSeconds : null).toString());
     }
 
-    public void setRefreshTokenCookie(HttpServletResponse response, String refreshToken, long maxAgeSeconds)
+    /** @param remembered {@code true}: persistent for {@code maxAgeSeconds}; {@code false}: a browser-session cookie (PRD 131 D2) */
+    public void setRefreshTokenCookie(HttpServletResponse response, String refreshToken, long maxAgeSeconds, boolean remembered)
     {
-        response.addHeader("Set-Cookie", buildRefreshCookie(refreshToken, maxAgeSeconds).toString());
+        response.addHeader("Set-Cookie", cookie(REFRESH_TOKEN_COOKIE, refreshToken, REFRESH_TOKEN_PATH, remembered ? maxAgeSeconds : null).toString());
     }
 
     public ResponseCookie buildAccessCookie(String accessToken, long maxAgeSeconds)
     {
-        return ResponseCookie.from(ACCESS_TOKEN_COOKIE, accessToken)
-                .httpOnly(true)
-                .secure(isSecure())
-                .sameSite("Lax")
-                .path(ACCESS_TOKEN_PATH)
-                .maxAge(Duration.ofSeconds(maxAgeSeconds))
-                .build();
+        return cookie(ACCESS_TOKEN_COOKIE, accessToken, ACCESS_TOKEN_PATH, maxAgeSeconds);
     }
 
     public ResponseCookie buildRefreshCookie(String refreshToken, long maxAgeSeconds)
     {
-        return ResponseCookie.from(REFRESH_TOKEN_COOKIE, refreshToken)
+        return cookie(REFRESH_TOKEN_COOKIE, refreshToken, REFRESH_TOKEN_PATH, maxAgeSeconds);
+    }
+
+    /** @param maxAgeSeconds {@code null}: no {@code Max-Age}, the browser drops the cookie when it closes */
+    private ResponseCookie cookie(String name, String value, String path, Long maxAgeSeconds)
+    {
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
                 .httpOnly(true)
                 .secure(isSecure())
                 .sameSite("Lax")
-                .path(REFRESH_TOKEN_PATH)
-                .maxAge(Duration.ofSeconds(maxAgeSeconds))
-                .build();
+                .path(path);
+        if (maxAgeSeconds != null)
+        {
+            builder.maxAge(Duration.ofSeconds(maxAgeSeconds));
+        }
+        return builder.build();
     }
 
     /**

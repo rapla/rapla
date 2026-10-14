@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Spring Authorization Server does not implement OIDC {@code prompt=login}
  * re-authentication itself (it only errors on {@code prompt=none}), so rapla
  * must: an authenticated session hitting {@code /oauth2/authorize?prompt=login}
- * is logged out (session + remember-me) and redirected to the same authorize
+ * is logged out (session) and redirected to the same authorize
  * URL without the login prompt, which then lands on the {@code /login} chooser.
  */
 @SpringBootTest(classes = RaplaSpringBootApplication.class)

@@ -65,4 +65,15 @@ public class RaplaClientServiceImplAutoSsoTest
         assertTrue(RaplaClientServiceImpl.isLoginCancelled(new java.util.concurrent.CompletionException(new java.util.concurrent.CancellationException())));
         assertFalse(RaplaClientServiceImpl.isLoginCancelled(new java.util.concurrent.ExecutionException(new java.io.IOException("Token exchange failed"))));
     }
+
+    @Test
+    public void browserWaitTimeoutIsATimeoutNotAnError()
+    {
+        java.util.concurrent.TimeoutException timeout = new java.util.concurrent.TimeoutException("OAuth login timed out after PT5M");
+        assertTrue(RaplaClientServiceImpl.isLoginTimedOut(new java.util.concurrent.ExecutionException(timeout)));
+        assertTrue(RaplaClientServiceImpl.isLoginTimedOut(new java.util.concurrent.CompletionException(new java.util.concurrent.ExecutionException(timeout))));
+        assertFalse(RaplaClientServiceImpl.isLoginTimedOut(new java.util.concurrent.ExecutionException(new java.net.http.HttpTimeoutException("token"))));
+        assertFalse(RaplaClientServiceImpl.isLoginTimedOut(new java.util.concurrent.CancellationException()));
+        assertFalse(RaplaClientServiceImpl.isLoginCancelled(new java.util.concurrent.ExecutionException(timeout)));
+    }
 }

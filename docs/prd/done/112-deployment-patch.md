@@ -222,3 +222,5 @@ is the natural later addition, not v1.
 Open items left when this PRD was closed in the 2026-10-06 triage.
 
 - [ ] Editor export with front matter (Option A text; deferred only in the Status line) — decide.
+
+**Later use of the directory (2026-10-14):** `login.css` and `login.mustache` in the patch directory restyle `/login` and are re-read on change, not at start — [PRD 131](../131-logout-stay-signed-in.md) R21; the start-up run skips `login.mustache`.

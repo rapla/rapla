@@ -186,8 +186,9 @@ import java.time.LocalDateTime;
             {
                 // Security audit PH1 — can_admin_parent defines who administers which groups; a group admin setting it
                 // on his own scope would climb to the user-groups root. Only global admins (early return above) change it.
-                String before = original == null ? null : ((Category) original).getAnnotation(CategoryAnnotations.CAN_ADMIN_PARENT);
-                if (!Objects.equals(before, category.getAnnotation(CategoryAnnotations.CAN_ADMIN_PARENT)))
+                // PRD 131 D8 — impersonated_by decides who may switch to the group's members; same rule.
+                if (annotationChanged(original, category, CategoryAnnotations.CAN_ADMIN_PARENT)
+                        || annotationChanged(original, category, CategoryAnnotations.IMPERSONATED_BY))
                 {
                     throw new RaplaSecurityException(i18n.format("error.modify_not_allowed", user.toString(), entity.toString()));
                 }
@@ -236,7 +237,8 @@ import java.time.LocalDateTime;
                 {
                     for (Category group : changedGroups)
                     {
-                        if ("true".equals(group.getAnnotation(CategoryAnnotations.CAN_ADMIN_PARENT)))
+                        // PRD 131 D8 — membership in a group that carries or is named by impersonated_by decides who may switch to whom
+                        if ("true".equals(group.getAnnotation(CategoryAnnotations.CAN_ADMIN_PARENT)) || decidesImpersonation(group))
                         {
                             throw new RaplaSecurityException(i18n.format("error.modify_not_allowed", user.toString(), userToModify));
                         }
@@ -315,6 +317,34 @@ import java.time.LocalDateTime;
                         i18n.format("error.admin_not_allowed", user.toString(), entity.toString()));
             }
         }
+    }
+
+    private static boolean annotationChanged(Entity original, Category category, String key)
+    {
+        String before = original == null ? null : ((Category) original).getAnnotation(key);
+        return !Objects.equals(before, category.getAnnotation(key));
+    }
+
+    /** PRD 131 D8 — true iff {@code group} carries {@code impersonated_by} or any user group names its id in one. */
+    private boolean decidesImpersonation(Category group) throws RaplaSecurityException
+    {
+        return group.getAnnotation(CategoryAnnotations.IMPERSONATED_BY) != null || isNamed(getUserGroupsCategory(), group.getId());
+    }
+
+    private static boolean isNamed(Category category, String groupId)
+    {
+        if (PermissionController.isImpersonatedBy(category, groupId))
+        {
+            return true;
+        }
+        for (Category child : category.getCategories())
+        {
+            if (isNamed(child, groupId))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** WP O1 — true iff {@code entity} equals {@code original} except for the owner, compared as update-history JSON. */

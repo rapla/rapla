@@ -9,8 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.RememberMeServices;
-import org.springframework.security.web.authentication.logout.CompositeLogoutHandler;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -34,8 +32,7 @@ import java.util.StringJoiner;
  *
  * <p>Behaviour: any {@code GET /oauth2/authorize} whose {@code prompt} values
  * contain {@code login} is (a) logged out — HTTP session invalidated, security
- * context cleared, remember-me cookie + persistent token removed — when a
- * non-anonymous authentication is present, and (b) redirected to the same
+ * context cleared — when a non-anonymous authentication is present, and (b) redirected to the same
  * authorize URL with the {@code login} prompt value removed. The stripped
  * re-entry request is then unauthenticated, so the standard entry point sends
  * the browser to the {@code /login} chooser, and the request the cache saves
@@ -49,14 +46,7 @@ public final class PromptLoginReauthenticationFilter extends OncePerRequestFilte
     private static final String PROMPT_PARAM = "prompt";
     private static final String LOGIN_PROMPT = "login";
 
-    private final LogoutHandler logoutHandler;
-
-    public PromptLoginReauthenticationFilter(RememberMeServices rememberMeServices)
-    {
-        this.logoutHandler = rememberMeServices instanceof LogoutHandler rememberMeLogout
-                ? new CompositeLogoutHandler(new SecurityContextLogoutHandler(), rememberMeLogout)
-                : new SecurityContextLogoutHandler();
-    }
+    private final LogoutHandler logoutHandler = new SecurityContextLogoutHandler();
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request)

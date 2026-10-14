@@ -33,4 +33,10 @@ public interface UserClientService
     boolean isLogoutAvailable();
     
     void logout();
+
+    /** revokes the session like {@link #logout()} and exits the application instead of showing a new login (PRD 131 R5) */
+    void logoutAndExit();
+
+    /** switches to the user with this username; allowed while already switched (PRD 131 D10) */
+    void switchToUser(String username) throws RaplaException;
 }

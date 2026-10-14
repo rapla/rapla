@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { UnsavedChangesService } from '../shell/unsaved-changes';
+import { actAsId, storeActAs } from './act-as';
 import { AuthService, Identity } from './auth.service';
 
 /**
@@ -38,6 +39,7 @@ describe('AuthService (cookie model)', () => {
 
   afterEach(() => {
     httpMock.verify();
+    sessionStorage.clear();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -96,7 +98,7 @@ describe('AuthService (cookie model)', () => {
   const stubReload = () =>
     vi.spyOn(TestBed.inject(UnsavedChangesService), 'reload').mockImplementation(() => undefined);
 
-  it('impersonate(target) POSTs the cookie switch endpoint with target_username, then reloads the page', async () => {
+  it('impersonate(target) POSTs the switch endpoint, keeps the returned id for THIS tab, then reloads the page', async () => {
     auth.identity.set(identity({ username: 'admin', admin: true }));
     const reload = stubReload();
 
@@ -105,9 +107,12 @@ describe('AuthService (cookie model)', () => {
       (r) => r.url === '/api/auth/impersonate/switch' && r.method === 'POST',
     );
     expect(switchReq.request.params.get('target_username')).toBe('alice');
-    switchReq.flush(null);
+    expect(actAsId()).toBe('self');
+    switchReq.flush({ id: 'u-alice', username: 'alice' });
 
     expect(await p).toBe(true);
+    expect(actAsId()).toBe('u-alice');
+    expect(sessionStorage.length).toBe(1);
     expect(reload).toHaveBeenCalledOnce();
   });
 
@@ -126,6 +131,7 @@ describe('AuthService (cookie model)', () => {
       .expectOne((r) => r.url === '/api/auth/impersonate/switch')
       .flush(null, { status: 403, statusText: 'Forbidden' });
     expect(await p).toBe(false);
+    expect(actAsId()).toBe('self');
     expect(reload).not.toHaveBeenCalled();
   });
 
@@ -140,6 +146,7 @@ describe('AuthService (cookie model)', () => {
     httpMock.expectNone('/api/auth/impersonate/switch');
     httpMock.expectNone('/api/auth/impersonate/end');
     expect(reload).not.toHaveBeenCalled();
+    expect(actAsId()).toBe('self');
   });
 
   it('an open draft confirmed → the switch goes through and the page reloads', async () => {
@@ -148,21 +155,23 @@ describe('AuthService (cookie model)', () => {
     vi.spyOn(TestBed.inject(UnsavedChangesService), 'any').mockReturnValue(true);
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     const p = auth.impersonate('alice');
-    httpMock.expectOne((r) => r.url === '/api/auth/impersonate/switch').flush(null);
+    httpMock
+      .expectOne((r) => r.url === '/api/auth/impersonate/switch')
+      .flush({ id: 'u-alice', username: 'alice' });
     expect(await p).toBe(true);
     expect(reload).toHaveBeenCalledOnce();
   });
 
-  it('endImpersonation() POSTs the cookie end endpoint, then reloads the page', async () => {
+  it('endImpersonation() drops the tab act-as without a server call, then reloads the page', async () => {
+    storeActAs('u-alice');
     auth.identity.set(
       identity({ username: 'alice', impersonating: true, actor: 'admin', target: 'alice' }),
     );
     const reload = stubReload();
-    const p = auth.endImpersonation();
-    httpMock
-      .expectOne((r) => r.url === '/api/auth/impersonate/end' && r.method === 'POST')
-      .flush(null);
-    expect(await p).toBe(true);
+    expect(await auth.endImpersonation()).toBe(true);
+    expect(actAsId()).toBe('self');
+    expect(sessionStorage.length).toBe(0);
+    httpMock.expectNone('/api/auth/impersonate/end');
     expect(reload).toHaveBeenCalledOnce();
   });
 
@@ -186,6 +195,25 @@ describe('AuthService (cookie model)', () => {
     // ?logout makes the server /login page re-prompt at the IdP (prompt=login) so
     // this explicit sign-out is not silently undone by the live Keycloak SSO session.
     expect(assign).toHaveBeenCalledWith('/login?logout');
+  });
+
+  it('redirectToLogin() drops the tab act-as before navigating (401 bounce, re-login)', () => {
+    stubLocationAssign();
+    storeActAs('u-alice');
+    auth.redirectToLogin();
+    expect(actAsId()).toBe('self');
+    expect(sessionStorage.length).toBe(0);
+  });
+
+  it('signOut() drops the tab act-as', async () => {
+    stubLocationAssign();
+    storeActAs('u-alice');
+    auth.identity.set(identity());
+    const done = auth.signOut();
+    httpMock.expectOne('/api/auth/session/logout').flush(null);
+    await done;
+    expect(actAsId()).toBe('self');
+    expect(sessionStorage.length).toBe(0);
   });
 
   it('signOut() still clears identity and navigates even if the logout POST fails', async () => {

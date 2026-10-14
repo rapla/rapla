@@ -103,7 +103,7 @@ abstract class DemoPasswordLockChecks extends IsolatedDefaultDatasetTest
     {
         for (String username : new String[] { "admin", "student" })
         {
-            String body = mockMvc.perform(get("/api/storage/profile/capabilities").cookie(cookie(username)))
+            String body = mockMvc.perform(get("/api/storage/profile/capabilities").cookie(cookie(username)).header("X-Rapla-Act-As", "self"))
                     .andReturn().getResponse().getContentAsString();
             assertTrue(body.contains("\"canChangePassword\":" + !demo()), username + " " + body);
         }
@@ -130,14 +130,14 @@ abstract class DemoPasswordLockChecks extends IsolatedDefaultDatasetTest
         {
             String[] parts = mapping.split(" ", 2);
             String path = parts[1].replaceAll("\\{[^}]+}", "student");
-            MockHttpServletRequestBuilder request = request(HttpMethod.valueOf(parts[0]), path).cookie(student);
+            MockHttpServletRequestBuilder request = request(HttpMethod.valueOf(parts[0]), path).cookie(student).header("X-Rapla-Act-As", "self");
             if (!parts[0].equals("GET"))
             {
                 request = request.with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body);
             }
             mockMvc.perform(request);
         }
-        mockMvc.perform(post("/api/graphql").cookie(student).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/graphql").cookie(student).header("X-Rapla-Act-As", "self").with(csrf()).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"query\":\"mutation { changePassword(username: \\\"student\\\", newPassword: \\\"walked\\\") }\"}"));
         mockMvc.perform(post("/change-password").cookie(student).with(csrf()).param("newPassword", "walked").param("confirmPassword", "walked"));
 

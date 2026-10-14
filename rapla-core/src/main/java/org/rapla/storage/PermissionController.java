@@ -859,6 +859,52 @@ public class PermissionController
         //return !disjoint;
     }
 
+    /**
+     * PRD 131 D8/D11 — may {@code actor} switch to {@code target}? {@link #canAdminUser}, or: the target is a DIRECT member
+     * of a group whose {@code impersonated_by} names (by id) a group the actor is a DIRECT member of. Via the annotation
+     * never self, never a global admin, never a group admin.
+     */
+    public static boolean canImpersonate(User actor, User target)
+    {
+        if (canAdminUser(actor, target))
+        {
+            return true;
+        }
+        if (actor.getId().equals(target.getId()) || target.isAdmin() || !getAdminGroups(target).isEmpty())
+        {
+            return false;
+        }
+        for (Category targetGroup : target.getGroupList())
+        {
+            for (Category actorGroup : actor.getGroupList())
+            {
+                if (isImpersonatedBy(targetGroup, actorGroup.getId()))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** PRD 131 D8 — does the comma-separated {@code impersonated_by} annotation of {@code group} name {@code groupId}? */
+    public static boolean isImpersonatedBy(Category group, String groupId)
+    {
+        final String ids = group.getAnnotation(CategoryAnnotations.IMPERSONATED_BY);
+        if (ids == null)
+        {
+            return false;
+        }
+        for (String id : ids.split(","))
+        {
+            if (id.trim().equals(groupId))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean isRequestFor(Reservation reservation, User workingUser) {
         if (workingUser == null)
         {

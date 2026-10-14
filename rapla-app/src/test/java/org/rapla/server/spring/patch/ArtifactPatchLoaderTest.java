@@ -66,6 +66,7 @@ class ArtifactPatchLoaderTest
         Files.writeString(patchDir.resolve("PatchView.graphql"), VIEW);
         Files.writeString(patchDir.resolve("PatchDoc.mustache"), DOC);
         Files.writeString(patchDir.resolve("no-head.mustache"), "<p>ignored</p>");
+        Files.writeString(patchDir.resolve("login.mustache"), "<html>{{title}}</html>");
     }
 
     @DynamicPropertySource

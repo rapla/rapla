@@ -55,7 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>401 when no Bearer is presented.
  *   <li>403 when the actor is not authorised to admin the target
  *       (group-admin trying to impersonate the global admin).
- *   <li>404 when {@code target_username} is unknown.
+ *   <li>403, identical to the not-permitted case, when {@code target_username} is unknown.
  *   <li>Authorization is re-checked on every call — calling impersonate
  *       a second time with the same target succeeds again (regression
  *       guard for "issuance is stateless").
@@ -172,15 +172,28 @@ class ImpersonationControllerTest
     }
 
     @Test
-    void unknownTargetReturns404() throws Exception
+    void unknownTargetAnswersExactlyLikeANotPermittedOne() throws Exception
     {
-        String adminToken = loginAs("homer", "duffs");
+        // PRD 131 D10 / AGENTS.md section 12: 404 for "unknown" next to 403 for "exists but not yours" would let a
+        // group admin enumerate users outside the scope. Both are 403 with the same headers and body.
+        String groupAdminToken = loginAs("monty", "burns");
 
-        mockMvc.perform(post("/api/auth/impersonate")
-                        .header("Authorization", "Bearer " + adminToken)
+        MvcResult unknown = mockMvc.perform(post("/api/auth/impersonate")
+                        .header("Authorization", "Bearer " + groupAdminToken)
                         .contentType("application/x-www-form-urlencoded")
                         .content("target_username=does-not-exist"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isForbidden())
+                .andReturn();
+        MvcResult notPermitted = mockMvc.perform(post("/api/auth/impersonate")
+                        .header("Authorization", "Bearer " + groupAdminToken)
+                        .contentType("application/x-www-form-urlencoded")
+                        .content("target_username=homer"))
+                .andExpect(status().isForbidden())
+                .andReturn();
+
+        assertEquals(unknown.getResponse().getContentAsString(), notPermitted.getResponse().getContentAsString());
+        assertEquals(new java.util.TreeSet<>(unknown.getResponse().getHeaderNames()),
+                new java.util.TreeSet<>(notPermitted.getResponse().getHeaderNames()));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package org.rapla.storage.dbrm;
 
+import java.nio.file.Path;
 import java.util.Optional;
 
 /**
@@ -21,10 +22,8 @@ import java.util.Optional;
  * {@link #tryClear()} removes only the token — the preferences survive
  * logout so the next login dialog still defaults sensibly (PRD 029 Phase 5).
  *
- * <p>Backends today: {@link FileTokenStore} (dotfile in
- * {@code ~/.rapla/}), {@link JnlpTokenStore} (JNLP
- * {@code PersistenceService} when launched via OpenWebStart / IcedTea-Web).
- * The factory in {@link TokenStores} picks the right one at startup.
+ * <p>Backend today: {@link FileTokenStore} (dotfile in {@code ~/.rapla/},
+ * the token kept per server origin). The factory in {@link TokenStores} creates it at startup.
  */
 public interface TokenStore
 {
@@ -37,9 +36,9 @@ public interface TokenStore
      *  SSO entry; the per-provider id is gone). */
     String KEY_LOGIN_METHOD = "loginMethod";
 
-    /** Preference key: the user's standing answer to "keep me signed in on this machine" —
-     *  {@code "yes"} / {@code "no"}; absent = ask at the next interactive login (PRD 126 Phase 2). */
-    String KEY_REMEMBER = "remember";
+    /** Preference key: {@code "login"} after an explicit logout — the next start sends {@code prompt=login} even across
+     *  a JVM exit; cleared by the next successful login (PRD 131 D6). */
+    String KEY_NEXT_LOGIN_PROMPT = "nextLoginPrompt";
 
     /** Returns the cached refresh token, or empty on any failure. Never throws. */
     Optional<String> read();
@@ -59,4 +58,10 @@ public interface TokenStore
     /** Persists a client preference alongside the token (empty value clears it).
      *  Logs warning on failure; never throws. */
     void tryWritePref(String key, String value);
+
+    /** Why the backend does not persist (memory only or write failed), with the path it attempted;
+     *  empty while storing works. */
+    default Optional<Failure> failure() { return Optional.empty(); }
+
+    record Failure(Path path, String reason) {}
 }

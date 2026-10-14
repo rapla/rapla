@@ -25,12 +25,12 @@ import org.springframework.web.service.annotation.PostExchange;
  *       path-scoped {@code refresh_token} cookie, validates it, mints a fresh
  *       access JWT, sets a fresh {@code access_token} cookie. 401 on an
  *       invalid/expired refresh token.</li>
- *   <li>{@code POST /api/auth/impersonate/switch} — cookie-shaped impersonation
- *       start: validates the admin cookie, checks
- *       {@code PermissionController.canAdminUser}, mints an impersonation access
- *       JWT, sets it as the {@code access_token} cookie.</li>
- *   <li>{@code POST /api/auth/impersonate/end} — restores the admin's
- *       {@code access_token} cookie (re-mint from the admin's refresh session).</li>
+ *   <li>{@code POST /api/auth/impersonate/switch} — authorizes
+ *       {@code PermissionController.canImpersonate(realActor, target)}, writes the audit line and returns the
+ *       target's id and username. The cookie does not change: the tab keeps the id and sends it as
+ *       {@code X-Rapla-Act-As} (PRD 131 D7/D12).</li>
+ *   <li>{@code POST /api/auth/impersonate/end} — checks that the calling tab impersonates; changes no
+ *       credential (the tab just drops its act-as).</li>
  *   <li>{@code POST /api/auth/session/logout} — sign-out. Resolves the user from
  *       the path-scoped {@code refresh_token} cookie and REVOKES the server-side
  *       session ({@code clearSession} — invalidates every refresh token for the
@@ -53,7 +53,7 @@ public interface AuthCookieService
     void refresh() throws RaplaException;
 
     @PostExchange("/impersonate/switch")
-    void impersonateSwitch(@RequestParam("target_username") String targetUsername) throws RaplaException;
+    ImpersonationTarget impersonateSwitch(@RequestParam("target_username") String targetUsername) throws RaplaException;
 
     @PostExchange("/impersonate/end")
     void impersonateEnd() throws RaplaException;

@@ -48,6 +48,8 @@ class CspPolicyBuilderTest
                 "https://login.example.com/realms/dhbw",
                 "https://login.example.com/realms/dhbw/protocol/openid-connect/token"));
         assertTrue(p.contains("connect-src 'self' https://login.example.com"), p);
+        // the login form's SSO buttons POST and are answered with a 302 to the IdP (PRD 131 D2)
+        assertTrue(p.contains("form-action 'self' https://login.example.com"), p);
         // path stripped, deduped to the single origin
         assertTrue(!p.contains("/realms/"), p);
     }

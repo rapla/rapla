@@ -56,7 +56,7 @@
             fetch('/api/auth/session/logout', {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}
+                headers: xsrf ? { 'X-XSRF-TOKEN': xsrf, 'X-Rapla-Act-As': 'self' } : { 'X-Rapla-Act-As': 'self' }
             }).catch(function () {}).finally(function () {
                 window.location.assign('/login');
             });
@@ -81,6 +81,7 @@
             requestInterceptor: function (req) {
                 var xsrf = getXsrfToken();
                 if (xsrf) req.headers['X-XSRF-TOKEN'] = xsrf;
+                req.headers['X-Rapla-Act-As'] = 'self';
                 return req;
             },
             // On 401, mint a fresh access_token cookie via the refresh endpoint;
@@ -92,7 +93,7 @@
                     fetch('/api/auth/session/refresh', {
                         method: 'POST',
                         credentials: 'same-origin',
-                        headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}
+                        headers: xsrf ? { 'X-XSRF-TOKEN': xsrf, 'X-Rapla-Act-As': 'self' } : { 'X-Rapla-Act-As': 'self' }
                     }).then(function (r) {
                         if (r.status === 401) {
                             location.href = '/login';

@@ -41,7 +41,7 @@ class RefreshTokenTtlTest
     @Test
     void refreshTokenLifetimeIs21Days() throws Exception
     {
-        String refresh = issuer.issueRefreshToken("user-uuid-1", RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS);
+        String refresh = issuer.issueRefreshToken("user-uuid-1", RefreshSessionService.DEFAULT_REFRESH_TOKEN_DAYS * 24L * 3600);
 
         SignedJWT jwt = SignedJWT.parse(refresh);
         Date iat = jwt.getJWTClaimsSet().getIssueTime();

@@ -106,6 +106,7 @@
             method,
             credentials: 'same-origin',
             headers: Object.assign(
+                { 'X-Rapla-Act-As': 'self' },
                 body ? { 'Content-Type': 'application/json' } : {},
                 token ? { 'X-XSRF-TOKEN': token } : {}),
             body: body ? JSON.stringify(body) : undefined
@@ -131,7 +132,7 @@
         const resp = await fetch('/api/graphql', {
             method: 'POST',
             credentials: 'same-origin',
-            headers: Object.assign({ 'Content-Type': 'application/json' },
+            headers: Object.assign({ 'Content-Type': 'application/json', 'X-Rapla-Act-As': 'self' },
                 token ? { 'X-XSRF-TOKEN': token } : {}),
             body: JSON.stringify({ query })
         });

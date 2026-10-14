@@ -22,6 +22,7 @@ import org.rapla.client.api.RaplaClientListener;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.internal.BrowserLauncher;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.client.internal.LoginDialog;
 import org.rapla.client.internal.OAuthConfig;
@@ -115,7 +116,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     /** The login dialog's language chooser for the current login attempt, so a
      *  successful login can persist the chosen language (PRD 029 Phase 4). */
     private LanguageChooser activeLanguageChooser;
-    private volatile LoginDialog activeLoginDialog;
 
     @Autowired
     public RaplaClientServiceImpl(StartupEnvironment env, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
@@ -217,6 +217,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         LOGGER.debug("RaplaClient started");
         ClientFacade facade = getClientFacade();
         facade.addUpdateErrorListener(this);
+        if (loginPromptPending(tokenStore)) logoutSignal.setForceOauthLoginNext(true);
         // Mid-session refresh-on-401 hook: when the auth seam decides the cached
         // refresh token is dead too, route through the existing facade
         // "disconnected" pipeline so the user sees the re-login dialog instead
@@ -226,12 +227,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             LOGGER.warn("session_expired: access + refresh tokens both rejected — prompting re-login");
             // tokenStore holds the persisted refresh token from a previous launch —
             // drop it too so the next start() opens the login dialog instead of
-            // trying a silent reauth that will fail the same way.
-            try { tokenStore.tryClear(); } catch (Exception ignored) {}
-            // Route through the existing disconnected() pipeline (modal dialog →
-            // restart() → login flow). The hook can fire on any thread; the
-            // dialog code already invokeLater's onto the EDT.
-            this.disconnected(i18n.getString("restart_client"));
+            // trying a silent reauth that will fail the same way (only if it is this session's, OQ10).
+            clearStoredSession(tokenStore, reconnectInfo == null ? null : reconnectInfo.getRefreshToken());
+            // The hook can fire on any thread; the dialog code invokeLater's onto the EDT.
+            this.sessionEnded();
         });
         advanceLoading(true);
 
@@ -242,6 +241,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // "no credentials, show login dialog".
         if (connectInfo != null)
         {
+            applyCarriedDecision(tokenStore, connectInfo);
             login(connectInfo).thenAccept( (result)-> {
                 LOGGER.info("Login successfull");
                 if (result )
@@ -306,28 +306,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 if ( language != null)
                 {
                     bundleManager.setLanguage(language);
-                }
-            }
-
-            // PRD 126: ask after load, so the question uses the language of the user's preferences;
-            // only with an interactive login dialog open (silent reauth and impersonation never ask).
-            LoginDialog loginDialog = activeLoginDialog;
-            activeLoginDialog = null;
-            if (loginDialog != null)
-            {
-                String refreshToken = connectionInfo.getRefreshToken();
-                Runnable ask = () -> {
-                    loginDialog.setStatus(i18n.getString("load"));
-                    askRememberLogin(loginDialog, refreshToken);
-                };
-                try
-                {
-                    if (SwingUtilities.isEventDispatchThread()) ask.run();
-                    else SwingUtilities.invokeAndWait(ask);
-                }
-                catch (Throwable t)
-                {
-                    LOGGER.warn("remember-login dialog failed: {}", t.toString());
                 }
             }
 
@@ -478,38 +456,33 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
         else
         {
-            if (logoutSignal.isImpersonationSession())
-            {
-                throw new RaplaException("Already switched to a user; switch back first.");
-            }
-            org.rapla.storage.dbrm.ImpersonationResponse resp = impersonationService.impersonate(user.getUsername());
-            if (resp == null || resp.getAccessToken() == null || resp.getAccessToken().isEmpty())
-            {
-                throw new RaplaException("Impersonation endpoint returned no access token.");
-            }
-            LOGGER.info("Switching from admin to '{}' — closing admin context, opening impersonation context", user.getUsername());
-            // PRD 052 Phase 2 — close the admin context and build a fresh one
-            // for the impersonation session. Avoids the "non system preferences
-            // for other users" cache-integrity error that the old in-place
-            // token swap hit because admin's LocalCache contained data the
-            // impersonated user shouldn't see.
-            //
-            // PRD 029 Phase 5 dual-slot — the new context starts with the
-            // ADMIN's full session as primary (so refresh + impersonation
-            // renewal both work), then sets the impersonation token in the
-            // dedicated impersonation slot via ClientService.setImpersonation().
-            // PRD 072 Phase 5: refresh always hits rapla's /oauth2/token, so the
-            // admin session is fully captured by its two tokens — no provider
-            // routing to carry across the context restart.
-            String impersonationAccessToken = resp.getAccessToken();
-            String targetUsername = user.getUsername();
-            // Capture admin's FULL session NOW — connectionInfo dies with the context.
-            ConnectInfo adminFullInfo = new ConnectInfo(
-                    connectionInfo.getAccessToken(),
-                    connectionInfo.getRefreshToken());
-            logoutSignal.next(org.rapla.client.spring.NextSession.switchTo(
-                    adminFullInfo, impersonationAccessToken, targetUsername));
+            switchToUser(user.getUsername());
         }
+    }
+
+    /**
+     * PRD 131 R17/D10: switch by username (the REST list of switch targets holds no {@code User} entities). Also
+     * allowed while impersonating (A → B → C, checked server-side as A → C): the call authenticates with the actor's
+     * own access token (see {@code RefreshOn401Interceptor}) and the next context starts with the actor's session.
+     */
+    public void switchToUser(String username) throws RaplaException
+    {
+        org.rapla.storage.dbrm.ImpersonationResponse resp = impersonationService.impersonate(username);
+        if (resp == null || resp.getAccessToken() == null || resp.getAccessToken().isEmpty())
+        {
+            throw new RaplaException("Impersonation endpoint returned no access token.");
+        }
+        LOGGER.info("Switching to '{}' — closing the current context, opening impersonation context", username);
+        // PRD 052 Phase 2 — close the context and build a fresh one for the impersonation session. Avoids the
+        // "non system preferences for other users" cache-integrity error of an in-place token swap.
+        logoutSignal.next(switchSession(connectionInfo, stayDecision(tokenStore), resp.getAccessToken(), username));
+    }
+
+    /** The actor's FULL session NOW — connectionInfo dies with the context; its regular slot always holds the actor's tokens. */
+    static org.rapla.client.spring.NextSession switchSession(RemoteConnectionInfo info, Boolean remember, String impersonationAccessToken, String targetUsername)
+    {
+        ConnectInfo actor = new ConnectInfo(info.getAccessToken(), info.getRefreshToken(), remember);
+        return org.rapla.client.spring.NextSession.switchTo(actor, impersonationAccessToken, targetUsername);
     }
 
     public boolean canSwitchBack()
@@ -777,7 +750,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             final LanguageChooser languageChooser = new LanguageChooser(i18n, raplaLocale, i18n.getString("login.language.user_setting"));
             activeLanguageChooser = languageChooser;
             final LoginDialog dlg = LoginDialog.create(env, i18n, localeSelector, raplaLocale, languageChooser.getComponent());
-            activeLoginDialog = dlg;
             // PRD 072 Phase 5: the per-provider menu is gone. In the legacy
             // password dialog the user may optionally also be offered a single
             // "SSO" method (the rapla SSO entry — index 1 in the method combo).
@@ -875,6 +847,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                         }
                         ConnectInfo info = new ConnectInfo(tokens.getAccessToken(), tokens.getRefreshToken());
                         reconnectInfo = info;
+                        applyLoginDecision(tokenStore, false);
                         login(info).thenAccept(success -> SwingSafe.invokeLater(() -> {
                             // PRD 029 Phase 4: remember language + "password" method.
                             persistLoginPrefs("password");
@@ -1015,43 +988,49 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     }
 
     /**
-     * PRD 126 Phase 2: after an interactive login, ask once per machine whether
-     * the refresh token may be stored (until its expiry or the next logout).
-     * Yes and stored → continue silently; yes but the backend cannot store →
-     * one information box; "don't ask again" persists the answer. Never throws.
+     * PRD 131 R4: the server's stay-signed-in decision of this login is the consent to store the refresh token
+     * (no question to the user); a failure to store is logged by the store and queryable via
+     * {@link TokenStore#failure()}. Never throws.
      */
-    private void askRememberLogin(java.awt.Component parent, String refreshToken)
+    static void applyLoginDecision(TokenStore store, boolean remember)
     {
         try
         {
-            if (!(tokenStore instanceof org.rapla.storage.dbrm.ConsentingTokenStore store) || !store.needsDecision()) return;
-            String question = org.rapla.storage.dbrm.ConsentingTokenStore.expiryOf(refreshToken)
-                    .map(exp -> i18n.format("login.remember.question", java.time.format.DateTimeFormatter
-                            .ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(raplaLocale.getLocale())
-                            .format(exp.atZone(java.time.ZoneId.systemDefault()).toLocalDate())))
-                    .orElse(i18n.getString("login.remember.question.nodate"));
-            javax.swing.JCheckBox dontAsk = new javax.swing.JCheckBox(i18n.getString("login.remember.dontask"));
-            javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 8));
-            panel.add(new javax.swing.JLabel("<html>" + question + "<br>" + i18n.getString("login.remember.logout_note") + "</html>"), java.awt.BorderLayout.CENTER);
-            panel.add(dontAsk, java.awt.BorderLayout.SOUTH);
-            Object[] options = { i18n.getString("yes"), i18n.getString("no") };
-            String title = i18n.getString("login.remember.title");
-            int choice = javax.swing.JOptionPane.showOptionDialog(parent, panel, title, javax.swing.JOptionPane.YES_NO_OPTION,
-                    javax.swing.JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-            boolean yes = choice == 0;
-            if (dontAsk.isSelected()) store.rememberDecision(yes);
-            boolean stored = store.setConsent(yes);
-            LOGGER.info("remember login: {} (backend {}, stored {})", yes ? "yes" : "no", store.backend(), stored);
-            if (yes && !stored)
+            if (store instanceof org.rapla.storage.dbrm.ConsentingTokenStore consenting)
             {
-                javax.swing.JOptionPane.showMessageDialog(parent, i18n.getString("login.remember.failed"), title,
-                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                boolean stored = consenting.setConsent(remember);
+                LOGGER.info("stay signed in: {} (backend {}, stored {})", remember, consenting.backend(), stored);
             }
         }
         catch (Throwable t)
         {
-            LOGGER.warn("remember-login dialog failed: {}", t.toString());
+            LOGGER.warn("could not apply the stay-signed-in decision: {}", t.toString());
         }
+    }
+
+    /** PRD 131 OQ10: the session's stay-signed-in decision, to ride on the {@link ConnectInfo} into the next context; null without a consent gate. */
+    static Boolean stayDecision(TokenStore store)
+    {
+        return store instanceof org.rapla.storage.dbrm.ConsentingTokenStore consenting ? consenting.remembers() : null;
+    }
+
+    /** A rebuilt context applies the carried decision before its first write, so the stored file never decides for it. */
+    static void applyCarriedDecision(TokenStore store, ConnectInfo info)
+    {
+        if (info != null && info.getRemember() != null) applyLoginDecision(store, info.getRemember());
+    }
+
+    /** PRD 131 D6: remembers (or clears) that the next login must send {@code prompt=login}, across a JVM exit. Never throws. */
+    static void markLoginPrompt(TokenStore store, boolean pending)
+    {
+        try { store.tryWritePref(TokenStore.KEY_NEXT_LOGIN_PROMPT, pending ? "login" : ""); }
+        catch (Throwable t) { LOGGER.debug("could not persist the login prompt: {}", t.toString()); }
+    }
+
+    static boolean loginPromptPending(TokenStore store)
+    {
+        try { return "login".equals(store.readPref(TokenStore.KEY_NEXT_LOGIN_PROMPT).orElse("")); }
+        catch (Throwable t) { return false; }
     }
 
     /** Best-effort read of a stored login preference. Never throws. */
@@ -1071,6 +1050,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             String lang = chooser != null ? chooser.getSelectedLanguage() : null;
             // null = "default" — stored as empty, which clears the pref.
             tokenStore.tryWritePref(TokenStore.KEY_LANGUAGE, lang == null ? "" : lang);
+            markLoginPrompt(tokenStore, false);
             if (loginMethod != null && !loginMethod.isEmpty())
             {
                 tokenStore.tryWritePref(TokenStore.KEY_LOGIN_METHOD, loginMethod);
@@ -1158,6 +1138,13 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 }
             }
         });
+        dlg.setReopenLink(() -> {
+            SwingOAuthLoginFlow.Session s = sessionRef.get();
+            java.net.URI url = s == null ? null : s.authorizeUrl();
+            if (url == null) return;
+            try { BrowserLauncher.open(url); }
+            catch (java.io.IOException ex) { LOGGER.warn("could not reopen the browser: {}", ex.getMessage()); }
+        });
         dlg.setBrowserLoginInProgress(i18n.getString("login.oauth.waiting"));
         commandScheduler.supply(() -> {
             // PRD 072 Phase 5: the single SSO entry always targets rapla's own
@@ -1201,6 +1188,15 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                         if (!dlg.isVisible()) dlg.setVisible(true);
                         return;
                     }
+                    if (isLoginTimedOut(ex))
+                    {
+                        LOGGER.info("OAuth login timed out — restoring Swing login dialog with a notice");
+                        dlg.idle();
+                        dlg.clearBrowserLoginInProgress();
+                        dlg.showNotice(i18n.getString("login.oauth.timeout"));
+                        if (!dlg.isVisible()) dlg.setVisible(true);
+                        return;
+                    }
                     LOGGER.error("OAuth login failed — restoring Swing login dialog to full state", ex);
                     dlg.idle();
                     dlg.clearBrowserLoginInProgress();
@@ -1215,6 +1211,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     {
         Throwable root = unwrap(t);
         return root instanceof java.util.concurrent.CancellationException || root instanceof InterruptedException;
+    }
+
+    /** The flow's callback wait ran out (the browser sign-in was never finished) — a notice, not an error. */
+    static boolean isLoginTimedOut(Throwable t)
+    {
+        return unwrap(t) instanceof java.util.concurrent.TimeoutException;
     }
 
     private static Throwable unwrap(Throwable t)
@@ -1235,6 +1237,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // its two tokens — no provider routing to carry across a switch-back.
         ConnectInfo info = new ConnectInfo(tokens.getAccessToken(), tokens.getRefreshToken());
         reconnectInfo = info;
+        applyLoginDecision(tokenStore, tokens.isRemember());
         // Capture the id_token for use as id_token_hint when the user signs out.
         // Without it, /connect/logout rejects the request (404) and the
         // rapla-remember-me cookie is not cleared → next OAuth flow silently
@@ -1389,6 +1392,43 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
     }
 
+    /** PRD 131: the session is dead on the server (both tokens rejected) — "Neu anmelden" or "Beenden". */
+    private void sessionEnded()
+    {
+        if (schedule != null) {
+            schedule.cancel();
+        }
+        this.schedule = null;
+        if (!started)
+        {
+            return;
+        }
+        SwingSafe.invokeLater(() -> {
+            try
+            {
+                final DialogInterface dialog = dialogUiFactory.createTextDialog(new SwingPopupContext(null, null), i18n.getString("session.ended.title"),
+                        i18n.getString("session.ended"), new String[] { i18n.getString("session.relogin"), i18n.getString("session.quit") });
+                dialog.start(true).thenAccept(choice -> SwingSafe.invokeLater(() -> onSessionEndedChoice(choice, this::restart, this::quitWithoutLogout)));
+            }
+            catch (Throwable e)
+            {
+                LOGGER.error(e.getMessage(), e);
+            }
+        });
+    }
+
+    /** Index 1 is "Beenden"; any other (button 0, closing the window) keeps today's restart. */
+    static void onSessionEndedChoice(int choice, Runnable relogin, Runnable quit)
+    {
+        (choice == 1 ? quit : relogin).run();
+    }
+
+    private void quitWithoutLogout()
+    {
+        stop(null);
+        logoutSignal.next(org.rapla.client.spring.NextSession.exit());
+    }
+
     public void restart()
     {
         // The "Logout / Restart" menu action wires here. Users who click it
@@ -1402,55 +1442,18 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     public void logout()
     {
-        // Best-effort: tell the server to invalidate this user's session before
-        // we drop the local tokens. If the server is unreachable the local
-        // logout still proceeds — never block the user-visible logout on a
-        // network call.
-        // PRD 041: revoke via OAuth 2.0 standard /oauth2/revoke (RFC 7009)
-        // with form-encoded body; replaces the legacy /api/auth/logout. The
-        // server-side hook in AuthorizationServerConfig.RaplaTokenRevocationAuthenticationProvider
-        // clears the user-prefs SESSION entry, invalidating every refresh
-        // token in circulation for the user (single-token-per-user model).
-        String refreshToken = connectionInfo.getRefreshToken();
-        String serverUrl = connectionInfo.getServerURL();
-        if (refreshToken != null && serverUrl != null && !serverUrl.isEmpty())
-        {
-            try
-            {
-                String body = "token=" + java.net.URLEncoder.encode(refreshToken, java.nio.charset.StandardCharsets.UTF_8)
-                        + "&token_type_hint=refresh_token&client_id=rapla-client";
-                HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
-                HttpRequest req = HttpRequest.newBuilder(URI.create(serverUrl + "/oauth2/revoke"))
-                        .timeout(Duration.ofSeconds(3))
-                        .header("Content-Type", "application/x-www-form-urlencoded")
-                        .POST(HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
-                        .build();
-                HttpResponse<Void> resp = http.send(req, HttpResponse.BodyHandlers.discarding());
-                if (resp.statusCode() / 100 == 2)
-                {
-                    LOGGER.info("logout: server-side session revoked");
-                }
-                else
-                {
-                    LOGGER.info("logout: server returned HTTP {}; local logout proceeds", resp.statusCode());
-                }
-            }
-            catch (Throwable t)
-            {
-                LOGGER.info("logout: server-side revocation failed ({}); local logout proceeds", t.getMessage());
-            }
-        }
-        // No background browser tab to /connect/logout. In the M2 broker model that
-        // endpoint only ends rapla's OWN SAS session (its id_token_hint is a rapla
-        // token, not the upstream IdP's), it needs a non-expired hint (it 400s on a
-        // stale one), and a tab popping up on logout is poor UX. The /oauth2/revoke
-        // call above already invalidated the server-side session; the still-live
-        // upstream IdP (e.g. Keycloak) SSO session is handled at the NEXT login by
-        // prompt=login (nextOauthForcesLogin below + the server /login page forcing
-        // a re-prompt for Keycloak), not by a logout redirect here.
-        tokenStore.tryClear();
-        // PRD 126 Phase 2: an explicit logout means "ask me again on this machine".
-        if (tokenStore instanceof org.rapla.storage.dbrm.ConsentingTokenStore consenting) consenting.forgetDecision();
+        endSession(false);
+    }
+
+    /** PRD 131 R5: "Abmelden" revokes the session and exits the application instead of showing the login dialog. */
+    public void logoutAndExit()
+    {
+        endSession(true);
+    }
+
+    private void endSession(boolean thenExit)
+    {
+        org.rapla.client.spring.NextSession next = logoutSession(connectionInfo.getServerURL(), connectionInfo.getRefreshToken(), tokenStore, thenExit);
         // PRD 051 — discard any active impersonation. Logout is a clean
         // state-change boundary; surviving impersonation into the next
         // login session would surprise the next admin.
@@ -1463,19 +1466,82 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         eventBus.reset();
         stop(null);
         // PRD 052 Phase 2 — signal SpringRaplaClient.main() to close this
-        // Spring context and build a fresh one for the next login. main()
-        // disposes JFrames, runs ctx.close() (which fires DisposableBean /
-        // @PreDestroy across every bean), and rebuilds the context. The user
-        // sees a fresh login dialog in a fresh context with zero carry-over
-        // of cached entities, UI state, or singleton listener registrations.
-        //
-        // showLoginDialogAfterLogout (not showLoginDialog): the next context's
-        // first OAuth flow must send prompt=login so the server terminates the
-        // browser's still-live session — we no longer open a /connect/logout
-        // tab, and without the prompt the next /oauth2/authorize silently
-        // re-authenticates the old user. The intent has to ride on NextSession;
-        // a field on this bean dies with the context this signal tears down.
-        logoutSignal.next(org.rapla.client.spring.NextSession.showLoginDialogAfterLogout());
+        // Spring context and build a fresh one for the next login (or to exit).
+        logoutSignal.next(next);
+    }
+
+    /**
+     * Best-effort: tells the server to invalidate this user's session, drops the stored entry if it is this
+     * session's (PRD 131 OQ10) and persists "next login sends prompt=login" (D6). If the server is unreachable the
+     * local logout still proceeds — never block the user-visible logout on a network call. Returns what main() does next:
+     * exit, or a fresh context whose first OAuth flow must send prompt=login so the server terminates the browser's
+     * still-live session (no /connect/logout tab: that endpoint only ends rapla's OWN session, needs a non-expired
+     * hint, and a tab popping up on logout is poor UX). The intent has to ride on NextSession; a field on a bean dies
+     * with the context.
+     */
+    static org.rapla.client.spring.NextSession logoutSession(String serverUrl, String refreshToken, TokenStore store, boolean thenExit)
+    {
+        revokeOnServer(serverUrl, refreshToken);
+        clearStoredSession(store, refreshToken);
+        markLoginPrompt(store, true);
+        return thenExit ? org.rapla.client.spring.NextSession.exit() : org.rapla.client.spring.NextSession.showLoginDialogAfterLogout();
+    }
+
+    /**
+     * PRD 041: revoke via OAuth 2.0 standard /oauth2/revoke (RFC 7009) with form-encoded body. The server-side hook
+     * in AuthorizationServerConfig.RaplaTokenRevocationAuthenticationProvider clears the user-prefs SESSION entry,
+     * invalidating every refresh token in circulation for the user (single-token-per-user model).
+     */
+    private static void revokeOnServer(String serverUrl, String refreshToken)
+    {
+        if (refreshToken == null || serverUrl == null || serverUrl.isEmpty()) return;
+        try
+        {
+            String body = "token=" + java.net.URLEncoder.encode(refreshToken, java.nio.charset.StandardCharsets.UTF_8)
+                    + "&token_type_hint=refresh_token&client_id=rapla-client";
+            HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
+            HttpRequest req = HttpRequest.newBuilder(URI.create(serverUrl + "/oauth2/revoke"))
+                    .timeout(Duration.ofSeconds(3))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<Void> resp = http.send(req, HttpResponse.BodyHandlers.discarding());
+            if (resp.statusCode() / 100 == 2)
+            {
+                LOGGER.info("logout: server-side session revoked");
+            }
+            else
+            {
+                LOGGER.info("logout: server returned HTTP {}; local logout proceeds", resp.statusCode());
+            }
+        }
+        catch (Throwable t)
+        {
+            LOGGER.info("logout: server-side revocation failed ({}); local logout proceeds", t.getMessage());
+        }
+    }
+
+    /** PRD 131 OQ10: the stored entry goes only if it belongs to the session that ends (same subject); unreadable subjects clear. */
+    static void clearStoredSession(TokenStore store, String sessionRefreshToken)
+    {
+        try
+        {
+            java.util.Optional<String> stored = store.read();
+            if (stored.isEmpty()) return;
+            java.util.Optional<String> storedOwner = org.rapla.storage.dbrm.ConsentingTokenStore.subjectOf(stored.get());
+            java.util.Optional<String> sessionOwner = sessionRefreshToken == null ? java.util.Optional.empty()
+                    : org.rapla.storage.dbrm.ConsentingTokenStore.subjectOf(sessionRefreshToken);
+            if (storedOwner.isPresent() && sessionOwner.isPresent() && !storedOwner.equals(sessionOwner))
+            {
+                LOGGER.info("logout: the stored session belongs to another user and stays");
+                return;
+            }
+            store.tryClear();
+        }
+        catch (Throwable t)
+        {
+            LOGGER.debug("could not clear the stored session: {}", t.toString());
+        }
     }
 
     /**

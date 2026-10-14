@@ -278,7 +278,7 @@ class DemoApiAllowlistTest extends IsolatedDefaultDatasetTest
     private String graphql(Cookie cookie, String query, String variables) throws Exception
     {
         String body = "{\"query\":" + quote(query) + (variables == null ? "" : ",\"variables\":" + variables) + "}";
-        return mockMvc.perform(post("/api/graphql").cookie(cookie).with(csrf())
+        return mockMvc.perform(post("/api/graphql").cookie(cookie).header("X-Rapla-Act-As", "self").with(csrf())
                 .contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().getResponse().getContentAsString();
     }
 
@@ -310,7 +310,7 @@ class DemoApiAllowlistTest extends IsolatedDefaultDatasetTest
         String view = graphql(cookie, "mutation { saveView(name: \"DemoView\", query: \"query DemoView @view(title: \\\"Demo\\\") { serverTime }\") { __typename } }", null);
         assertFalse(view.contains("\"errors\""), view);
 
-        MockHttpServletResponse document = mockMvc.perform(put("/api/documents/demo_doc").cookie(cookie).with(csrf())
+        MockHttpServletResponse document = mockMvc.perform(put("/api/documents/demo_doc").cookie(cookie).header("X-Rapla-Act-As", "self").with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"viewName\":\"DemoView\",\"template\":\"<p>{{serverTime}}</p>\",\"isPublic\":false,\"groups\":[]}"))
                 .andReturn().getResponse();
@@ -325,7 +325,7 @@ class DemoApiAllowlistTest extends IsolatedDefaultDatasetTest
                 post("/api/storage/confirm/email").contentType(MediaType.APPLICATION_JSON).content("{\"username\":\"admin\",\"newEmail\":\"x@example.org\"}"),
                 post("/api/storage/change/email").contentType(MediaType.APPLICATION_JSON).content("{\"username\":\"admin\",\"newEmail\":\"x@example.org\"}")))
         {
-            assertClosed(mockMvc.perform(mail.cookie(cookie).with(csrf())).andReturn().getResponse(), "mail path");
+            assertClosed(mockMvc.perform(mail.cookie(cookie).header("X-Rapla-Act-As", "self").with(csrf())).andReturn().getResponse(), "mail path");
         }
         assertEquals(0, SENT.get());
     }

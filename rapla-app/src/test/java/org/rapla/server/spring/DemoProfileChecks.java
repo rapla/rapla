@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -72,7 +73,7 @@ abstract class DemoProfileChecks extends IsolatedDefaultDatasetTest
 
     private MockHttpServletResponse asAdmin(MockHttpServletRequestBuilder request) throws Exception
     {
-        return mockMvc.perform(request.cookie(adminCookie())).andReturn().getResponse();
+        return mockMvc.perform(request.cookie(adminCookie()).header("X-Rapla-Act-As", "self")).andReturn().getResponse();
     }
 
     private int beans(Class<?> type)
@@ -110,19 +111,19 @@ abstract class DemoProfileChecks extends IsolatedDefaultDatasetTest
         MockHttpServletResponse switched = asAdmin(post("/api/auth/impersonate/switch").with(csrf())
                 .param("target_username", "lehmann"));
         assertEquals(200, switched.getStatus(), switched.getContentAsString());
-        Cookie asLehmann = switched.getCookie("access_token");
-        assertNotNull(asLehmann, "switch must set the impersonation cookie");
-        String me = mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", asLehmann.getValue())))
+        assertNull(switched.getCookie("access_token"), "the tab acts as the target, the cookie stays the admin's");
+        String lehmannId = tools.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(switched.getContentAsString()).get("id").asString();
+        Cookie admin = adminCookie();
+        String me = mockMvc.perform(get("/api/auth/me").cookie(admin).header("X-Rapla-Act-As", lehmannId))
                 .andReturn().getResponse().getContentAsString();
         assertTrue(me.contains("\"username\":\"lehmann\"") && me.contains("\"impersonating\":true")
                 && me.contains("\"actor\":\"admin\""), me);
 
         MockHttpServletResponse ended = mockMvc.perform(post("/api/auth/impersonate/end").with(csrf())
-                .cookie(new Cookie("access_token", asLehmann.getValue()))).andReturn().getResponse();
+                .cookie(admin).header("X-Rapla-Act-As", lehmannId)).andReturn().getResponse();
         assertEquals(200, ended.getStatus(), ended.getContentAsString());
-        Cookie back = ended.getCookie("access_token");
-        assertNotNull(back, "end must restore the admin cookie");
-        String meAgain = mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", back.getValue())))
+        String meAgain = mockMvc.perform(get("/api/auth/me").cookie(admin).header("X-Rapla-Act-As", "self"))
                 .andReturn().getResponse().getContentAsString();
         assertTrue(meAgain.contains("\"username\":\"admin\"") && meAgain.contains("\"impersonating\":false"), meAgain);
     }

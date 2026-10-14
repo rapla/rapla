@@ -23,13 +23,20 @@ package org.rapla;
 public class ConnectInfo {
     private final String accessToken;
     private final String refreshToken;
+    private final Boolean remember;
 
     /** Tokens-only session start. Refresh always goes to rapla's
      *  {@code serverURL + /oauth2/token} with {@code client_id=rapla-client}
      *  (PRD 072 Phase 5). */
     public ConnectInfo(String accessToken, String refreshToken) {
+        this(accessToken, refreshToken, null);
+    }
+
+    /** @param remember the stay-signed-in decision of the session, carried across a context rebuild (PRD 131 OQ10); null = none yet */
+    public ConnectInfo(String accessToken, String refreshToken, Boolean remember) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
+        this.remember = remember;
     }
 
     public String getAccessToken() {
@@ -38,6 +45,10 @@ public class ConnectInfo {
 
     public String getRefreshToken() {
         return refreshToken;
+    }
+
+    public Boolean getRemember() {
+        return remember;
     }
 
     /** Source-compat factory for the two-token constructor. */

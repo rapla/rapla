@@ -119,6 +119,31 @@ class MyCustomConnectorReauthTest
                 "refresh endpoint must not be called when no refresh token is available");
     }
 
+    /** PRD 131 D10: the server rejects impersonation requests made with an act token, so the renewal must carry the actor's own token. */
+    @Test
+    void impersonationRenewalAuthenticatesWithTheActorsTokenNeverTheImpersonationToken() throws Exception
+    {
+        AtomicReference<String> auth = new AtomicReference<>();
+        AtomicReference<String> body = new AtomicReference<>();
+        server.createContext("/api/auth/impersonate", exchange -> {
+            auth.set(exchange.getRequestHeaders().getFirst("Authorization"));
+            body.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            byte[] out = "{\"access_token\":\"renewed-c\"}".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, out.length);
+            try (OutputStream os = exchange.getResponseBody()) { os.write(out); }
+        });
+        info.setAccessToken("actor-a");
+        info.setImpersonationAccessToken("expired-c", "carol");
+
+        String renewed = connector().reauth(Object.class);
+
+        assertEquals("renewed-c", renewed);
+        assertEquals("Bearer actor-a", auth.get());
+        assertEquals("target_username=carol", body.get());
+        assertEquals("renewed-c", info.getEffectiveAccessToken());
+        assertEquals("actor-a", info.getAccessToken(), "the actor slot is untouched");
+    }
+
     @Test
     void reauthOnPasswordLoginProxyReturnsNull() throws Exception
     {

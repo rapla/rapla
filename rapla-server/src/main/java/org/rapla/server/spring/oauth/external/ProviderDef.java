@@ -32,7 +32,7 @@ public class ProviderDef
     private String clientSecret = "";
     private String hostedDomain = "";
     private Boolean autoProvision;        // type default: true
-    private String displayName = "";      // type default: "Sign in with <Type>"
+    private String displayName = "";      // type default: "Sign in with <Type>", Keycloak "Sign in with Single Sign-On"
     private String icon = "";             // type default: the type id
     private Integer order;                // type default: ms=10, keycloak=15, google=20
     private Boolean webPickerVisible;     // type default: true
@@ -45,6 +45,8 @@ public class ProviderDef
     // Dev bridge for an IdP whose realm can't register the conformant
     // /login/oauth2/code/{id} (DHBW Mosbach on localhost). At most one provider.
     private boolean legacyCallback = false;
+    // Deployment ResourceBundle with login.<id>.button / login.<id>.title for the /login page (PRD 131).
+    private String i18nBundle = "";
 
     // --- explicit endpoints (Microsoft/Google may override; Keycloak derives) ---
     private String issuer = "";
@@ -95,6 +97,8 @@ public class ProviderDef
     public void setScopes(List<String> scopes) { this.scopes = scopes; }
     public boolean isRevokeOnLogout() { return revokeOnLogout; }
     public void setRevokeOnLogout(boolean revokeOnLogout) { this.revokeOnLogout = revokeOnLogout; }
+    public String getI18nBundle() { return i18nBundle; }
+    public void setI18nBundle(String i18nBundle) { this.i18nBundle = i18nBundle; }
     public boolean isLegacyCallback() { return legacyCallback; }
     public void setLegacyCallback(boolean legacyCallback) { this.legacyCallback = legacyCallback; }
     public String getIssuer() { return issuer; }
@@ -234,7 +238,7 @@ public class ProviderDef
         String oidc = realmBase + "/protocol/openid-connect";
         return new ProviderConfig(
                 id, ExternalProviderId.KEYCLOAK,
-                orDefault(displayName, "Sign in with Keycloak"), orDefault(icon, "keycloak"),
+                orDefault(displayName, "Sign in with Single Sign-On"), orDefault(icon, "keycloak"),
                 orDefault(order, 15), orDefault(webPickerVisible, true),
                 clientId, clientSecret,
                 realmBase,

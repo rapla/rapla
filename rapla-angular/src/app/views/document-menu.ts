@@ -1,5 +1,6 @@
 import { InjectionToken, Injectable, inject } from '@angular/core';
 
+import { openDocument } from '../auth/open-document';
 import type { RowContext } from './row-context';
 import type { RowMenuItem, RowMenuProvider } from './row-menu';
 
@@ -70,6 +71,6 @@ export class DocumentsRowMenuProvider implements RowMenuProvider {
   private readonly catalog = inject(DOCUMENT_CATALOG);
 
   items(ctx: RowContext): RowMenuItem[] {
-    return documentMenuItems(ctx, this.catalog, (url) => window.open(url, '_blank'));
+    return documentMenuItems(ctx, this.catalog, openDocument);
   }
 }

@@ -14,20 +14,17 @@ import org.rapla.framework.RaplaException;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.spring.CookieAuthSupport;
 import org.rapla.server.spring.ApiKeyScopeContextInitializer;
-import org.rapla.server.spring.JwtConfig;
 import org.rapla.server.spring.RefreshSessionService;
-import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.AuthCookieService;
 import org.rapla.storage.dbrm.IdentityResponse;
+import org.rapla.storage.dbrm.ImpersonationTarget;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -50,11 +47,9 @@ import java.util.Map;
 public class AuthCookieController implements AuthCookieService
 {
     private static final Logger AUDIT_LOG = LoggerFactory.getLogger("rapla");
-    private static final long IMPERSONATION_TTL_SECONDS = 3600L;
 
     private final RemoteSession session;
     private final RaplaFacade facade;
-    private final JwtConfig.JwtIssuer jwtIssuer;
     private final RefreshSessionService refreshSessionService;
     private final CookieAuthSupport cookies;
     private final HttpServletRequest request;
@@ -64,7 +59,6 @@ public class AuthCookieController implements AuthCookieService
 
     public AuthCookieController(RemoteSession session,
                                RaplaFacade facade,
-                               JwtConfig.JwtIssuer jwtIssuer,
                                RefreshSessionService refreshSessionService,
                                CookieAuthSupport cookies,
                                HttpServletRequest request,
@@ -75,7 +69,6 @@ public class AuthCookieController implements AuthCookieService
     {
         this.session = session;
         this.facade = facade;
-        this.jwtIssuer = jwtIssuer;
         this.refreshSessionService = refreshSessionService;
         this.cookies = cookies;
         this.request = request;
@@ -97,7 +90,7 @@ public class AuthCookieController implements AuthCookieService
         User user = session.checkAndGetUser(request);
 
         // Impersonation state comes from the act-claim on the caller's own token.
-        Jwt jwt = currentJwt();
+        Jwt jwt = ImpersonationActor.currentJwt();
         boolean impersonating = false;
         String actor = null;
         String target = null;
@@ -152,12 +145,13 @@ public class AuthCookieController implements AuthCookieService
         {
             throw new RaplaException("Failed to mint access token: " + e.getMessage(), e);
         }
-        cookies.setAccessTokenCookie(response, accessToken, RefreshSessionService.ACCESS_TOKEN_TTL_SECONDS);
+        cookies.setAccessTokenCookie(response, accessToken, RefreshSessionService.ACCESS_TOKEN_TTL_SECONDS,
+                CookieAuthSupport.isRemembered(request));
         // Single-slot, non-sliding: the refresh token is NOT rotated.
     }
 
     @Override
-    public void impersonateSwitch(String targetUsername) throws RaplaException
+    public ImpersonationTarget impersonateSwitch(String targetUsername) throws RaplaException
     {
         // security-audit A0c / PRD 051: honour the same impersonation kill switch as
         // ImpersonationController (rapla.auth.impersonation.enabled=false).
@@ -165,91 +159,37 @@ public class AuthCookieController implements AuthCookieService
         {
             throw new RaplaSecurityException("Impersonation is disabled (rapla.auth.impersonation.enabled=false)");
         }
-        // 401 if anonymous. The EFFECTIVE user is the impersonation target when an
-        // act-claim token is presented (a chained switch).
+        // 401 if anonymous. The EFFECTIVE user is the act-as target when this tab already acts as one (a chained switch).
         session.checkAndGetUser(request);
         if (ApiKeyScopeContextInitializer.isApiKeyPrincipal())
         {
             throw new ImpersonationForbiddenException();
         }
-        // Review B2: the REAL actor must be the original admin, not the effective
-        // (impersonated) user. If the current token already carries an act claim
-        // (already impersonating), resolve the admin from act.sub so canAdminUser +
-        // the audit log + the new act-claim name the real admin — no actor laundering,
-        // no admin-check run against the impersonated user's permissions.
-        User actor = resolveRealActor();
+        // Review B2 / PRD 131 D10: the REAL actor is the logged-in user (act.sub when already impersonating), so
+        // a chain A -> B -> C is checked as A -> C and the audit log names A.
+        User actor = ImpersonationActor.realActor(session, facade, request);
 
-        User target;
-        try
-        {
-            target = facade.getUser(targetUsername);
-        }
-        catch (RaplaException ex)
-        {
-            throw new TargetNotFoundException(targetUsername);
-        }
+        // An unknown and a not-permitted target get the identical 403 (AGENTS.md section 12).
+        User target = ImpersonationActor.permittedTarget(facade, actor, targetUsername);
         if (target == null)
         {
-            throw new TargetNotFoundException(targetUsername);
-        }
-
-        if (!PermissionController.canAdminUser(actor, target))
-        {
-            // 403 — the actor IS authenticated, just not authorised to admin
-            // this target. A dedicated 403 type (not RaplaSecurityException,
-            // which the global handler maps to 401) so refresh's invalid-token
-            // path keeps its 401.
             throw new ImpersonationForbiddenException();
-        }
-
-        String token;
-        try
-        {
-            token = jwtIssuer.issueImpersonationToken(
-                    target.getId(), target.getUsername(),
-                    actor.getId(), actor.getUsername(),
-                    IMPERSONATION_TTL_SECONDS);
-        }
-        catch (JOSEException ex)
-        {
-            throw new RaplaException("Failed to sign impersonation token: " + ex.getMessage(), ex);
         }
 
         AUDIT_LOG.info("Impersonation: actor=" + actor.getUsername() + " (uuid=" + actor.getId()
                 + ") target=" + target.getUsername() + " (uuid=" + target.getId() + ")");
 
-        cookies.setAccessTokenCookie(response, token, IMPERSONATION_TTL_SECONDS);
+        return new ImpersonationTarget(target.getId(), target.getUsername());
     }
 
     @Override
     public void impersonateEnd() throws RaplaException
     {
-        // Review B1: restore the admin from the act.sub claim on the CURRENT
-        // impersonation token — NOT the refresh cookie. The refresh cookie is
-        // Path=/api/auth/session, so a real browser never sends it to
-        // /api/auth/impersonate/end → depending on it made end() always 401.
         session.checkAndGetUser(request); // 401 if anonymous
-        String adminSub = actorSub(currentJwt());
-        if (adminSub == null)
+        if (!ImpersonationActor.isImpersonating())
         {
-            // Not impersonating — there is no admin session to restore.
             throw new RaplaSecurityException("not impersonating");
         }
-        User admin = facade.getOperator().tryResolve(adminSub, User.class);
-        if (admin == null)
-        {
-            throw new RaplaSecurityException("impersonation actor not found");
-        }
-        String accessToken;
-        try
-        {
-            accessToken = refreshSessionService.issueAccessToken(admin);
-        }
-        catch (JOSEException e)
-        {
-            throw new RaplaException("Failed to mint admin access token: " + e.getMessage(), e);
-        }
-        cookies.setAccessTokenCookie(response, accessToken, RefreshSessionService.ACCESS_TOKEN_TTL_SECONDS);
     }
 
     @Override
@@ -295,67 +235,11 @@ public class AuthCookieController implements AuthCookieService
     }
 
     /**
-     * The real actor for an impersonation operation: the original admin (the
-     * {@code act.sub} on the current token) when the caller is already
-     * impersonating, otherwise the effective authenticated user. Review B2 —
-     * prevents a chained switch from laundering the admin out of the chain.
-     */
-    private User resolveRealActor() throws RaplaException
-    {
-        String adminSub = actorSub(currentJwt());
-        if (adminSub != null)
-        {
-            User admin = facade.getOperator().tryResolve(adminSub, User.class);
-            if (admin == null)
-            {
-                throw new RaplaSecurityException("impersonation actor not found");
-            }
-            return admin;
-        }
-        return session.checkAndGetUser(request);
-    }
-
-    /** The original-admin UUID from the current token's {@code act.sub} claim, or null if not impersonating. */
-    private static String actorSub(Jwt jwt)
-    {
-        if (jwt == null)
-        {
-            return null;
-        }
-        Object act = jwt.getClaims().get("act");
-        if (act instanceof Map<?, ?> actMap)
-        {
-            Object sub = actMap.get("sub");
-            return sub != null ? sub.toString() : null;
-        }
-        return null;
-    }
-
-    private static Jwt currentJwt()
-    {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth instanceof JwtAuthenticationToken jwtAuth)
-        {
-            return jwtAuth.getToken();
-        }
-        return null;
-    }
-
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    static final class TargetNotFoundException extends RuntimeException
-    {
-        TargetNotFoundException(String username)
-        {
-            super("Target user not found: " + username);
-        }
-    }
-
-    /**
-     * 403 carrier for "actor authenticated but not authorised to admin this
-     * target". Distinct from {@link RaplaSecurityException} (mapped to 401 by
+     * 403 carrier for "actor authenticated but not authorised to switch to this
+     * target" (and for an unknown target, identically). Distinct from {@link RaplaSecurityException} (mapped to 401 by
      * {@link RaplaExceptionHandler}) so the refresh endpoint's invalid-token
      * path keeps its 401. Body intentionally empty — surfacing the
-     * can_admin_parent scope would leak group structure (see
+     * can_admin_parent / impersonated_by scope would leak group structure (see
      * {@link ImpersonationController}).
      */
     @ResponseStatus(HttpStatus.FORBIDDEN)

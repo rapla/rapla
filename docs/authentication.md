@@ -52,12 +52,12 @@ this tab but not that one" events.
 Revocation is **explicit only**: `POST /oauth2/revoke` (any client) or
 form-login `/logout` clears the prefs entry. All refresh tokens for
 that user are immediately invalid; in-flight access tokens keep working
-until their 1 h TTL elapses.
+until their 1 h TTL elapses (immediate rejection is deferred, [PRD 131](prd/131-logout-stay-signed-in.md) OQ9).
 
 | Property | Default | Where to override |
 |---|---|---|
 | Access-token TTL | 1 h | `spring.security.oauth2.authorizationserver.client.rapla-client.token.access-token-time-to-live` |
-| Refresh-token TTL | 21 d | (constant in `RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS`) |
+| Refresh-token TTL | 21 d | `rapla.auth.remember-me-days` (`RefreshSessionService.refreshTokenTtlSeconds()`; also the "Bis zu N Tage" of the login choice, see [Logout and stay signed in](#logout-and-stay-signed-in)) |
 | Rotation policy | never rotate | by design — see [PRD 041](prd/041-openapi-runtime-removal.md) |
 
 For per-device revocation, theft detection via rotation conflict, and
@@ -288,6 +288,53 @@ Never collapse the latter into "invalid username/password" — that
 misleads users into retyping a valid password and hides actionable
 server-side errors (DB rollbacks, permission-store gone, etc.).
 
+## Logout and stay signed in
+
+([PRD 131](prd/131-logout-stay-signed-in.md))
+
+**One session per user.** The refresh token is shared by all devices (see above), so
+"Abmelden (Logout)" and "Neu anmelden" sign the user out on **every** device: the
+refresh token is revoked at once and the other clients notice at their next refresh
+(access tokens live up to 1 h; an immediate per-request check is deferred, PRD 131 OQ9).
+"Beenden (ohne Abmelden)" in Swing leaves other devices alone. A second device only gets
+the remaining lifetime, hence the wording "bis zu N Tage". `/login?logout` shows
+"Sie wurden auf allen Geräten abgemeldet."
+
+**Stay signed in is a per-device storage choice**, made once on `/login` for password
+and SSO logins alike: a segmented choice "Nur diese Sitzung" | "Bis zu N Tage"
+(`<input type="radio" name="remember-me">`, `off`|`on`, no JavaScript, CSS only; the same
+`<form method="post">` carries the SSO buttons and the password fields, so the password
+never reaches a URL). The choice is stored in the HttpOnly cookie `rapla-remember-choice`
+(`RememberChoiceFilter` on `POST /oauth2/authorization/**`; the password handler reads
+the request parameter) and pre-selects the next visit.
+
+| Choice | SPA cookies | Swing |
+|---|---|---|
+| Nur diese Sitzung | `access_token` and `refresh_token` are session cookies (gone when the browser closes) | token held in memory only |
+| Bis zu N Tage | persistent cookies | token stored in `tokens.json` |
+
+`CookieAuthSupport.set{Access,Refresh}TokenCookie(…, remembered)` applies the switch at
+every cookie writer (login handlers, `TokenResponseCookieFilter`, refresh, impersonation
+end). The server session itself is the same either way (21 d refresh token).
+
+**One lifetime `rapla.auth.remember-me-days`** (default 21) is N: it drives the refresh
+JWT, the refresh cookies and the authorization-server refresh-token expiry. The former
+Spring `rapla-remember-me` cookie (`PersistentTokenBasedRememberMeServices`,
+`RaplaTokenRepository`) is **removed**: browsers keep their session via the refresh
+cookie, Swing via its stored token; the explorer pages (GraphiQL, Swagger) need a valid
+`access_token` cookie or a fresh login. The inert system-preference entry
+`org.rapla.auth.rememberMeTokens` may remain in existing data.
+
+**Swing gets the decision from the server**: for a loopback `redirect_uri`
+`RememberAwareAuthorizationResponseHandler` appends `remember=1|0` to the redirect;
+`SwingOAuthLoginFlow` passes it to `ConsentingTokenStore.setConsent`. There is no consent
+dialog. The legacy Swing password dialog never persists (PRD 131 OQ7).
+
+**Context hints on `/login`**: when the page was reached from a Swing login (saved
+`/oauth2/authorize` request with a loopback `redirect_uri`, `LoopbackUriCheck`) it shows
+a top hint for the Rapla Client and the option texts name the client; otherwise the
+browser texts. Display only; the authorization server keeps validating the redirect.
+
 ## Client login flows — browser, SPA, Swing
 
 Three client surfaces authenticate against rapla — all on OAuth 2.0.
@@ -415,11 +462,37 @@ error".
    fields and no SSO button (a button would have no auth server to
    reach).
 
-Swing stores the refresh token only with the user's consent: after an interactive
-login the client asks once per machine ("Anmeldung auf diesem Rechner speichern bis
-<Datum> oder bis zur Abmeldung?", Ja/Nein, "Nicht mehr fragen"); `ConsentingTokenStore`
-holds the token in memory until then, writes and verifies on Ja, clears on Nein, and an
-explicit logout asks again next time ([PRD 126](prd/done/126-swing-sso-auto-login.md) Phase 2).
+Swing stores the refresh token only when the user chose "Bis zu N Tage" on `/login`;
+the server returns that decision with the login (`remember=1|0` on the loopback redirect,
+see [Logout and stay signed in](#logout-and-stay-signed-in)) and there is **no consent
+dialog** any more ([PRD 126](prd/done/126-swing-sso-auto-login.md) Phase 2 replaced by
+[PRD 131](prd/131-logout-stay-signed-in.md)). `ConsentingTokenStore` stays the write gate
+(`setConsent(serverDecision)`): memory only until consent, file after.
+
+#### Swing token store and exits
+
+- **Store:** only `~/.rapla/tokens.json` (`user.home`), else memory (`TokenStores`; the
+  JNLP `PersistenceService` store is removed). One entry per server origin
+  (`refreshToken@<origin>`, origin = scheme + host + port): a token is only sent to the
+  origin that issued it. Directory and file are created owner-only (POSIX permissions,
+  Windows ACL: the owner plus principals that can read the profile directory anyway); an
+  existing own `~/.rapla` is tightened. If no safe store is possible the client falls back
+  to memory and shows a small ⓘ at the user button whose non-modal text names the
+  attempted path. Existing JNLP users log in once more.
+- **User button:** top right `[user-icon name logout-icon]`; its menu offers "Neu anmelden"
+  (revoke, then login dialog), "Beenden (ohne Abmelden)" (enabled while a stored session
+  exists, otherwise plain "Beenden"; other devices stay signed in) and "Abmelden (Logout)"
+  (revoke, clear own entry, exit, next start forces `prompt=login`). The same entries are
+  in the File menu; no confirmation. A logout entry clears the stored entry only if its
+  JWT `sub` matches the logging-out user; a login without stay-signed-in never touches it.
+  While impersonating only "Beenden" is offered.
+- **Session-ended dialog:** when the server ended the session ("Sie wurden abgemeldet.")
+  the client offers "Neu anmelden" / "Beenden" (window close = Neu anmelden).
+- **Waiting dialog** ("Warte auf Browser-Anmeldung…"): "Browser erneut öffnen" reopens
+  the login page; the text says "Abbrechen" leads to the username/password login.
+- Two Swing clients on one OS account logged in as different real users share the
+  per-server slot; the last writer wins at the next start. Switch user is unaffected
+  (its token stays in memory).
 
 Token refresh for every client kind is OAuth-standard:
 `POST /oauth2/token grant_type=refresh_token`
@@ -867,7 +940,8 @@ be overridden with the matching env var.
 | `rapla.oauth.allow-loopback-redirects` | `RAPLA_OAUTH_ALLOW_LOOPBACK_REDIRECTS` | `true` | Accept `127.0.0.1` / `[::1]` redirect URIs at any port (RFC 8252 §7.3), gated by the `same-origin-callback-paths` allowlist. (Also listed above under validation order.) |
 | `rapla.oauth.same-origin-callback-paths` | *(list)* | `[/login/oauth2/code/rapla, /app/auth/callback]` | Single source-of-truth path allowlist consumed by **both** the WSL-bridge and same-origin redirect validators. |
 | `rapla.oauth.local-accounts-enabled` | `RAPLA_OAUTH_LOCAL_ACCOUNTS_ENABLED` | `true` | Gate for the rapla-local password grant. When `false`, `/oauth2/token grant_type=password` is refused with `unsupported_grant_type` — only the browser/OAuth (external IdP) path can authenticate. Leave `true` for the default single-admin / rapla-local-user deployment. |
-| `rapla.auth.impersonation.enabled` | `RAPLA_AUTH_IMPERSONATION_ENABLED` | `true` | Master switch for admin impersonation ("switch to user"). When `false`, **both** `POST /api/auth/impersonate` (Swing Bearer) and `POST /api/auth/impersonate/switch` (SPA cookie) are refused. Default `true` preserves current behaviour. |
+| `rapla.auth.remember-me-days` | `RAPLA_AUTH_REMEMBER_ME_DAYS` | `21` | The one session lifetime N: refresh JWT, refresh cookies, authorization-server refresh-token expiry, and the "Bis zu N Tage" on `/login` ([PRD 131](prd/131-logout-stay-signed-in.md)). |
+| `rapla.auth.impersonation.enabled` | `RAPLA_AUTH_IMPERSONATION_ENABLED` | `true` | Master switch for admin impersonation ("switch to user"). When `false`, **both** `POST /api/auth/impersonate` (Swing Bearer) and `POST /api/auth/impersonate/switch` (SPA) are refused, as is any act-as request (`X-Rapla-Act-As`). Default `true` preserves current behaviour. |
 | `rapla.oauth.external.<id>.auto-provision` | *(per provider)* | `true` | Per external IdP: on first sign-in with no matching rapla user, `true` auto-creates the user; `false` **rejects** the unknown external identity, requiring admin pre-provisioning. Previously only a configured `hosted-domain` bounded who could be auto-created — this knob is the explicit gate. See the per-provider rows below for the recommended value. |
 | `rapla.oauth.external.<id>.legacy-callback` | *(per provider)* | `false` | **Dev-only, per-provider** ([PRD 036](prd/done/036-external-idp-oauth-login.md) Phase 3; was the global `rapla.oauth.web.dhbw-legacy-callback`). Set on the one external-IdP entry whose realm can't register the conformant redirect URI (DHBW Keycloak on localhost). When `true`: that provider's `ClientRegistration` sends the registered `/app/auth/callback` `redirect_uri`, and `LegacyAppCallbackBridgeFilter` server-side-redirects `/app/auth/callback` → that provider's `/login/oauth2/code/{id}`. At most one provider may set it (single `/app/auth/callback` path). A second Keycloak keeps its conformant per-provider callback. Not for production. (Lives in `application-local.yml`, not committed `application.yml`.) |
 
@@ -1058,15 +1132,18 @@ Then:
 | `bob` | `[/groups/department-1/students]` | Not a group-admin (the student category has no `can_admin_parent` annotation). Cannot admin anyone. |
 | `carol` | `[/groups/department-1/admins, /groups/department-2/admins]` | Admin of both `/groups/department-1` AND `/groups/department-2`. Effectively two scopes. |
 
-### Setting up group admins via the Swing client
+### Setting up group admins
 
-1. Open the **resource editor** in the Swing client (admin only).
-2. Navigate to the `Groups` / `Categories` tree (left pane).
-3. Right-click the group whose members should be admins of its
-   parent — e.g. `/groups/department-1/admins` — and choose
-   *Edit annotations*.
-4. Add an annotation: key `can_admin_parent`, value `true`. Save.
-5. Add users to that group via the user editor. They become group
+No UI edits category annotations yet (the Swing category editor maps name, key and
+colour only; there is no "Edit annotations" action). Until a category editor exists
+([PRD 131](prd/131-logout-stay-signed-in.md) D8, [PRD 117](prd/117-graphql-administration-entities.md) E11),
+the annotations `can_admin_parent` and `impersonated_by` are entered **by hand** into the
+category data (on a database deployment with all servers stopped, picked up by the full
+load at start); there is no SQL recipe in the repo docs.
+
+1. Add the annotation `can_admin_parent` = `true` to the group whose members should be
+   admins of its parent — e.g. `/groups/department-1/admins`.
+2. Add users to that group via the user editor. They become group
    admins of the parent on next login.
 
 ### How `belongsTo` transitivity works
@@ -1098,15 +1175,46 @@ specific implication for the "switch to user" feature.
 
 ## Admin impersonation ("switch to user")
 
-Admins can temporarily act as another user to troubleshoot
-"why can't user X see resource Y" issues. The feature is invoked
-from the Swing client's user editor (right-click a user → *Switch to
-user*) and, once the SPA admin surface lands, from the Angular UI.
-Authorization runs through
-[`PermissionController.canAdminUser`](../rapla-core/src/main/java/org/rapla/storage/PermissionController.java)
-— global admins can impersonate anyone, group admins can impersonate
-users whose group list intersects their `can_admin_parent` scope
-(see § "Group administration policy" above).
+Users with the right can temporarily act as another user, to troubleshoot
+"why can't user X see resource Y" issues or to work as a shared functional account. The
+feature is invoked from the Swing user menu and the Angular user menu. Authorization is
+[`PermissionController.canImpersonate(actor, target)`](../rapla-core/src/main/java/org/rapla/storage/PermissionController.java)
+([PRD 131](prd/131-logout-stay-signed-in.md) D8–D11) = `canAdminUser` (global admins:
+anyone; group admins: users whose group list intersects their `can_admin_parent` scope,
+see § "Group administration policy") **or** the `impersonated_by` group annotation below.
+The kill switch `rapla.auth.impersonation.enabled` covers both paths. `canImpersonate`
+grants no admin operation; password reset, user edit etc. stay on `canAdminUser`.
+
+### The `impersonated_by` annotation
+
+A group under `user-groups` may carry the annotation `impersonated_by` with
+comma-separated ids (GraphQL `Group.id`, persistent category ids) of the groups whose
+**direct** members may switch to its **direct** members:
+
+```
+user-groups
+  function-accounts   ← annotation impersonated_by = <id of exporters>
+       export
+  exporters
+       alice, bob
+```
+
+`alice` and `bob` may switch to `export`, not to each other; `export` may switch to no
+one. The right sits on a separate group, not below the target (a `can_admin_parent`-style
+child group would make its members transitively belong to the target group). Via this
+path never self and never an admin or group-admin target; the `canAdminUser` path is
+unchanged. Ids, not keys: renaming a group needs no migration; a deleted group grants
+nothing (fail closed). Changing `impersonated_by`, and membership in any group that
+carries or is named by one, is global-admin-only (`SecurityManager`, same guard family
+as the group-admin guards). Setup is by hand as described under "Setting up group
+admins". The audit log names the actor; the functional account needs no session or
+shared password of its own.
+
+**Unknown ≡ not-permitted:** both impersonation endpoints answer an unknown and a
+not-permitted target identically (403, empty body). **No chains:** the actor is always
+the logged-in user. The Bearer endpoint `POST /api/auth/impersonate` rejects tokens that
+carry an `act` claim; switching while impersonating (A → B → C) is checked as A → C
+with A's rights, and clients switch with the actor's own credential.
 
 ### Wire format
 
@@ -1133,7 +1241,7 @@ Content-Type: application/json
 |---|---|
 | Path | `/api/auth/impersonate` |
 | Auth required | Yes — any rapla-accepted Bearer (rapla-SAS, Keycloak, Entra, Google) |
-| Authorization | `canAdminUser(actor, target)` — runs in rapla code against rapla data |
+| Authorization | `canImpersonate(actor, target)` — runs in rapla code against rapla data; tokens carrying an `act` claim are rejected (no chains) |
 | Issued by | rapla-SAS (always, regardless of which IdP the actor authenticated with) |
 | TTL | 1 h — a hardcoded `ImpersonationController.IMPERSONATION_TTL_SECONDS = 3600L` constant (chosen to match the OAuth2 access-token TTL; **not** sourced from `access-token-time-to-live`, which governs the `/oauth2/token` access-token TTL) |
 | **No `refresh_token`** | Renewal is via repeat call to the same endpoint with the admin's Bearer |
@@ -1144,8 +1252,7 @@ Failure codes:
 | HTTP | Cause |
 |---|---|
 | 401 | No Bearer presented (or Bearer doesn't resolve to a rapla user) |
-| 403 | Actor authenticated but `canAdminUser(actor, target)` is false |
-| 404 | `target_username` is not a known rapla user |
+| 403 | Actor authenticated but `canImpersonate(actor, target)` is false, **or** the target is unknown (identical response, empty body — existence is not leaked), or the token carries an `act` claim |
 
 ### Audit log
 
@@ -1170,7 +1277,7 @@ Angular SPA's pattern:
 |---|---|
 | Impersonation **refresh** token | **Nowhere.** Not issued. |
 | Impersonation **access** token (Swing) | In-memory only on `RemoteConnectionInfo.impersonationAccessToken` — a sidecar slot distinct from admin's `accessToken`. Discarded on client cold restart, on logout, and on switch-back. |
-| Impersonation **access** token (Angular) | **Not client-side.** Since [PRD 072](prd/done/072-server-side-login-dialog.md) Phase 4 the SPA holds no token; impersonation state is server-side, surfaced via `GET /api/auth/me` (`{impersonating, actor, target}`). The `access_token` is an HttpOnly cookie JS cannot read. |
+| Impersonation **state** (Angular) | **No token, no cookie change.** The SPA holds no token ([PRD 072](prd/done/072-server-side-login-dialog.md) Phase 4); the actor's `access_token` cookie never changes. The target id lives in the tab's `sessionStorage` (`rapla.actAs`) and is sent as `X-Rapla-Act-As` (see § "SPA: per-tab act-as"). |
 | Admin's password | Never stored anywhere by the impersonation feature (Phase 5 removed all password caching — the admin's refresh token is the only credential needed for renewal) |
 | Per-impersonation server-side session record | **None.** Each `/api/auth/impersonate` call is independent; authorization is re-checked from scratch |
 
@@ -1178,9 +1285,9 @@ Angular SPA's pattern:
 
 The Swing client still uses the two-slot bearer model (admin slot +
 impersonation sidecar slot on `RemoteConnectionInfo`). The Angular SPA
-([PRD 072](prd/done/072-server-side-login-dialog.md) Phase 4) has **one cookie credential, not two slots** — admin
-vs impersonation identity is tracked server-side and read from
-`GET /api/auth/me`; there is no client-held token.
+([PRD 072](prd/done/072-server-side-login-dialog.md) Phase 4) has **one cookie credential, not two slots** — the
+tab's act-as id selects the identity per request, and `GET /api/auth/me` reports
+the effective identity; there is no client-held token.
 
 | | Swing (`RemoteConnectionInfo`) |
 |---|---|
@@ -1194,8 +1301,9 @@ vs impersonation identity is tracked server-side and read from
 
 (The Angular surface is now: `identity` signal, `isImpersonating`
 computed, `username` / `actorUsername` computed, `loadIdentity()` via
-`GET /api/auth/me`, `impersonate()` via `POST /api/auth/impersonate/switch`,
-`endImpersonation()` via `POST /api/auth/impersonate/end`. The old
+`GET /api/auth/me`, `impersonate()` via `POST /api/auth/impersonate/switch`
+(authorizes and audits, returns `{id, username}`), `endImpersonation()` (client-only
+after the check at `POST /api/auth/impersonate/end`). The old
 `token()` / `adminToken()` / `impersonationOverride()` methods no longer
 exist.)
 
@@ -1227,11 +1335,10 @@ of active impersonation; the renewal is invisible to the user (no UI
 prompt) until and unless the admin's refresh token has also expired —
 then the auth-error dialog opens.
 
-On the **Angular** SPA ([PRD 072](prd/done/072-server-side-login-dialog.md)), impersonation is cookie-based: the
-interceptor calls `POST /api/auth/session/refresh` once on a 401 (cookie
-refresh), and impersonation start/swap goes through
-`POST /api/auth/impersonate/switch` — there is no client-side Bearer
-renewal of `/api/auth/impersonate`.
+On the **Angular** SPA ([PRD 072](prd/done/072-server-side-login-dialog.md)), the
+interceptor calls `POST /api/auth/session/refresh` once on a 401 (the actor's cookie
+refresh; the act-as header is re-applied per request), so no renewal of the impersonation
+is needed. Impersonation start goes through `POST /api/auth/impersonate/switch`.
 
 ### Switch back
 
@@ -1239,75 +1346,68 @@ On **Swing**, clearing the impersonation override is the entire
 operation — the admin's tokens are already in their normal slots
 (`RemoteConnectionInfo.accessToken`) throughout the impersonation
 lifetime. Active Bearer reverts to the admin's own on the very next
-outbound request. On the **Angular** SPA, switch-back is
-`POST /api/auth/impersonate/end` (`AuthService.endImpersonation()`);
-the server re-mints the `access_token` cookie back to the admin.
+outbound request. On the **Angular** SPA, switch-back drops the tab's act-as id
+(`AuthService.endImpersonation()`); the server only checks at
+`POST /api/auth/impersonate/end` that the tab impersonates and no longer re-mints a cookie.
+
+An impersonation is not remembered on exit: closing the tab or the Swing client ends it,
+the next start is the own account. A tab reload keeps it. Logout in a non-impersonating
+tab or client signs out impersonating tabs/clients too, since impersonation rides on the
+actor's session. While impersonating, no logout (icon or menu) and no "Neu anmelden" is
+offered, only "Zurückwechseln" and "Zu Benutzer wechseln…" (Swing keeps "Beenden").
+
+#### SPA: per-tab act-as
+
+([PRD 131](prd/131-logout-stay-signed-in.md) D7, D12; replaces the browser-wide cookie swap)
+
+- The tab that switches keeps the target id in `sessionStorage` (`rapla.actAs`); other
+  tabs never notice. Known copies: "duplicate tab" and browser session restore carry it.
+- One `HttpClient` interceptor (`actAsInterceptor`) sets `X-Rapla-Act-As: self|<user id>` on
+  every cookie-authenticated request under `/api`. A missing header is rejected with 400,
+  never run as the actor. Opened documents (`GET /api/documents/**`) take `actAs` as a
+  query parameter (default `self`; helper `openDocument()`); free links in a template do
+  not carry it and open as the actor.
+- `ActAsFilter` sits right after the bearer filter (`CookieToBearerFilter` marks cookie
+  requests) and turns a permitted id into a hand-built `Jwt` of the impersonation shape
+  (`sub` = target, `act` = actor, the actor's `exp`), so nothing downstream reads the
+  header.
+- Rejections: header on a Bearer/API-key request, an id with an `act` token, or a
+  misplaced parameter -> 400; kill switch, unknown and not-permitted target -> 403
+  (identical). API tokens never impersonate. `GET /api/graphql/schema` and
+  `GET /api/v3/api-docs/**` need no header (plain navigations from GraphiQL/Swagger);
+  the static pages send `self`.
+- ESLint bans raw `fetch`, `XMLHttpRequest`, `EventSource`, `WebSocket`, `sendBeacon` and
+  `window.open` on `/api` outside the one helper that appends `actAs`.
+- Audit happens once, at the explicit switch call, not per request.
 
 **SPA: switch and end reload the page** (R-22, 2026-10-01). After a
-successful `impersonate/switch` or `impersonate/end` the SPA reloads
+successful switch or end the SPA reloads
 completely, so nothing loaded under the previous identity survives
 (picker lean list, "+ Neu" types, "Neu" event options, schema caches);
 per-identity caches need no `identity()` effect for this. An open
 draft is asked about BEFORE the POST (`UnsavedChangesService.confirmDiscard`)
-— a cancel after the cookie swap would leave the old page talking as
-the new user; the reload then skips the browser's second question.
+— a cancel after the switch would leave the old page talking as
+the old user; the reload then skips the browser's second question.
 
 ### Switching from one target to another mid-impersonation
 
-If an admin is impersonating user A and wants to switch to user B
-(without first switching back to admin), the client UI flow is:
+An actor impersonating A may switch to B without first switching back: the switch is
+checked as **actor -> B** with the actor's own rights (A -> B -> C is checked as A -> C),
+never as A -> B. The client UI flow:
 
-1. The admin clicks the user chip in the toolbar (it still shows
-   "Impersonating A" — but it's still clickable while impersonating).
-2. The "Switch to user" dialog opens.
-3. The dialog's typeahead — `GET /api/users` — must reflect the
-   **admin's** admin-scope, not A's. On Swing this means attaching the
-   admin's Bearer (not the impersonation Bearer); on the Angular SPA
-   ([PRD 072](prd/done/072-server-side-login-dialog.md)) there is no client-held token — the request relies on the
-   `access_token` cookie, and the cookie/identity model surfaces the
-   admin actor server-side so `canAdminUser` runs against the admin.
-4. The admin picks B; the SPA POSTs `/api/auth/impersonate/switch`
-   (cookie-authenticated — the server validates the admin's cookie and
-   re-mints the `access_token` cookie for B). On Swing the equivalent
-   is `POST /api/auth/impersonate` with the admin's Bearer.
-5. On success, the impersonation is replaced (A → B). One uninterrupted
-   session.
+1. The user clicks the user chip in the toolbar (still clickable while impersonating).
+2. The "Switch to user" dialog opens; its typeahead (`GET /api/users`) lists the
+   `canImpersonate` targets of the **real actor** (`UsersController` via
+   `ImpersonationActor`/`resolveRealActor`, which unwraps the impersonation credential).
+3. The user picks B. The SPA POSTs `/api/auth/impersonate/switch` with the actor's
+   unchanged cookie, stores B as the tab's act-as id and reloads after the unsaved-draft
+   confirm. Swing sends `POST /api/auth/impersonate` with the **actor's** token (the
+   `RefreshOn401Interceptor` does so; the former client-side refusal is gone).
 
-**Authoritative rule: the *Bearer* impersonation-token path cannot
-re-invoke impersonation — but the SPA cookie `switch` endpoint
-deliberately can, by re-resolving the admin from the token's `act`
-claim.** Specifically:
-
-- `GET /api/users` during an active impersonation returns the **real
-  admin's** admin-scope — not the target's. `UsersController` calls
-  `resolveRealActor`, which unwraps the impersonation credential and
-  resolves the underlying admin (via the `act.sub` claim), so the
-  listing reflects the admin's "switch to another user" scope even while
-  B is the effective subject. On the Angular SPA ([PRD 072](prd/done/072-server-side-login-dialog.md))
-  `UsersService.list()` (`rapla-angular/src/app/auth/users.service.ts`)
-  does a plain `GET /api/users` relying on the `access_token` cookie;
-  `resolveRealActor` is what surfaces the admin actor server-side.
-- `POST /api/auth/impersonate` called with an impersonation **Bearer**
-  resolves the actor to the impersonated user; if that user isn't
-  themselves admin/group-admin (the typical case), the server returns
-  403. The SPA cookie endpoint `POST /api/auth/impersonate/switch` is
-  the deliberate exception: it **accepts an impersonation cookie** and
-  re-resolves the original admin via the `act.sub` claim (CSRF-protected),
-  so an admin can switch A → B → C without dropping back to an admin
-  Bearer first.
-- This is intentional: as a **Bearer**, an impersonation token grants
-  *exactly* the target user's permissions — the "switch to another user"
-  capability is not reachable that way. The one seam back to the admin's
-  authority is the cookie `switch` endpoint above, which re-derives the
-  admin from `act.sub` under CSRF protection rather than trusting the
-  effective subject.
-
-Implementation cross-reference (Angular, [PRD 072](prd/done/072-server-side-login-dialog.md)): the SPA holds no
-token, so there is no `AuthService.adminToken()` / `renewImpersonation()`.
-Impersonation switch/end go through `AuthService.impersonate()` /
-`AuthService.endImpersonation()` via
-`POST /api/auth/impersonate/{switch,end}`, both cookie-authenticated;
-`UsersService.list()` is a plain cookie-authenticated `GET /api/users`.
+Rule: the *Bearer* endpoint rejects every request made with a token that carries an
+`act` claim. Clients therefore always switch with the actor's own credential; an
+impersonation token grants exactly the target's permissions and is never an authority
+to impersonate. Unknown and not-permitted targets get the identical 403.
 
 ### Visual indicator
 
@@ -1316,9 +1416,9 @@ impersonation" cue while the override is active:
 
 | Client | Where | Visual |
 |---|---|---|
-| Angular SPA | Top-right of the toolbar | The user chip text is the impersonation target (not the admin's name); chip icon flips to Material `person_search` (a magnifying-glass-over-head); the right-hand action button changes from "Sign out" to "Switch back" (the two are mutually exclusive — there is no "Sign out" available while impersonating) |
+| Angular SPA (labels/menu per PRD 131 package G still pending) | Top-right of the toolbar | The user chip text is the impersonation target (not the admin's name); chip icon flips to Material `person_search` (a magnifying-glass-over-head); the right-hand action button changes from "Sign out" to "Switch back" (the two are mutually exclusive — there is no "Sign out" available while impersonating) |
 | Angular SPA — admin-not-yet-impersonating | Same chip | When the admin can impersonate but isn't currently, the chip stays on the admin's name and the icon shows `swap_horiz` to signal the chip is clickable; the button remains "Sign out" |
-| Swing | Right side of the menu bar | Status label "Acting as &lt;target&gt;" plus a "Switch back" link. Implementation rides [PRD 052](prd/052-client-clean-restart.md)'s close+recreate session channel ([PRD 051](prd/done/051-switch-user-with-oauth.md) Plan §7–§8 was superseded — see [PRD 051](prd/done/051-switch-user-with-oauth.md) § "Closed scope") |
+| Swing | Right side of the menu bar (`UserBar`) | Amber "Als &lt;target&gt; angemeldet" in the user button, without logout icon; the user menu offers switch back. Implementation rides [PRD 052](prd/052-client-clean-restart.md)'s close+recreate session channel ([PRD 051](prd/done/051-switch-user-with-oauth.md) Plan §7–§8 was superseded — see [PRD 051](prd/done/051-switch-user-with-oauth.md) § "Closed scope") |
 
 Clicking the chip in the SPA opens the "Switch to user" dialog
 (when `canImpersonate` is true OR an impersonation is active —
@@ -1627,14 +1727,13 @@ JWKS. The Angular `AuthService.token()` picks `id_token` vs
 >
 > **Swing** signs out the same way in spirit: it `POST`s `/oauth2/revoke` with its
 > **refresh token** (robust even when the access token has expired — the standard
-> revoke resolves the user from the durable refresh token), clears its local
-> `TokenStore`, and re-enters the login flow. It no longer opens a background
-> `/connect/logout` browser tab; the force-login intent rides on
-> `NextSession.showLoginDialogAfterLogout()` across the PRD 052 context rebuild
-> into the fresh context's `LogoutSignal`, whose one-shot flag makes the next
-> OAuth flow send `prompt=login`. (A plain field on `RaplaClientServiceImpl`
-> doesn't survive the rebuild — that was the "logout keeps auto-logging-in the
-> old user" bug, fixed 2026-07-21.)
+> revoke resolves the user from the durable refresh token) and clears its own entry
+> in the token store. "Abmelden (Logout)" then **exits** the application and persists
+> `nextLoginPrompt=login` in `tokens.json`, so the next start does not silently
+> re-authenticate (it sends `prompt=login`, consumed at start, cleared after a
+> successful login); "Neu anmelden" revokes and shows the login dialog again. It no
+> longer opens a background `/connect/logout` browser tab. See § "Swing token store and
+> exits".
 >
 > **`prompt=login` against rapla's OWN `/oauth2/authorize` is honored by
 > `PromptLoginReauthenticationFilter`** (rapla-app, wired into the SAS chain in
@@ -1642,7 +1741,7 @@ JWKS. The Angular `AuthService.token()` picks `id_token` vs
 > `prompt=none` — it validates but ignores `prompt=login`, so `/oauth2/revoke`
 > alone left the browser's rapla session cookie live and the next authorize
 > silently re-issued a code for the old user. The filter logs the session out
-> (HttpSession + SecurityContext + remember-me cookie/token) and redirects to
+> (HttpSession + SecurityContext) and redirects to
 > the same authorize URL with the `login` prompt value stripped, so the saved
 > request replayed after `/login` can't loop. Regression tests:
 > `PromptLoginReauthenticationTest` (tier 3) and
@@ -1715,7 +1814,8 @@ All settable via the matching `RAPLA_OAUTH_EXTERNAL_*` env vars.
 | `rapla.oauth.external.keycloak.client-secret` | *(empty)* | Leave empty for a Keycloak **public** client (PKCE-only — recommended for SPAs). Set it for a **confidential** client; the BFF route is then used, same as Google Web app. |
 | `rapla.oauth.external.keycloak.hosted-domain` | *(empty)* | Optional email-domain guard. |
 | `rapla.oauth.external.keycloak.auto-provision` | `true` | Create a rapla `User` on first sign-in if no match. A Keycloak realm is already scoped, so on is the expected SSO behaviour. |
-| `rapla.oauth.external.keycloak.display-name` | `Sign in with Keycloak` | Picker button label. |
+| `rapla.oauth.external.keycloak.display-name` | `Sign in with Single Sign-On` | Picker button label; the section title on `/login` stays `Keycloak` unless a display-name or bundle title is set. |
+| `rapla.oauth.external.<id>.i18n-bundle` | *(empty)* | Any provider: package name of a deployment ResourceBundle (e.g. `org.rapla.plugin.dhbw.DhbwLoginResources`) whose keys `login.<id>.button` and `login.<id>.title` give the `/login` button text and section title per language (PRD 131). A missing bundle or key falls back to `display-name` with the translated "Sign in with" prefix. The discovery endpoint `/api/auth/oauth/config` keeps returning `display-name`. |
 | `rapla.oauth.external.keycloak.order` | `15` | Sort key in the picker (lower = first). |
 | `rapla.oauth.external.keycloak.web-picker-visible` | `true` | Show on the web picker. |
 | `rapla.oauth.web.picker.mode` | `auto` | `auto` (show when ≥2 visible providers), `always`, or `never`. |
@@ -1916,7 +2016,7 @@ Keycloak emits **two different kinds of refresh tokens**:
 | **SSO-session refresh** | none — issued by default with any login | governed by realm's *SSO Session Idle/Max* (typically ~8 h sliding) | no — invalidated on logout | normal interactive web/SPA login |
 | **Offline refresh** | `offline_access` (must be in client's allowed scopes AND requested) | governed by realm's *Offline Session Idle/Max* (typically days to months) | yes — survives logout | CLI tools, background jobs |
 
-> **Under [PRD 072](prd/done/072-server-side-login-dialog.md) the IdP refresh-token kind is moot — rapla discards all IdP tokens.** rapla is an identity-only broker (#7=a): the server-side `oauth2Login` HEAD verifies the IdP `id_token` *once* at login, then `RaplaClientRegistrationConfig` actively **strips `offline_access`** from the outgoing IdP scopes on *that* path. Note this stripping is **path-specific, not blanket**: the discovery/BFF exchange surface still advertises the provider defaults unfiltered via `/api/auth/oauth/config` — `ProviderDef` defaults Microsoft to `offline_access` and Google to `access_type=offline` — so on the BFF exchange path the IdP **does** mint a refresh token, which transits the exchange and is then discarded server-side. Either way rapla keeps no IdP refresh token. The SPA/Swing session is governed entirely by **rapla's own** refresh token — `RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS` (21 d), delivered to the SPA as the httpOnly `refresh_token` cookie and consumed reactively via `POST /api/auth/session/refresh`. There is **no** `setupAutomaticSilentRefresh` and **no** silent-iframe refresh (see the SPA cookie-model section above). The realm's SSO Session Max and the IdP refresh lifetimes in the table above do **not** bound a rapla session — the table is background only, explaining why rapla requests the *minimal* identity scopes and not `offline_access`.
+> **Under [PRD 072](prd/done/072-server-side-login-dialog.md) the IdP refresh-token kind is moot — rapla discards all IdP tokens.** rapla is an identity-only broker (#7=a): the server-side `oauth2Login` HEAD verifies the IdP `id_token` *once* at login, then `RaplaClientRegistrationConfig` actively **strips `offline_access`** from the outgoing IdP scopes on *that* path. Note this stripping is **path-specific, not blanket**: the discovery/BFF exchange surface still advertises the provider defaults unfiltered via `/api/auth/oauth/config` — `ProviderDef` defaults Microsoft to `offline_access` and Google to `access_type=offline` — so on the BFF exchange path the IdP **does** mint a refresh token, which transits the exchange and is then discarded server-side. Either way rapla keeps no IdP refresh token. The SPA/Swing session is governed entirely by **rapla's own** refresh token — `RefreshSessionService.refreshTokenTtlSeconds()` (`rapla.auth.remember-me-days`, default 21 d), delivered to the SPA as the httpOnly `refresh_token` cookie and consumed reactively via `POST /api/auth/session/refresh`. There is **no** `setupAutomaticSilentRefresh` and **no** silent-iframe refresh (see the SPA cookie-model section above). The realm's SSO Session Max and the IdP refresh lifetimes in the table above do **not** bound a rapla session — the table is background only, explaining why rapla requests the *minimal* identity scopes and not `offline_access`.
 
 Adding `offline_access` to a provider's `rapla.oauth.external.<id>.scopes` has **no effect under the broker model** — `RaplaClientRegistrationConfig` strips it before the authorize call. The block below is retained only for a hypothetical future *non-broker* deployment that needs the IdP's own offline refresh token; in today's [PRD 072](prd/done/072-server-side-login-dialog.md) model it is a no-op:
 

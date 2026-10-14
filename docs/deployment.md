@@ -241,6 +241,25 @@ the store keeps the artefacts. Disable with `rapla.services.org.rapla.plugin.pat
 Dynamic-type annotations (e.g. `documents=` on an event type) are **not** patched — set them in
 the type editor.
 
+Two files in the same directory restyle the `/login` page instead (PRD 131); they are read on
+the next request after a change (modification time), no restart:
+
+- `login.css` — inlined as `<style id="patch-login-css">` after the built-in style. The built-in
+  colours are variables on `:root` (`--accent`, `--accent-hover`, `--select`, `--select-bg`), and
+  an empty `<div class="logo"></div>` sits first in `body` for a background-image logo.
+- `login.mustache` — replaces the built-in template (`rapla-app/.../templates/login.mustache`,
+  copy it as a starting point). It receives the same model, so its variable names are the page's
+  contract: `lang`, `title`, `languageLabel`, `languages` (`value`, `label`, `selected`),
+  `demoBanner`, `bannerText`, `bannerColor`, `form`, `csrfName`, `csrfValue`, `defaultSubmit`,
+  `swing`, `swingHint`, `ask`, `sessionLabel`, `daysLabel`, `textOff`, `textOn`, `offChecked`,
+  `onChecked`, `sso`, `ssoTitle`, `ssoButtons` (`label`, `formaction`), `password`, `divider`,
+  `dividerText`, `serverTitle`, `directLabel`, `directOpen`, `usernameLabel`, `passwordLabel`,
+  `busyText`, `loginLabel`, `devNote`, `demoNote`, `patchCss`. Form field names (`username`,
+  `password`, `remember-me`, the CSRF field) and the SSO `formaction` targets must stay as they
+  are. A template that fails to compile is ignored with a WARN and the built-in one is used.
+
+`login.mustache` is not treated as a stored document by the start-up patch run.
+
 ## Docker
 
 The repo root carries a `Dockerfile` that wraps the fat JAR in

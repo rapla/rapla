@@ -26,6 +26,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -75,6 +76,18 @@ public class SwingOAuthLoginFlowTest
     }
 
     @Test
+    public void sessionExposesAuthorizeUrlWhileWaitingAndClearsItAfterwards() throws Exception
+    {
+        OAuthConfig cfg = new OAuthConfig(true, "rapla-client", "http://127.0.0.1:1/oauth2/authorize",
+                "http://127.0.0.1:1/oauth2/token", List.of("openid"));
+        SwingOAuthLoginFlow.Session session = new SwingOAuthLoginFlow(cfg, url -> { }).start();
+        assertNotNull(session.authorizeUrl());
+        assertTrue(session.authorizeUrl().toString().startsWith("http://127.0.0.1:1/oauth2/authorize?"));
+        session.future().cancel(true);
+        assertEquals(null, session.authorizeUrl());
+    }
+
+    @Test
     public void happyPathExchangesCodeForTokens() throws Exception
     {
         OAuthConfig cfg = new OAuthConfig(true, "rapla-client",
@@ -93,6 +106,30 @@ public class SwingOAuthLoginFlowTest
         assertNotNull("verifier must be sent at token exchange", capturedCodeVerifier);
         assertTrue("verifier hashes to the challenge sent on authorize",
                 capturedCodeVerifierMatchesChallenge());
+    }
+
+    private OAuthTokens loginWithCallbackQuery(String extraQuery) throws Exception
+    {
+        OAuthConfig cfg = new OAuthConfig(true, "rapla-client",
+                fakeAuthServerUrl() + "/oauth2/authorize",
+                fakeAuthServerUrl() + "/oauth2/token",
+                List.of("openid"));
+        SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg,
+                (url) -> simulateBrowserLogin(url, "test-code-xyz", null, extraQuery));
+        return flow.start().future().get(10, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void rememberOneInTheCallbackIsTheServersStaySignedInDecision() throws Exception
+    {
+        assertTrue(loginWithCallbackQuery("&remember=1").isRemember());
+    }
+
+    @Test
+    public void rememberZeroOrNothingInTheCallbackMeansNotRemembered() throws Exception
+    {
+        assertFalse(loginWithCallbackQuery("&remember=0").isRemember());
+        assertFalse(loginWithCallbackQuery("").isRemember());
     }
 
     @Test
@@ -148,12 +185,17 @@ public class SwingOAuthLoginFlowTest
 
     private void simulateBrowserLogin(URI authorizeUrl, String code, String stateOverride) throws IOException
     {
+        simulateBrowserLogin(authorizeUrl, code, stateOverride, "");
+    }
+
+    private void simulateBrowserLogin(URI authorizeUrl, String code, String stateOverride, String extraQuery) throws IOException
+    {
         Map<String, String> params = parseForm(authorizeUrl.getRawQuery());
         String redirectUri = params.get("redirect_uri");
         String state = stateOverride != null ? stateOverride : params.get("state");
         // record challenge for later verifier-check
         capturedChallenge = params.get("code_challenge");
-        String callback = redirectUri + "?code=" + code + "&state=" + state;
+        String callback = redirectUri + "?code=" + code + "&state=" + state + extraQuery;
         try
         {
             HttpResponse<String> resp = HttpClient.newHttpClient().send(
@@ -245,5 +287,39 @@ public class SwingOAuthLoginFlowTest
         {
             assertTrue(expected.getCause().getMessage(), expected.getCause().getMessage().contains("anderen Standort"));
         }
+    }
+
+    @Test
+    public void callbackTimeoutFailsWithTimeoutAndStopsTheListener() throws Exception
+    {
+        OAuthConfig cfg = new OAuthConfig(true, "rapla-client",
+                fakeAuthServerUrl() + "/oauth2/authorize",
+                fakeAuthServerUrl() + "/oauth2/token",
+                List.of());
+        SwingOAuthLoginFlow.Session session = new SwingOAuthLoginFlow(cfg, url -> { })
+                .callbackTimeout(java.time.Duration.ofMillis(200)).start();
+        try
+        {
+            session.future().get(10, TimeUnit.SECONDS);
+            fail("expected ExecutionException");
+        }
+        catch (ExecutionException expected)
+        {
+            assertTrue(expected.getCause() instanceof TimeoutException);
+        }
+        long deadline = System.currentTimeMillis() + 2000;
+        boolean closed = false;
+        while (!closed && System.currentTimeMillis() < deadline)
+        {
+            try (java.net.Socket socket = new java.net.Socket("127.0.0.1", session.redirectUri().getPort()))
+            {
+                Thread.sleep(50);
+            }
+            catch (java.net.ConnectException refused)
+            {
+                closed = true;
+            }
+        }
+        assertTrue("loopback listener must be stopped after the timeout", closed);
     }
 }

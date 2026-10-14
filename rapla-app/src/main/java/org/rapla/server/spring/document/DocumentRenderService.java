@@ -328,6 +328,10 @@ public class DocumentRenderService
                 {
                     // The nav reference day — consumed by the render pipeline, not a variable.
                 }
+                else if ("actAs".equals(key))
+                {
+                    // PRD 131 D12 — consumed by ActAsFilter before the controller runs, not a variable.
+                }
                 else
                 {
                     throw new UndeclaredParameterException();

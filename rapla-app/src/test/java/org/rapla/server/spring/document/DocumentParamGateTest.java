@@ -119,6 +119,17 @@ class DocumentParamGateTest
                 .andReturn().getResponse().getStatus());
     }
 
+    /** PRD 131 D12 — {@code actAs} is read by the act-as filter; it is no view input and no 400. */
+    @Test
+    @WithMockUser(username = "homer")
+    void theActAsParameterIsNeitherAViewInputNorUndeclared() throws Exception
+    {
+        assertEquals(200, mockMvc.perform(get("/api/documents/pg_scoped_doc").param("actAs", "self"))
+                .andReturn().getResponse().getStatus());
+        assertEquals(200, mockMvc.perform(get("/api/documents/pg_scoped_doc/csv").param("actAs", "self"))
+                .andReturn().getResponse().getStatus());
+    }
+
     /** The interim dotted-path convention is gone: a private variable path is not a public name. */
     @Test
     @WithMockUser(username = "homer")

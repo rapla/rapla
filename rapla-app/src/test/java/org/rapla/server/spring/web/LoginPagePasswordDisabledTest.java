@@ -57,7 +57,7 @@ class LoginPagePasswordDisabledTest
         registry.add("rapla.oauth.web.password-login", () -> "false");
         registry.add("rapla.oauth.external.keycloak.enabled", () -> "true");
         registry.add("rapla.oauth.external.keycloak.base-url", () -> "https://kc.example.com");
-        registry.add("rapla.oauth.external.keycloak.realm", () -> "rapla-test");
+        registry.add("rapla.oauth.external.keycloak.realm", () -> "example-realm");
         registry.add("rapla.oauth.external.keycloak.client-id", () -> "rapla-app");
     }
 
@@ -72,6 +72,17 @@ class LoginPagePasswordDisabledTest
                 .andExpect(content().string(not(containsString("name=\"password\""))))
                 // SSO chooser still present
                 .andExpect(content().string(containsString("/oauth2/authorization/keycloak")));
+    }
+
+    @Test
+    void ssoOnlyPageHasGroupAndKeycloakSectionOnly() throws Exception
+    {
+        mockMvc.perform(get("/login"))
+                .andExpect(content().string(containsString("class=\"group\"")))
+                .andExpect(content().string(containsString("<p class=\"stitle\">Keycloak</p>")))
+                .andExpect(content().string(not(containsString("<details"))))
+                .andExpect(content().string(not(containsString("Rapla Server"))))
+                .andExpect(content().string(not(containsString("class=\"divider\""))));
     }
 
     @Test

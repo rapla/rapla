@@ -63,14 +63,15 @@ public class FormLoginSuccessHandler extends SavedRequestAwareAuthenticationSucc
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException
     {
-        cookies.setRememberChoiceCookie(request, response, request.getParameter("remember-me") != null);
+        boolean remember = "on".equals(request.getParameter("remember-me"));
+        cookies.setRememberChoiceCookie(request, response, remember);
         try
         {
             User user = resolveUser(authentication.getName());
             RefreshSessionService.IssuedTokens tokens = refreshSessionService.issueAndPersist(user);
-            cookies.setAccessTokenCookie(response, tokens.accessToken(), tokens.expiresIn());
+            cookies.setAccessTokenCookie(response, tokens.accessToken(), tokens.expiresIn(), remember);
             cookies.setRefreshTokenCookie(response, tokens.refreshToken(),
-                    RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS);
+                    refreshSessionService.refreshTokenTtlSeconds(), remember);
 
             // B3: nag a passwordless user to set a password (cookies are already set, so the
             // /change-password page is reachable authenticated). Skippable, not disableable.

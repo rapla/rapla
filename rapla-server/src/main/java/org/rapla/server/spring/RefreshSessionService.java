@@ -14,6 +14,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.storage.RaplaSecurityException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -43,7 +44,7 @@ import java.util.List;
  *       {@code typ=refresh} claim + exact match against the prefs entry.
  *       No in-memory authorization state.</li>
  *   <li><b>Never rotate at refresh time.</b> {@code /oauth2/token grant_type=refresh_token}
- *       returns the SAME refresh token until it expires (21 d). At expiry
+ *       returns the SAME refresh token until it expires (N days, {@code rapla.auth.remember-me-days}, default 21). At expiry
  *       the user re-Authorizes — predictable, all devices at once.
  *       Avoids the multi-tab "tab A wins rotation, tab B's stale token
  *       fails" problem.</li>
@@ -83,24 +84,28 @@ public class RefreshSessionService
 
     public static final long ACCESS_TOKEN_TTL_SECONDS = 3600;
     /**
-     * Absolute, non-sliding refresh-token lifetime — the session cap. For
+     * Default of the absolute, non-sliding refresh-token lifetime N
+     * ({@code rapla.auth.remember-me-days}, PRD 131 OQ1) — the session cap. For
      * IdP-brokered logins (model A, PRD 072 #7) rapla owns the session, so an
      * IdP-side account disable is caught only at the next forced re-federation;
      * this cap bounds that worst-case window. Lowered 30 d → 21 d (2026-06-19).
      */
-    public static final long REFRESH_TOKEN_TTL_SECONDS = 21L * 24 * 3600;
+    public static final int DEFAULT_REFRESH_TOKEN_DAYS = 21;
 
     private final JwtConfig.JwtIssuer jwtIssuer;
     private final JwtDecoder jwtDecoder;
     private final JwtDecoder refreshDecoder;
     private final RaplaFacade facade;
+    private final long refreshTokenTtlSeconds;
 
     public RefreshSessionService(JwtConfig.JwtIssuer jwtIssuer, JwtDecoder jwtDecoder, RaplaFacade facade,
-                                 JWKSource<SecurityContext> jwkSource)
+                                 JWKSource<SecurityContext> jwkSource,
+                                 @Value("${rapla.auth.remember-me-days:" + DEFAULT_REFRESH_TOKEN_DAYS + "}") int refreshTokenDays)
     {
         this.jwtIssuer = jwtIssuer;
         this.jwtDecoder = jwtDecoder;
         this.facade = facade;
+        this.refreshTokenTtlSeconds = refreshTokenDays * 24L * 3600;
         // The resource-server jwtDecoder REJECTS typ=refresh tokens
         // (RaplaTokenTypeValidator, JwtConfig) — that gate is correct for the
         // /api path, but refresh-token VALIDATION here needs to decode exactly
@@ -108,6 +113,12 @@ public class RefreshSessionService
         // verifies signature + standard claims WITHOUT the typ-rejection; the
         // typ=refresh requirement is enforced explicitly below.
         this.refreshDecoder = NimbusJwtDecoder.withPublicKey(extractRsaPublicKey(jwkSource)).build();
+    }
+
+    /** The lifetime N of a refresh token — also the Max-Age of the refresh cookie. */
+    public long refreshTokenTtlSeconds()
+    {
+        return refreshTokenTtlSeconds;
     }
 
     private static RSAPublicKey extractRsaPublicKey(JWKSource<SecurityContext> jwkSource)
@@ -170,7 +181,7 @@ public class RefreshSessionService
         {
             return stored;
         }
-        String fresh = jwtIssuer.issueRefreshToken(user.getId(), REFRESH_TOKEN_TTL_SECONDS);
+        String fresh = jwtIssuer.issueRefreshToken(user.getId(), refreshTokenTtlSeconds);
         persistSession(user, fresh);
         return fresh;
     }

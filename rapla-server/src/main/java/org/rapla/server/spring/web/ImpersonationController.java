@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.spring.ApiKeyScopeContextInitializer;
 import org.rapla.server.spring.JwtConfig;
-import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.ImpersonationResponse;
 import org.rapla.storage.dbrm.ImpersonationService;
@@ -31,8 +30,8 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>Authorization runs every call: the controller resolves the actor
  * from the incoming Bearer (any issuer rapla accepts via the
  * multi-issuer decoder + {@link RemoteSession#checkAndGetUser}), then
- * checks {@link PermissionController#canAdminUser(User, User)} against
- * the target. No server-side per-impersonation state is persisted —
+ * checks {@link org.rapla.storage.PermissionController#canImpersonate(User, User)}
+ * against the target. No server-side per-impersonation state is persisted —
  * each call is independent, and the issued token has no refresh-token
  * counterpart. See PRD 051 § "Token renewal model".
  */
@@ -87,38 +86,21 @@ public class ImpersonationController implements ImpersonationService
         {
             throw new RaplaSecurityException("api keys cannot impersonate");
         }
+        // PRD 131 D10: no chains. A client switches with the actor's own token; an impersonation token never starts another one.
+        if (ImpersonationActor.isImpersonating())
+        {
+            throw new RaplaSecurityException("an impersonation token cannot start another impersonation");
+        }
 
-        // 2. Resolve the target by username. canAdminUser's scoping
-        //    means we want a 404 (not 403) for "unknown user" — leaking
-        //    "this user exists but you can't admin them" via differing
-        //    status codes would let an admin enumerate users outside
-        //    their group-admin scope. So look up first, 404 if absent.
-        User target;
-        try
-        {
-            target = facade.getUser(targetUsername);
-        }
-        catch (RaplaException ex)
-        {
-            // facade.getUser throws when the name isn't found.
-            throw new TargetNotFoundException(targetUsername);
-        }
+        // 2. Resolve + authorize the target (PRD 131 D11: canImpersonate). An unknown and a not-permitted target
+        //    get the identical 403 — differing answers would let an actor enumerate users outside his right.
+        User target = ImpersonationActor.permittedTarget(facade, actor, targetUsername);
         if (target == null)
         {
-            throw new TargetNotFoundException(targetUsername);
+            throw new RaplaSecurityException("Not authorized to impersonate the requested target");
         }
 
-        // 3. Authorize. PRD 051 § "Rapla's group-administration policy
-        //    — the authorization rule": global admin OR group-admin
-        //    whose can_admin_parent scope intersects the target's groups.
-        if (!PermissionController.canAdminUser(actor, target))
-        {
-            throw new RaplaSecurityException(
-                    "User '" + actor.getUsername() + "' is not authorized to impersonate '"
-                            + target.getUsername() + "'");
-        }
-
-        // 4. Mint. Same key, same algorithm, same JWKS as any other
+        // 3. Mint. Same key, same algorithm, same JWKS as any other
         //    rapla-SAS access token — validates against the existing
         //    resource-server decoder without special-casing.
         String token;
@@ -134,7 +116,7 @@ public class ImpersonationController implements ImpersonationService
             throw new RaplaException("Failed to sign impersonation token: " + ex.getMessage(), ex);
         }
 
-        // 5. Audit. One line per issuance, including renewals — the
+        // 4. Audit. One line per issuance, including renewals — the
         //    renewal cadence is the audit cadence. Lands wherever ops
         //    collects rapla logs.
         AUDIT_LOG.info("Impersonation: actor=" + actor.getUsername() + " (uuid=" + actor.getId()
@@ -144,26 +126,10 @@ public class ImpersonationController implements ImpersonationService
     }
 
     /**
-     * 404 carrier for "target_username not found". Extends
-     * {@link RuntimeException} (not {@link RaplaException}) so the
-     * global {@code @ExceptionHandler(RaplaException.class)} in
-     * {@link RaplaExceptionHandler} doesn't gobble it into a 500;
-     * the {@code @ResponseStatus} resolver gets first crack.
-     */
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    static final class TargetNotFoundException extends RuntimeException
-    {
-        TargetNotFoundException(String username)
-        {
-            super("Target user not found: " + username);
-        }
-    }
-
-    /**
      * RaplaSecurityException → 403 for impersonation specifically. The
      * generic mapping in the global exception handler returns 401 for
      * RaplaSecurityException; that's wrong here because the actor IS
-     * authenticated — they just aren't authorised to admin this target.
+     * authenticated — they just aren't authorised to switch to this target.
      */
     @ExceptionHandler(RaplaSecurityException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
@@ -171,7 +137,7 @@ public class ImpersonationController implements ImpersonationService
     {
         // Body is intentionally empty — the controller's own audit log
         // captures the failed attempt; the client doesn't need details
-        // beyond the 403 status (and surfacing "user X is not an admin
-        // of user Y" would leak the can_admin_parent scope structure).
+        // beyond the 403 status (and surfacing "user X may not switch to
+        // user Y" would leak the can_admin_parent / impersonated_by structure).
     }
 }

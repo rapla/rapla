@@ -23,17 +23,20 @@ import java.nio.charset.StandardCharsets;
  *
  * <p>The JSON body is left intact (Swing / API clients keep reading the tokens
  * from the body) — the cookies are purely additive. Only 2xx JSON responses are
- * touched.
+ * touched. The cookies are session-scoped unless the request carries the stay-signed-in choice
+ * (PRD 131 D2).
  */
 public class TokenResponseCookieFilter extends OncePerRequestFilter
 {
     private static final JsonMapper MAPPER = JsonMapper.builder().build();
 
     private final CookieAuthSupport cookies;
+    private final long refreshTtlSeconds;
 
-    public TokenResponseCookieFilter(CookieAuthSupport cookies)
+    public TokenResponseCookieFilter(CookieAuthSupport cookies, long refreshTtlSeconds)
     {
         this.cookies = cookies;
+        this.refreshTtlSeconds = refreshTtlSeconds;
     }
 
     @Override
@@ -44,7 +47,7 @@ public class TokenResponseCookieFilter extends OncePerRequestFilter
         try
         {
             chain.doFilter(request, wrapper);
-            maybeSetCookies(wrapper);
+            maybeSetCookies(wrapper, CookieAuthSupport.isRemembered(request));
         }
         finally
         {
@@ -52,7 +55,7 @@ public class TokenResponseCookieFilter extends OncePerRequestFilter
         }
     }
 
-    private void maybeSetCookies(ContentCachingResponseWrapper wrapper)
+    private void maybeSetCookies(ContentCachingResponseWrapper wrapper, boolean remembered)
     {
         int status = wrapper.getStatus();
         if (status < 200 || status >= 300)
@@ -78,13 +81,12 @@ public class TokenResponseCookieFilter extends OncePerRequestFilter
                 long expiresIn = tree.has("expires_in") && tree.get("expires_in").isNumber()
                         ? tree.get("expires_in").asLong()
                         : RefreshSessionService.ACCESS_TOKEN_TTL_SECONDS;
-                cookies.setAccessTokenCookie(wrapper, access.asString(), expiresIn);
+                cookies.setAccessTokenCookie(wrapper, access.asString(), expiresIn, remembered);
             }
             JsonNode refresh = tree.get("refresh_token");
             if (refresh != null && refresh.isString())
             {
-                cookies.setRefreshTokenCookie(wrapper, refresh.asString(),
-                        RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS);
+                cookies.setRefreshTokenCookie(wrapper, refresh.asString(), refreshTtlSeconds, remembered);
             }
         }
         catch (RuntimeException ignored)

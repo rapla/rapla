@@ -123,7 +123,7 @@
             method: 'POST',
             credentials: 'same-origin',
             headers: Object.assign(
-                { 'Content-Type': 'application/json' },
+                { 'Content-Type': 'application/json', 'X-Rapla-Act-As': 'self' },
                 xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}
             ),
             body: JSON.stringify(body)
@@ -139,7 +139,7 @@
             const doFetch = () => {
                 const opts = { ...(init || {}) };
                 opts.credentials = 'same-origin';
-                opts.headers = { ...((init && init.headers) || {}) };
+                opts.headers = { ...((init && init.headers) || {}), 'X-Rapla-Act-As': 'self' };
                 const xsrf = getXsrfToken();
                 if (xsrf) opts.headers['X-XSRF-TOKEN'] = xsrf;
                 return fetch(input, opts);
@@ -152,7 +152,7 @@
                     credentials: 'same-origin',
                     headers: (() => {
                         const x = getXsrfToken();
-                        return x ? { 'X-XSRF-TOKEN': x } : {};
+                        return x ? { 'X-XSRF-TOKEN': x, 'X-Rapla-Act-As': 'self' } : { 'X-Rapla-Act-As': 'self' };
                     })()
                 });
                 if (refresh.status === 401) {
@@ -522,7 +522,7 @@
             const xsrf = getXsrfToken();
             await fetch('/api/auth/session/logout', {
                 method: 'POST',
-                headers: xsrf ? { 'X-XSRF-TOKEN': xsrf } : {},
+                headers: xsrf ? { 'X-XSRF-TOKEN': xsrf, 'X-Rapla-Act-As': 'self' } : { 'X-Rapla-Act-As': 'self' },
             }).catch(() => {});
             window.location.assign('/login');
         });

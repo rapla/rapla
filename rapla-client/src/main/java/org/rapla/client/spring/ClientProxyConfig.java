@@ -138,13 +138,15 @@ public class ClientProxyConfig
             // PRD 051: use effective access token (impersonation if set,
             // else admin's). getAccessToken() is the admin token, read
             // separately below by the renewal/refresh paths.
-            String token = info.getEffectiveAccessToken();
+            // PRD 131 D10: a switch-user call always authenticates as the actor — the server rejects act tokens.
+            final boolean switchCall = request.getURI().getPath().endsWith("/api/auth/impersonate");
+            String token = switchCall ? info.adminToken() : info.getEffectiveAccessToken();
             if (token != null && !token.isEmpty()) request.getHeaders().setBearerAuth(token);
             org.springframework.http.client.ClientHttpResponse response = execution.execute(request, body);
             if (response.getStatusCode().value() != 401) return response;
             refreshAttempts.incrementAndGet();
-            // Don't recurse on /api/auth/* itself.
-            if (request.getURI().getPath().contains("/api/auth/")) return response;
+            // Don't recurse on /api/auth/* itself; the switch call is the exception: an expired actor token is refreshed.
+            if (!switchCall && request.getURI().getPath().contains("/api/auth/")) return response;
 
             // PRD 051 — impersonation renewal precedes the refresh chain.
             // If we're impersonating and got 401, the impersonation
@@ -153,7 +155,7 @@ public class ClientProxyConfig
             // the refresh-then-retry path which refreshes the admin
             // token, then we retry impersonation, then retry the
             // original request.
-            if (info.isImpersonating())
+            if (!switchCall && info.isImpersonating())
             {
                 if (tryRenewImpersonation())
                 {
@@ -215,12 +217,12 @@ public class ClientProxyConfig
             // admin token (which will likely 403 on the original request
             // — at which point the audit log explains why and the user
             // sees the dialog via fireAuthDeadOnce).
-            if (info.isImpersonating())
+            if (!switchCall && info.isImpersonating())
             {
                 tryRenewImpersonation();
             }
             response.close();
-            request.getHeaders().setBearerAuth(info.getEffectiveAccessToken());
+            request.getHeaders().setBearerAuth(switchCall ? info.adminToken() : info.getEffectiveAccessToken());
             return execution.execute(request, body);
         }
 
@@ -421,9 +423,9 @@ public class ClientProxyConfig
      * {@link org.rapla.client.swing.internal.RaplaClientServiceImpl#switchTo}
      * call {@code POST /api/auth/impersonate} via the same Spring
      * RestClient machinery used by every other typed proxy. Bearer
-     * attachment is via {@link RefreshOn401Interceptor}, which reads
-     * {@code info.getEffectiveAccessToken()} — i.e. the impersonation
-     * token if set, otherwise the admin's access token. The renewal
+     * attachment is via {@link RefreshOn401Interceptor}, which sends the
+     * actor's own access token on this endpoint (PRD 131 D10) and the
+     * effective one (impersonation token if set) everywhere else. The renewal
      * path (impersonation expired → call impersonate again) is also
      * handled inside the interceptor.
      */
@@ -431,6 +433,13 @@ public class ClientProxyConfig
     public org.rapla.storage.dbrm.ImpersonationService impersonationServiceProxy(HttpServiceProxyFactory factory)
     {
         return factory.createClient(org.rapla.storage.dbrm.ImpersonationService.class);
+    }
+
+    /** PRD 131 R17: the users the real actor may switch to; the switch-user dialog lists them by username. */
+    @Bean
+    public org.rapla.storage.dbrm.UsersService usersServiceProxy(HttpServiceProxyFactory factory)
+    {
+        return factory.createClient(org.rapla.storage.dbrm.UsersService.class);
     }
 
     @Bean

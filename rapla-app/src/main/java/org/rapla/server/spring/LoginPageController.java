@@ -1,5 +1,7 @@
 package org.rapla.server.spring;
 
+import com.samskivert.mustache.Mustache;
+import com.samskivert.mustache.Template;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,15 +11,21 @@ import org.rapla.components.util.LocaleTools;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
+import org.rapla.server.spring.oauth.RaplaOauthRedirectProperties;
 import org.rapla.server.spring.oauth.external.ExternalProviderId;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
 import org.rapla.server.spring.oauth.external.ProviderConfig;
+import org.rapla.server.spring.oauth.external.ProviderDef;
+import org.rapla.server.util.LoopbackUriCheck;
 import org.rapla.storage.SyncStorageOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,20 +34,33 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.rapla.server.spring.oauth.OidcLoginSuccessHandler;
 import org.springframework.web.util.HtmlUtils;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.MissingResourceException;
+import java.util.function.Function;
 
 /**
  * Replaces Spring Security's DefaultLoginPageGeneratingFilter with the ONE
  * combined rapla login page (PRD 072 Phase 1).
  *
- * <p>The page ALWAYS renders an SSO chooser — one link per
- * {@link ExternalProvidersProperties#enabledProviders()}, each pointing at
- * {@code /oauth2/authorization/<id>} (Spring's {@code oauth2Login()} kickoff).
- * The inline username/password form is OPTIONAL, gated by the
- * {@code rapla.oauth.web.password-login} flag (default ON). This is SEPARATE
- * from {@code rapla.oauth.swing-legacy-login} (Swing-only, default off).
+ * <p>The page renders ONE POST form without JavaScript (PRD 131 R2/D2): the stay-signed-in choice on
+ * top, then an SSO entry per {@link ExternalProvidersProperties#enabledProviders()} — each a submit
+ * button whose {@code formaction} is {@code /oauth2/authorization/<id>} (Spring's {@code oauth2Login()}
+ * kickoff, preceded by {@link RememberChoiceFilter}) — and the inline username/password fields. The
+ * password fields are OPTIONAL, gated by the {@code rapla.oauth.web.password-login} flag (default ON).
+ * This is SEPARATE from {@code rapla.oauth.swing-legacy-login} (Swing-only, default off).
  *
  * <p>Activated by SecurityConfig's {@code formLogin().loginPage("/login")} +
  * {@code oauth2Login().loginPage("/login")}, which disable the default
@@ -64,12 +85,27 @@ public class LoginPageController
     /** Explicit language choice from the login page's chooser (per-browser). */
     static final String LANG_COOKIE = org.rapla.server.spring.web.RequestLanguage.COOKIE;
 
+    private static final String TEMPLATE = "templates/login.mustache";
+
+    /** Same conventions as DocumentRenderer; escaping is HtmlUtils (named entities), as the page always rendered. */
+    private static final Mustache.Compiler COMPILER = Mustache.compiler().escapeHTML(true).withEscaper(HtmlUtils::htmlEscape)
+            .nullValue("").defaultValue("");
+
+    private volatile Template template;
+
+    /** PRD 131 round 2 — deployment styling and template from the patch directory (PRD 112), re-read when changed. */
+    private final PatchFile<String> patchCss;
+    private final PatchFile<Template> patchTemplate;
+
     private final ExternalProvidersProperties externalProviders;
     private final boolean passwordLoginEnabled;
     private final RaplaFacade facade;
     private final RaplaResources i18n;
     private final BundleManager bundleManager;
     private final org.rapla.server.spring.web.RequestLanguage requestLanguage;
+    private final RefreshSessionService refreshSessions;
+    private final List<String> callbackPaths;
+    private final HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
 
     public LoginPageController(ExternalProvidersProperties externalProviders,
                               @Value("${rapla.oauth.web.password-login:true}") boolean passwordLoginEnabled,
@@ -77,9 +113,18 @@ public class LoginPageController
                               RaplaResources i18n,
                               BundleManager bundleManager,
                               @Value("${rapla.demo.banner:}") String demoBanner,
-                              org.rapla.server.spring.web.RequestLanguage requestLanguage)
+                              org.rapla.server.spring.web.RequestLanguage requestLanguage,
+                              RefreshSessionService refreshSessions,
+                              RaplaOauthRedirectProperties redirectProps,
+                              RaplaServerProperties serverProperties)
     {
+        Path patchDir = Path.of(serverProperties.getPatchDir());
+        this.patchCss = new PatchFile<>(patchDir.resolve("login.css"), css -> css);
+        this.patchTemplate = new PatchFile<>(patchDir.resolve("login.mustache"), COMPILER::compile);
+        this.callbackPaths = redirectProps.getSameOriginCallbackPaths();
+        requestCache.setMatchingRequestParameterName(null);
         this.requestLanguage = requestLanguage;
+        this.refreshSessions = refreshSessions;
         this.externalProviders = externalProviders;
         this.passwordLoginEnabled = passwordLoginEnabled;
         this.facade = facade;
@@ -90,11 +135,6 @@ public class LoginPageController
 
     /** PRD 118 D8-8 — {@code rapla.demo.banner}; empty outside the demo. */
     private final String demoBanner;
-
-    private String demoBannerHtml()
-    {
-        return demoBanner.isEmpty() ? "" : "<p class=\"demo-banner\">" + HtmlUtils.htmlEscape(demoBanner) + "</p>";
-    }
 
     /** @return {@code lang} if it is one of the shipped bundle languages, else {@code null}. */
     private String validLanguage(String lang)
@@ -152,11 +192,6 @@ public class LoginPageController
         }
     }
 
-    private String msg(String key, Locale locale)
-    {
-        return HtmlUtils.htmlEscape(i18n.getString(key, locale));
-    }
-
     /** B3: only advertise the default admin/empty credential while it is actually in effect. */
     private boolean showDefaultAdminHint()
     {
@@ -200,188 +235,281 @@ public class LoginPageController
             response.addCookie(legacy);
         }
         Locale locale = resolveLocale(request, lang);
-        String banner = "";
+        Map<String, Object> model = new HashMap<>();
+        model.put("lang", locale.getLanguage());
+        model.put("title", i18n.getString("logindialog.title", locale));
+        model.put("languageLabel", i18n.getString("language", locale));
+        model.put("languages", languageOptions(locale));
+        if (!demoBanner.isEmpty())
+        {
+            model.put("demoBanner", demoBanner);
+        }
         if (error != null)
         {
             jakarta.servlet.http.HttpSession session = request.getSession(false);
             Object reason = session == null ? null : session.getAttribute(OidcLoginSuccessHandler.LOGIN_ERROR_ATTR);
             if (reason != null) session.removeAttribute(OidcLoginSuccessHandler.LOGIN_ERROR_ATTR);
-            String text = reason != null ? HtmlUtils.htmlEscape(reason.toString()) : msg("error.login", locale);
-            banner = "<p style=\"color:#c00;\">" + text + "</p>";
+            model.put("bannerColor", "#c00");
+            model.put("bannerText", reason != null ? reason.toString() : i18n.getString("error.login", locale));
         }
         else if (logout != null)
         {
-            banner = "<p style=\"color:#080;\">" + msg("login.logged_out", locale) + "</p>";
+            model.put("bannerColor", "#080");
+            model.put("bannerText", i18n.getString("login.logged_out_all_devices", locale));
         }
         // PRD 072 follow-up: after an explicit logout (/login?logout), re-prompt at
         // the IdP so the next SSO login can't silently re-use the still-live Keycloak
         // session (and lets the user pick a different account). RaplaOAuth2Authorization
         // RequestResolver forwards this whitelisted param. Ordinary logins omit it →
         // silent SSO preserved.
-        boolean reprompt = logout != null;
-        return """
-                <!doctype html>
-                <html lang="%LANG%">
-                <head>
-                  <meta charset="utf-8">
-                  <title>%TITLE%</title>
-                  <style>
-                    body { font-family: system-ui, sans-serif; background: #f4f4f4; margin: 0; padding: 0; display: flex; min-height: 100vh; align-items: center; justify-content: center; }
-                    .card { background: #fff; padding: 2rem 2.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); min-width: 320px; position: relative; }
-                    h1 { margin: 0 0 1rem; font-size: 1.4rem; color: #333; }
-                    label { display: block; margin: 0.8rem 0 0.2rem; color: #555; font-size: 0.9rem; }
-                    input[type=text], input[type=password] { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; box-sizing: border-box; }
-                    button { margin-top: 1.2rem; padding: 0.6rem 1.2rem; background: #2a6; color: #fff; border: 0; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; }
-                    button:hover { background: #248; }
-                    button:disabled { background: #888; cursor: default; }
-                    .note { color: #888; font-size: 0.8rem; margin-top: 1rem; }
-                    .demo-banner { background: #fff4ce; color: #5c4400; border-radius: 4px; padding: 0.4rem 0.6rem; font-size: 0.85rem; margin: 0 0 1rem; }
-                    .remember { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0 0.2rem; color: #555; font-size: 0.9rem; }
-                    .remember input { margin: 0; }
-                    .sso { display: block; text-decoration: none; text-align: center; margin: 0.5rem 0; padding: 0.6rem 1.2rem; background: #345; color: #fff; border-radius: 4px; font-size: 1rem; }
-                    .sso:hover { background: #234; }
-                    .divider { text-align: center; color: #aaa; margin: 1.2rem 0 0.4rem; font-size: 0.8rem; }
-                    .langrow { position: absolute; top: 0.8rem; right: 0.8rem; }
-                    .langrow select { padding: 0.2rem 0.3rem; border: 1px solid #ddd; border-radius: 4px; color: #777; font-size: 0.8rem; background: #fff; }
-                  </style>
-                </head>
-                <body>
-                  <div class="card">
-                    <div class="langrow">%CHOOSER%</div>
-                    <h1>%TITLE%</h1>
-                    %DEMO%
-                    %BANNER%
-                    %SSO%
-                    %PASSWORD%
-                  </div>
-                  <script>
-                    var f = document.querySelector('form');
-                    if (f) {
-                      f.addEventListener('submit', function () {
-                        var b = document.getElementById('btn');
-                        if (b) { b.disabled = true; b.textContent = b.dataset.busy; }
-                      });
-                    }
-                    var s = document.getElementById('lang');
-                    if (s) {
-                      s.addEventListener('change', function () {
-                        location.href = '/login?lang=' + encodeURIComponent(this.value);
-                      });
-                    }
-                  </script>
-                </body>
-                </html>
-                """
-                .replace("%LANG%", HtmlUtils.htmlEscape(locale.getLanguage()))
-                .replace("%TITLE%", msg("logindialog.title", locale))
-                .replace("%BANNER%", banner)
-                .replace("%SSO%", ssoButtonsHtml(reprompt, locale))
-                .replace("%PASSWORD%", passwordLoginEnabled ? passwordFormHtml(request, locale) : "")
-                .replace("%CHOOSER%", languageChooserHtml(locale))
-                .replace("%DEMO%", demoBannerHtml());
+        addForm(model, request, logout != null, error != null, locale);
+        model.put("patchCss", patchCss.get());
+        Template patched = patchTemplate.get();
+        return (patched != null ? patched : template()).execute(model);
+    }
+
+    private Template template()
+    {
+        Template t = template;
+        if (t == null)
+        {
+            try (Reader reader = new InputStreamReader(new ClassPathResource(TEMPLATE).getInputStream(), StandardCharsets.UTF_8))
+            {
+                t = COMPILER.compile(reader);
+            }
+            catch (IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
+            template = t;
+        }
+        return t;
     }
 
     /** Language chooser — every shipped bundle language, labeled with its autonym. */
-    private String languageChooserHtml(Locale locale)
+    private List<Map<String, Object>> languageOptions(Locale locale)
     {
         List<String> languages = new ArrayList<>(bundleManager.getAvailableLanguages());
         languages.sort(String::compareTo);
-        StringBuilder sb = new StringBuilder();
-        sb.append("<select id=\"lang\" aria-label=\"").append(msg("language", locale)).append("\">\n");
+        List<Map<String, Object>> options = new ArrayList<>();
         for (String l : languages)
         {
             Locale option = new Locale(l);
-            String label = option.getDisplayLanguage(option);
-            sb.append("<option value=\"").append(HtmlUtils.htmlEscape(l)).append('"')
-              .append(l.equals(locale.getLanguage()) ? " selected" : "")
-              .append('>').append(HtmlUtils.htmlEscape(label)).append("</option>\n");
+            options.add(Map.of("value", l, "label", option.getDisplayLanguage(option), "selected", l.equals(locale.getLanguage())));
         }
-        sb.append("</select>");
-        return sb.toString();
+        return options;
+    }
+
+    private static final String EN_SSO_PREFIX = "Sign in with ";
+
+    private List<ProviderConfig> enabledProviders()
+    {
+        return externalProviders == null ? List.of() : externalProviders.enabledProviders();
     }
 
     /**
-     * Provider displayNames follow the {@code "Sign in with <name>"} convention
+     * The one form (PRD 131 R2/D2): one subtle group (role=group) with the stay-signed-in choice, then titled sections for the SSO buttons and the password login; with SSO present the password fields sit behind a native {@code <details>} "sign in directly on the server" (opened after a failed login), without SSO they show at once. All of them POST, so
+     * a password never reaches a URL; the SSO buttons override the target with {@code formaction}. With both
+     * kinds present a visually hidden first submit button makes Enter in a password field sign in with the
+     * password (the form's default button is the first submit button in document order).
+     */
+    private void addForm(Map<String, Object> model, HttpServletRequest request, boolean reprompt, boolean failed, Locale locale)
+    {
+        List<ProviderConfig> providers = enabledProviders();
+        boolean sso = !providers.isEmpty();
+        if (!sso && !passwordLoginEnabled)
+        {
+            return;
+        }
+        model.put("form", true);
+        // CSRF hidden field — POST /login is gated by CookieAuthCsrfMatcher whenever an access_token cookie is present
+        // (e.g. a prior/partial login), so the form must carry the double-submit token or it 403s.
+        // CsrfCookieFilter has already materialized the matching XSRF-TOKEN cookie on this GET.
+        CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+        if (token != null)
+        {
+            model.put("csrfName", token.getParameterName());
+            model.put("csrfValue", token.getToken());
+        }
+        model.put("defaultSubmit", sso && passwordLoginEnabled);
+        boolean swing = isSwingLogin(request);
+        model.put("swing", swing);
+        model.put("swingHint", i18n.getString("login.hint_client", locale));
+        addRemember(model, request, locale, swing);
+        if (sso)
+        {
+            model.put("sso", true);
+            model.put("ssoTitle", providers.size() == 1 ? providerTitle(providers.get(0), locale) : i18n.getString("login.frame_sso", locale));
+            model.put("ssoButtons", ssoButtons(providers, reprompt, locale));
+        }
+        if (passwordLoginEnabled)
+        {
+            model.put("password", true);
+            model.put("divider", sso);
+            model.put("dividerText", i18n.getString("login.or_divider", locale));
+            model.put("directLabel", i18n.getString("login.direct_open", locale));
+            model.put("directOpen", failed);
+            model.put("serverTitle", i18n.getString("login.frame_server", locale));
+            model.put("usernameLabel", i18n.getString("username", locale));
+            model.put("passwordLabel", i18n.getString("password", locale));
+            model.put("busyText", i18n.getString("login.signing_in", locale));
+            model.put("loginLabel", i18n.getString("login.submit", locale));
+            if (showDefaultAdminHint())
+            {
+                model.put(demoBanner.isEmpty() ? "devNote" : "demoNote", true);
+            }
+        }
+    }
+
+    /** Section title over a single provider's button: the deployment bundle's {@code login.<id>.title}, else the configured
+     *  display-name without its "Sign in with" prefix, else the provider type (Keycloak, Microsoft, Google). */
+    private String providerTitle(ProviderConfig p, Locale locale)
+    {
+        String fromBundle = bundleText(p, "title", locale);
+        if (fromBundle != null)
+        {
+            return fromBundle;
+        }
+        ProviderDef def = externalProviders.getExternal().get(p.id());
+        String configured = def == null ? "" : def.getDisplayName();
+        if (configured == null || configured.isEmpty())
+        {
+            String type = p.type().id();
+            return Character.toUpperCase(type.charAt(0)) + type.substring(1);
+        }
+        return configured.startsWith(EN_SSO_PREFIX) ? configured.substring(EN_SSO_PREFIX.length()) : configured;
+    }
+
+    /** {@code login.<id>.<suffix>} from the provider's {@code i18n-bundle}; null when no bundle is set or the key is missing. */
+    private String bundleText(ProviderConfig p, String suffix, Locale locale)
+    {
+        ProviderDef def = externalProviders.getExternal().get(p.id());
+        String bundle = def == null ? null : def.getI18nBundle();
+        if (bundle == null || bundle.isEmpty())
+        {
+            return null;
+        }
+        try
+        {
+            return bundleManager.getString(bundle, "login." + p.id() + "." + suffix, locale);
+        }
+        catch (MissingResourceException e)
+        {
+            LOGGER.debug("No {} for provider {} in {}: {}", suffix, p.id(), bundle, e.getMessage());
+            return null;
+        }
+    }
+
+    /** A file in the patch directory, parsed again whenever its modification time changes; null while it is absent or broken. */
+    private static final class PatchFile<T>
+    {
+        private record Loaded<T>(FileTime modified, T value) {}
+
+        private final Path path;
+        private final Function<String, T> parse;
+        private volatile Loaded<T> loaded;
+
+        PatchFile(Path path, Function<String, T> parse)
+        {
+            this.path = path;
+            this.parse = parse;
+        }
+
+        T get()
+        {
+            try
+            {
+                FileTime modified = Files.getLastModifiedTime(path);
+                Loaded<T> current = loaded;
+                if (current == null || !current.modified().equals(modified))
+                {
+                    current = new Loaded<>(modified, parse.apply(Files.readString(path)));
+                    loaded = current;
+                }
+                return current.value();
+            }
+            catch (NoSuchFileException e)
+            {
+                return null;
+            }
+            catch (IOException | RuntimeException e)
+            {
+                LOGGER.warn("Ignoring {}: {}", path, e.toString());
+                return null;
+            }
+        }
+    }
+
+    /**
+     * PRD 131 R19, display only: the saved request is an {@code /oauth2/authorize} with a loopback
+     * {@code redirect_uri}, i.e. the page was reached from a Swing login. No decision depends on it.
+     */
+    private boolean isSwingLogin(HttpServletRequest request)
+    {
+        try
+        {
+            SavedRequest saved = requestCache.getRequest(request, null);
+            if (saved == null)
+            {
+                return false;
+            }
+            String path = java.net.URI.create(saved.getRedirectUrl()).getPath();
+            String[] redirect = saved.getParameterValues("redirect_uri");
+            return path != null && path.endsWith("/oauth2/authorize") && redirect != null && redirect.length > 0
+                    && LoopbackUriCheck.isLoopbackRedirect(redirect[0], callbackPaths);
+        }
+        catch (Exception e)
+        {
+            LOGGER.debug("Could not inspect the saved request: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /** The stay-signed-in choice: question, segmented choice (two radios) and the description of the selected option, CSS only. */
+    private void addRemember(Map<String, Object> model, HttpServletRequest request, Locale locale, boolean swing)
+    {
+        String days = String.valueOf(Math.max(1, refreshSessions.refreshTokenTtlSeconds() / 86400));
+        boolean on = CookieAuthSupport.isRemembered(request);
+        String who = swing ? "client" : "browser";
+        model.put("ask", i18n.getString(swing ? "login.remember_question" : "login.store_question", locale));
+        model.put("sessionLabel", i18n.getString(swing ? "login.remember_session" : "login.store_no", locale));
+        model.put("daysLabel", i18n.getString(swing ? "login.remember_days" : "login.store_yes_days", locale).replace("{0}", days));
+        model.put("textOff", i18n.getString("login.remember_session_" + who, locale).replace("{0}", days));
+        model.put("textOn", i18n.getString("login.remember_days_" + who, locale));
+        model.put("offChecked", !on);
+        model.put("onChecked", on);
+    }
+
+    /**
+     * Button text: {@code login.<id>.button} from the provider's {@code i18n-bundle} when set. Otherwise
+     * provider displayNames follow the {@code "Sign in with <name>"} convention
      * (the ProviderDef defaults and most deployment configs). Localize that
      * prefix via the {@code login.method} key; displayNames that don't match
      * the convention render as configured.
      */
-    private static final String EN_SSO_PREFIX = "Sign in with ";
-
-    private String ssoButtonsHtml(boolean reprompt, Locale locale)
+    private List<Map<String, Object>> ssoButtons(List<ProviderConfig> providers, boolean reprompt, Locale locale)
     {
-        List<ProviderConfig> providers = externalProviders == null
-                ? List.of() : externalProviders.enabledProviders();
-        if (providers.isEmpty())
-        {
-            return "";
-        }
-        StringBuilder sb = new StringBuilder();
+        List<Map<String, Object>> buttons = new ArrayList<>();
         for (ProviderConfig p : providers)
         {
-            String id = HtmlUtils.htmlEscape(p.id());
-            String displayName = p.displayName();
-            if (displayName != null && displayName.startsWith(EN_SSO_PREFIX))
+            String displayName = bundleText(p, "button", locale);
+            if (displayName == null)
             {
-                displayName = i18n.getString("login.method", locale) + " " + displayName.substring(EN_SSO_PREFIX.length());
+                displayName = p.displayName();
+                if (displayName != null && displayName.startsWith(EN_SSO_PREFIX))
+                {
+                    displayName = i18n.getString("login.method", locale) + " " + displayName.substring(EN_SSO_PREFIX.length());
+                }
             }
-            String label = HtmlUtils.htmlEscape(displayName);
             // Keycloak ALWAYS re-prompts: its SSO-session survives rapla's local
             // logout, and the ?logout marker (one-shot signal) is not reliably
             // present on every entry to this page — so silent SSO would defeat
             // sign-out / account-switch. Other providers re-prompt only after an
             // explicit logout (reprompt).
             boolean prompt = reprompt || p.type() == ExternalProviderId.KEYCLOAK;
-            sb.append("<a class=\"sso\" href=\"/oauth2/authorization/")
-              .append(id)
-              .append(prompt ? "?prompt=login" : "")
-              .append("\">")
-              .append(label)
-              .append("</a>\n");
+            buttons.add(Map.of("label", displayName == null ? "" : displayName,
+                    "formaction", "/oauth2/authorization/" + p.id() + (prompt ? "?prompt=login" : "")));
         }
-        return sb.toString();
-    }
-
-    private String passwordFormHtml(HttpServletRequest request, Locale locale)
-    {
-        // CSRF hidden field — POST /login is gated by CookieAuthCsrfMatcher whenever
-        // an access_token cookie is present (e.g. a prior/partial login), so the form
-        // must carry the double-submit token or it 403s. CsrfCookieFilter has already
-        // materialized the matching XSRF-TOKEN cookie on this GET.
-        String csrfField = "";
-        CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
-        if (token != null)
-        {
-            csrfField = "<input type=\"hidden\" name=\"" + HtmlUtils.htmlEscape(token.getParameterName())
-                    + "\" value=\"" + HtmlUtils.htmlEscape(token.getToken()) + "\">\n";
-        }
-        return """
-                <div class="divider">%OR%</div>
-                <form method="post" action="/login">
-                  %CSRF%
-                  <label for="u">%USERNAME%</label>
-                  <input id="u" type="text" name="username" autofocus required>
-                  <label for="p">%PASSWORD%</label>
-                  <input id="p" type="password" name="password">
-                  <label class="remember">
-                    <input type="checkbox" name="remember-me" value="on"%CHECKED%>
-                    %REMEMBER%
-                  </label>
-                  <button type="submit" id="btn" data-busy="%SIGNING_IN%">%LOGIN%</button>
-                </form>
-                %HINT%
-                """.replace("%OR%", msg("login.or_divider", locale))
-                   .replace("%USERNAME%", msg("username", locale))
-                   .replace("%PASSWORD%", msg("password", locale))
-                   .replace("%REMEMBER%", msg("login.remember_me", locale))
-                   .replace("%SIGNING_IN%", msg("login.signing_in", locale))
-                   .replace("%LOGIN%", msg("login", locale))
-                   .replace("%CSRF%", csrfField)
-                   .replace("%CHECKED%", "1".equals(CookieAuthSupport.readCookie(request,
-                           CookieAuthSupport.REMEMBER_CHOICE_COOKIE)) ? " checked" : "")
-                   .replace("%HINT%", !showDefaultAdminHint() ? ""
-                           : demoBanner.isEmpty()
-                           ? "<p class=\"note\">Dev default: <code>admin</code> with empty password.</p>"
-                           : "<p class=\"note\">Demo login: <code>admin</code>, no password &mdash; data resets nightly.</p>");
+        return buttons;
     }
 }

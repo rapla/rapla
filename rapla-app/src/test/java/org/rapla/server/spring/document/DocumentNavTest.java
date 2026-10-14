@@ -108,6 +108,14 @@ class DocumentNavTest
 
     @Test
     @WithMockUser(username = "homer")
+    void navLinksCarryActAsAlong() throws Exception
+    {
+        String page = render("/api/documents/wochenprogramm?date=2026-03-04&resource=a1&actAs=self");
+        assertTrue(page.contains("actAs=self"), "the nav window navigation keeps the act-as: " + page);
+    }
+
+    @Test
+    @WithMockUser(username = "homer")
     void malformedDateIsA400() throws Exception
     {
         var response = mockMvc.perform(get("/api/documents/wochenplan?date=banana"))

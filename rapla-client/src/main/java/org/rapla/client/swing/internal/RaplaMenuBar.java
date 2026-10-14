@@ -36,10 +36,10 @@ import org.rapla.client.extensionpoints.ViewMenuExtension;
 import org.rapla.client.internal.admin.client.TypeCategoryTask;
 import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuItemFactory;
+import org.rapla.client.menu.SessionMenuModel;
 import org.rapla.client.menu.UserAction;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.action.RestartRaplaAction;
 import org.rapla.client.swing.internal.action.RestartServerAction;
 import org.rapla.client.swing.internal.action.SaveableToggleAction;
 import org.rapla.client.swing.internal.edit.TemplateEdit;
@@ -84,6 +84,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 import java.awt.Component;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -116,6 +118,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private final RaplaSystemInfo systemInfo;
     private final MenuItemFactory menuItemFactory;
     private final Supplier<UserAction> userActionProvider;
+    private final SessionMenu sessionMenu;
 
 
     @Autowired public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer, ClientFacade clientFacade, RaplaSystemInfo systemInfo, RaplaResources i18n, RaplaLocale raplaLocale,
@@ -123,7 +126,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             Set<ExportMenuExtension> exportMenuExt, EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
             DialogUiFactoryInterface dialogUiFactory, Supplier<TemplateEdit> templateEditFactory, Supplier<LicenseInfoUI> licenseInfoUIProvider, CalendarEventBus eventBus, ApplicationEventBus appEventBus, MenuItemFactory menuItemFactory,
             Supplier<UserAction> userActionProvider,
-            org.rapla.client.swing.internal.adminpanels.ServerDrivenSettingsDialog settingsDialog)            throws RaplaInitializationException
+            org.rapla.client.swing.internal.adminpanels.ServerDrivenSettingsDialog settingsDialog, SessionMenu sessionMenu)            throws RaplaInitializationException
     {
         super(clientFacade, i18n, raplaLocale);
         this.systemInfo = systemInfo;
@@ -136,6 +139,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         this.menuItemFactory = menuItemFactory;
         this.userActionProvider = userActionProvider;
         this.settingsDialog = settingsDialog;
+        this.sessionMenu = sessionMenu;
 
         RaplaMenu editMenu = menuBarContainer.getEditMenu();
         RaplaMenu viewMenu = menuBarContainer.getViewMenu();
@@ -192,16 +196,36 @@ public class RaplaMenuBar extends RaplaGUIComponent
         }
 
         Listener listener = new Listener();
-        JMenuItem restart = new JMenuItem();
-        restart.setAction(new ActionWrapper(new RestartRaplaAction(clientFacade, i18n, raplaLocale, clientService)));
-        systemMenu.add(restart);
-
         systemMenu.setMnemonic('F');
-        exit = new JMenuItem(getString("exit"));
-        exit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, ActionEvent.CTRL_MASK));
-        exit.setMnemonic('x');
-        exit.addActionListener(listener);
-        systemMenu.add(exit);
+        JMenuItem exitItem = null;
+        for (SessionMenuModel.Entry entry : sessionMenu.fileEntries())
+        {
+            if (entry == SessionMenuModel.Entry.QUIT || entry == SessionMenuModel.Entry.QUIT_STAY)
+            {
+                exitItem = new JMenuItem(sessionMenu.label(entry));
+                exitItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, ActionEvent.CTRL_MASK));
+                exitItem.setMnemonic('x');
+                exitItem.addActionListener(listener);
+                exitItem.setEnabled(sessionMenu.enabled(entry));
+                systemMenu.add(exitItem);
+            }
+            else
+            {
+                systemMenu.add(sessionMenu.item(entry));
+            }
+        }
+        exit = exitItem;
+        systemMenu.addMenuListener(new MenuListener()
+        {
+            public void menuSelected(MenuEvent e)
+            {
+                SessionMenuModel.Entry quit = sessionMenu.fileEntries().contains(SessionMenuModel.Entry.QUIT_STAY) ? SessionMenuModel.Entry.QUIT_STAY : SessionMenuModel.Entry.QUIT;
+                exit.setText(sessionMenu.label(quit));
+                exit.setEnabled(sessionMenu.enabled(quit));
+            }
+            public void menuDeselected(MenuEvent e) { }
+            public void menuCanceled(MenuEvent e) { }
+        });
 
         redo = new JMenuItem(getString("redo"));
         undo = new JMenuItem(getString("undo"));

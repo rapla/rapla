@@ -10,13 +10,14 @@ import org.springframework.web.service.annotation.HttpExchange;
 import java.util.List;
 
 /**
- * PRD 051 — list users the caller can admin. The SPA's "Switch to
+ * PRD 051 — list users the caller can switch to. The SPA's "Switch to
  * user" dialog uses this as the typeahead source. Server-side filter
- * runs {@link org.rapla.storage.PermissionController#canAdminUser}
- * against every user; only those the caller can admin are included
- * (the calling user is also in the list, per design).
+ * runs {@link org.rapla.storage.PermissionController#canImpersonate}
+ * against every user, for the real actor (PRD 131 D10); only those the
+ * caller may switch to are included (an admin or group admin is also in
+ * the list, per design).
  *
- * <p>Empty array = caller has no admin authority — the SPA reads
+ * <p>Empty array = caller may switch to nobody — the SPA reads
  * this signal to decide whether to make the username chip
  * clickable.
  *

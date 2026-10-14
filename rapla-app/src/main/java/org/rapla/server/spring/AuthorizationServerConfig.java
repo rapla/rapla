@@ -37,9 +37,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
@@ -73,13 +70,8 @@ import org.springframework.security.oauth2.server.authorization.authentication.O
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcLogoutAuthenticationContext;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcLogoutAuthenticationProvider;
-import org.springframework.security.oauth2.server.authorization.oidc.web.authentication.OidcLogoutAuthenticationSuccessHandler;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.authentication.RememberMeServices;
-import org.springframework.security.web.authentication.logout.CompositeLogoutHandler;
-import org.springframework.security.web.authentication.logout.LogoutHandler;
-import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -139,7 +131,6 @@ public class AuthorizationServerConfig
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
-                                                                      RememberMeServices rememberMeServices,
                                                                       OAuth2TokenGenerator<?> tokenGenerator,
                                                                       RegisteredClientRepository clientRepository,
                                                                       RefreshSessionService refreshSessionService,
@@ -155,7 +146,9 @@ public class AuthorizationServerConfig
         RequestMatcher endpointsMatcher = authServerConfigurer.getEndpointsMatcher();
 
         authServerConfigurer.authorizationEndpoint(authorizationEndpoint ->
-                authorizationEndpoint.authenticationProviders(providers -> providers.forEach(provider -> {
+                authorizationEndpoint
+                .authorizationResponseHandler(new RememberAwareAuthorizationResponseHandler(redirectProps.getSameOriginCallbackPaths()))
+                .authenticationProviders(providers -> providers.forEach(provider -> {
                     if (provider instanceof OAuth2AuthorizationCodeRequestAuthenticationProvider codeRequestProvider)
                     {
                         codeRequestProvider.setAuthenticationValidator(redirectUriAndScopeValidator(
@@ -185,7 +178,7 @@ public class AuthorizationServerConfig
                 // explorer surfaces get the cookie credential from the SAS login
                 // path. Additive — the JSON body is untouched. Installed first so
                 // it wraps the response before the token endpoint writes it.
-                .addFilterBefore(new TokenResponseCookieFilter(cookieAuthSupport),
+                .addFilterBefore(new TokenResponseCookieFilter(cookieAuthSupport, refreshSessionService.refreshTokenTtlSeconds()),
                         org.springframework.security.web.context.SecurityContextHolderFilter.class)
                 // H2: throttle the password grant (POST /oauth2/token, grant_type=password)
                 .addFilterBefore(loginRateLimitFilter,
@@ -196,7 +189,7 @@ public class AuthorizationServerConfig
                 // old user — the Swing SSO "logout doesn't let me change user" bug. Must
                 // run after SecurityContextHolderFilter (needs the session's
                 // Authentication) and before the authorize endpoint.
-                .addFilterAfter(new PromptLoginReauthenticationFilter(rememberMeServices),
+                .addFilterAfter(new PromptLoginReauthenticationFilter(),
                         org.springframework.security.web.context.SecurityContextHolderFilter.class)
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
@@ -236,20 +229,6 @@ public class AuthorizationServerConfig
                             logoutProvider.setAuthenticationValidator(permissivePostLogoutRedirectUriValidator());
                         }
                     }));
-                    // Spring SAS's default OidcLogoutAuthenticationSuccessHandler only
-                    // clears the HttpSession + SecurityContext. It does NOT consult
-                    // RememberMeServices, so the rapla-remember-me cookie survives a
-                    // /connect/logout — and Spring's RememberMeAuthenticationFilter then
-                    // silently re-authenticates the next /oauth2/authorize ("sign out →
-                    // instantly signed back in" bug). Wrapping the success handler with
-                    // a CompositeLogoutHandler that includes the bean-promoted
-                    // RememberMeServices closes the gap: cookie cleared + persistent
-                    // token removed in one shot.
-                    OidcLogoutAuthenticationSuccessHandler successHandler = new OidcLogoutAuthenticationSuccessHandler();
-                    successHandler.setLogoutHandler(new CompositeLogoutHandler(
-                            new SecurityContextLogoutHandler(),
-                            (LogoutHandler) rememberMeServices));
-                    logout.logoutResponseHandler(successHandler);
                 }));
                 })
                 .exceptionHandling(exc -> exc.defaultAuthenticationEntryPointFor(
@@ -592,65 +571,6 @@ public class AuthorizationServerConfig
     }
 
     /**
-     * Looks up Rapla users for Spring Security's remember-me cookie validation.
-     * The form-login flow stores {@code user.getId()} (a UUID) as the
-     * authentication principal name — that's what gets persisted in the
-     * remember-me token store and arrives back as the "username" argument here.
-     * We try UUID resolution first and fall back to the human-readable username
-     * for any path that authenticates by name (e.g. direct DaoAuthenticationProvider
-     * usage, future API-key flows).
-     *
-     * The returned {@link UserDetails#getPassword()} is intentionally a placeholder:
-     * remember-me uses {@link org.springframework.security.web.authentication.rememberme.PersistentTokenBasedRememberMeServices},
-     * which validates cookies via the server-side token repository rather than
-     * recomputing a password-derived hash. Rapla's {@code operator.authenticate()}
-     * is opaque (could be a local hash, LDAP, or an external AuthenticationStore),
-     * so we have no encoded password to expose here.
-     */
-    @Bean
-    public UserDetailsService raplaUserDetailsService(RaplaFacade facade)
-    {
-        return name -> {
-            User user;
-            try
-            {
-                user = facade.getOperator().tryResolve(name, User.class);
-                if (user == null)
-                {
-                    user = facade.getUser(name);
-                }
-            }
-            catch (RaplaException e)
-            {
-                throw new UsernameNotFoundException(name, e);
-            }
-            if (user == null)
-            {
-                throw new UsernameNotFoundException(name);
-            }
-            String role = user.isAdmin() ? "ROLE_ADMIN" : "ROLE_USER";
-            // Include a FactorGrantedAuthority alongside the role so OIDC ID-token
-            // issuance (JwtGenerator.getAuthenticationTime) can populate the auth_time
-            // claim. Remember-me-restored Authentications would otherwise carry only
-            // the SimpleGrantedAuthority for ROLE_*, and Spring AS would throw
-            // "authenticationTime cannot be null" at /oauth2/token.
-            //
-            // issuedAt defaults to Instant.now() on .build(). That's an over-estimate
-            // (real auth happened when the remember-me cookie was issued, possibly
-            // weeks ago) but matches OIDC's intent of "the time the user authenticated
-            // for this session" — the cookie presentation is a re-authentication
-            // event in Spring's model.
-            return org.springframework.security.core.userdetails.User
-                    .withUsername(user.getId())
-                    .password("N/A")
-                    .authorities(
-                            FactorGrantedAuthority.fromAuthority(FactorGrantedAuthority.PASSWORD_AUTHORITY),
-                            new SimpleGrantedAuthority(role))
-                    .build();
-        };
-    }
-
-    /**
      * PRD 041 — token generator chain that issues JWT refresh tokens (signed
      * by the persistent RSA key) for PUBLIC clients (PKCE / NONE auth method).
      * Spring AS's stock {@code OAuth2RefreshTokenGenerator}:
@@ -720,8 +640,7 @@ public class AuthorizationServerConfig
                 }
                 String jwt = refreshSessionService.issueAndPersistRefreshToken(user);
                 Instant now = Instant.now();
-                return new OAuth2RefreshToken(jwt, now,
-                        now.plus(context.getRegisteredClient().getTokenSettings().getRefreshTokenTimeToLive()));
+                return new OAuth2RefreshToken(jwt, now, now.plusSeconds(refreshSessionService.refreshTokenTtlSeconds()));
             }
             catch (Exception e)
             {
@@ -820,7 +739,7 @@ public class AuthorizationServerConfig
      * ANY {@code /oauth2/token} grant are accepted there and survive restart.
      *
      * <p>Honors {@link RefreshSessionService#shouldRotate} — most refreshes
-     * return the same refresh token (~1 prefs write per 21 days per active
+     * return the same refresh token (~1 prefs write per N days per active
      * session, see RefreshSessionService Javadoc).
      */
     private static final class RaplaRefreshTokenAuthenticationProvider implements AuthenticationProvider
@@ -853,7 +772,7 @@ public class AuthorizationServerConfig
             try
             {
                 // Never rotate: the presented refresh token stays in circulation
-                // until expiry (30d). Multi-tab share works trivially.
+                // until expiry (N days). Multi-tab share works trivially.
                 Instant now = Instant.now();
                 String accessTokenValue = refreshSessionService.issueAccessToken(validated.user());
                 OAuth2AccessToken accessToken = new OAuth2AccessToken(

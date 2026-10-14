@@ -27,9 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * PRD 118 D8-9 — the nightly reset (stop, copy the seed over the data file, start) invalidates every
- * credential issued during the day: access token, refresh token, remember-me cookie and API key. Real
+ * credential issued during the day: access token, refresh token and API key. Real
  * server restarts on a random port, {@code demo} profile. Controls: a restart WITHOUT the copy keeps all
- * four valid (so the rejection is the reset's doing), and a seed that still carries a signing key keeps
+ * three valid (so the rejection is the reset's doing), and a seed that still carries a signing key keeps
  * access tokens alive across the reset (so the seed must be scrubbed).
  */
 @Tag("e2e")
@@ -48,12 +48,12 @@ class DemoResetInvalidatesCredentialsTest
         }
     }
 
-    record Credentials(String accessToken, String refreshToken, String rememberMe, String apiKey, String kid) { }
+    record Credentials(String accessToken, String refreshToken, String apiKey, String kid) { }
 
-    record Accepted(boolean access, boolean refresh, boolean rememberMe, boolean apiKey)
+    record Accepted(boolean access, boolean refresh, boolean apiKey)
     {
-        static final Accepted ALL = new Accepted(true, true, true, true);
-        static final Accepted NONE = new Accepted(false, false, false, false);
+        static final Accepted ALL = new Accepted(true, true, true);
+        static final Accepted NONE = new Accepted(false, false, false);
     }
 
     private Server start(Path dataFile)
@@ -103,39 +103,30 @@ class DemoResetInvalidatesCredentialsTest
         String xsrf = cookies(page).get("XSRF-TOKEN");
         Matcher field = Pattern.compile("name=\"_csrf\" value=\"([^\"]+)\"").matcher(page.body());
         assertEquals(true, field.find(), "login page must carry the CSRF field");
-        String form = "username=homer&password=duffs&remember-me=on&_csrf=" + URLEncoder.encode(field.group(1), StandardCharsets.UTF_8);
+        String form = "username=homer&password=duffs&_csrf=" + URLEncoder.encode(field.group(1), StandardCharsets.UTF_8);
         HttpResponse<String> login = send(HttpRequest.newBuilder(URI.create(server.base + "/login"))
                 .header("Content-Type", "application/x-www-form-urlencoded").header("Cookie", "XSRF-TOKEN=" + xsrf)
                 .POST(HttpRequest.BodyPublishers.ofString(form)).build());
         Map<String, String> issued = cookies(login);
         String access = issued.get("access_token");
         String refresh = issued.get("refresh_token");
-        String rememberMe = issued.get("rapla-remember-me");
         assertNotNull(access, login.statusCode() + " " + login.headers().firstValue("Location").orElse("-") + " "
                 + login.headers().allValues("Set-Cookie").stream().map(c -> c.replaceAll("=[^;]{12,}", "=…")).toList());
         assertNotNull(refresh, issued.keySet().toString());
-        assertNotNull(rememberMe, issued.keySet().toString());
 
         HttpResponse<String> created = send(HttpRequest.newBuilder(URI.create(server.base + "/api/auth/api-keys"))
                 .header("Content-Type", "application/json").header("X-XSRF-TOKEN", xsrf)
-                .header("Cookie", "access_token=" + access + "; XSRF-TOKEN=" + xsrf)
+                .header("Cookie", "access_token=" + access + "; XSRF-TOKEN=" + xsrf).header("X-Rapla-Act-As", "self")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"label\":\"reset\",\"scopes\":[\"read\"]}")).build());
         Matcher key = Pattern.compile("\"key\"\\s*:\\s*\"([^\"]+)\"").matcher(created.body());
         assertEquals(true, key.find(), created.statusCode() + " " + created.body());
-        return new Credentials(access, refresh, rememberMe, key.group(1), kid(server));
+        return new Credentials(access, refresh, key.group(1), kid(server));
     }
-
-    /** Persistent remember-me tokens rotate on every use: the probe must continue with the newest cookie. */
-    private String rememberMe;
 
     private Accepted check(Server server, Credentials credentials) throws Exception
     {
-        if (rememberMe == null)
-        {
-            rememberMe = credentials.rememberMe;
-        }
         int access = send(HttpRequest.newBuilder(URI.create(server.base + "/api/auth/me"))
-                .header("Cookie", "access_token=" + credentials.accessToken).build()).statusCode();
+                .header("Cookie", "access_token=" + credentials.accessToken).header("X-Rapla-Act-As", "self").build()).statusCode();
         int apiKey = send(HttpRequest.newBuilder(URI.create(server.base + "/api/auth/me"))
                 .header("Authorization", "Bearer " + credentials.apiKey).build()).statusCode();
         HttpResponse<String> page = send(HttpRequest.newBuilder(URI.create(server.base + "/login")).build());
@@ -143,24 +134,13 @@ class DemoResetInvalidatesCredentialsTest
         int refresh = send(HttpRequest.newBuilder(URI.create(server.base + "/api/auth/session/refresh"))
                 .header("X-XSRF-TOKEN", xsrf).header("Cookie", "refresh_token=" + credentials.refreshToken + "; XSRF-TOKEN=" + xsrf)
                 .POST(HttpRequest.BodyPublishers.noBody()).build()).statusCode();
-        boolean rememberMeAccepted = authenticatedPage(server, "rapla-remember-me=" + rememberMe);
-        return new Accepted(access == 200, refresh == 200, rememberMeAccepted, apiKey == 200);
+        return new Accepted(access == 200, refresh == 200, apiKey == 200);
     }
 
     /** {@code /graphiql/} needs a login: anonymous requests are sent to {@code /login}. */
-    private boolean authenticatedPage(Server server, String cookie) throws Exception
+    private boolean authenticatedPage(Server server) throws Exception
     {
-        HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(server.base + "/graphiql/"));
-        if (cookie != null)
-        {
-            request.header("Cookie", cookie);
-        }
-        HttpResponse<String> response = send(request.build());
-        String rotated = cookies(response).get("rapla-remember-me");
-        if (cookie != null && rotated != null && !rotated.isEmpty())
-        {
-            rememberMe = rotated;
-        }
+        HttpResponse<String> response = send(HttpRequest.newBuilder(URI.create(server.base + "/graphiql/")).build());
         String location = response.headers().firstValue("Location").orElse("");
         return response.statusCode() < 400 && !location.contains("/login");
     }
@@ -189,7 +169,7 @@ class DemoResetInvalidatesCredentialsTest
         try (Server day = start(dataFile))
         {
             credentials = issue(day);
-            assertEquals(false, authenticatedPage(day, null), "anonymous /graphiql/ must be sent to the login page");
+            assertEquals(false, authenticatedPage(day), "anonymous /graphiql/ must be sent to the login page");
             assertEquals(Accepted.ALL, check(day, credentials), "issued credentials must work on the same day");
         }
         try (Server restartedWithoutReset = start(dataFile))
@@ -220,7 +200,7 @@ class DemoResetInvalidatesCredentialsTest
         try (Server nextDay = start(dataFile))
         {
             assertEquals(credentials.kid, kid(nextDay));
-            assertEquals(new Accepted(true, false, false, false), check(nextDay, credentials),
+            assertEquals(new Accepted(true, false, false), check(nextDay, credentials),
                     "only the stateless access token survives a keyed seed; the stored ones are wiped by the copy");
         }
     }

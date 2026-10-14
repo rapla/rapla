@@ -1,8 +1,9 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { type Observable, firstValueFrom } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 import { UnsavedChangesService } from '../shell/unsaved-changes';
+import { storeActAs } from './act-as';
 
 /**
  * PRD 072 Phase 4 — cookie-credential (model A) identity for the SPA.
@@ -14,7 +15,8 @@ import { UnsavedChangesService } from '../shell/unsaved-changes';
  * auto-attached same-origin.
  *
  * No {@code angular-oauth2-oidc}, no {@code localStorage}/{@code sessionStorage}
- * token handling — those are gone with H4.
+ * token handling — those are gone with H4. The only storage is the tab's act-as user id
+ * ({@link storeActAs}, PRD 131), never a credential.
  */
 export interface Identity {
   /** Opaque user id — used for owner-scoped ("my events") queries (PRD 078 §Scope). */
@@ -85,6 +87,7 @@ export class AuthService {
    * Relative URL so the dev proxy keeps it on the proxy origin.
    */
   redirectToLogin(): void {
+    storeActAs(null);
     window.location.assign('/login');
   }
 
@@ -108,44 +111,46 @@ export class AuthService {
       // best-effort: still drop local identity and bounce to /login below.
     }
     this.identity.set(null);
+    storeActAs(null);
     window.location.assign('/login?logout');
   }
 
   /**
-   * PRD 072 — start impersonation via the cookie-shaped endpoint
-   * {@code POST /api/auth/impersonate/switch?target_username=…}. The server
-   * validates {@code canAdminUser} and swaps the {@code access_token} cookie
-   * for an impersonation JWT. On success the page reloads (R-22: no per-identity
-   * cache survives). Returns false on failure (the caller stays as admin), null
-   * when the user kept an open draft instead.
+   * PRD 131 D7 — start impersonation in THIS tab: {@code POST /api/auth/impersonate/switch?target_username=…}
+   * authorizes and audits the switch and returns the target; the tab keeps the target id (the cookie never
+   * changes) and every later request sends it as {@code X-Rapla-Act-As}. The page then reloads (R-22: no
+   * per-identity cache survives). Returns false on failure (the caller stays as is), null when the user kept an
+   * open draft instead.
    */
   async impersonate(targetUsername: string): Promise<boolean | null> {
-    // Self-target → end impersonation rather than mint a self-as-self token.
+    // Self-target → nothing to switch to.
     if (this.identity()?.username === targetUsername && !this.isImpersonating()) {
       return true;
     }
-    return this.switchIdentity(
-      this.http.post('/api/auth/impersonate/switch', null, {
-        params: { target_username: targetUsername },
-      }),
-    );
+    return this.switchIdentity(async () => {
+      const target = await firstValueFrom(
+        this.http.post<{ id: string }>('/api/auth/impersonate/switch', null, {
+          params: { target_username: targetUsername },
+        }),
+      );
+      storeActAs(target.id);
+    });
   }
 
   /**
-   * PRD 072 — end impersonation via {@code POST /api/auth/impersonate/end}.
-   * The server restores the admin's {@code access_token} cookie; the page reloads.
-   * Returns false on failure, null when the user kept an open draft instead.
+   * PRD 131 D7 — end impersonation in this tab: drop the act-as and reload. Other tabs are not touched.
+   * Returns null when the user kept an open draft instead.
    */
   async endImpersonation(): Promise<boolean | null> {
-    return this.switchIdentity(this.http.post('/api/auth/impersonate/end', null));
+    return this.switchIdentity(async () => storeActAs(null));
   }
 
-  /** Ask about open drafts BEFORE the cookie changes — a cancel after it would leave the
-   *  old page talking as the new user — then switch and reload the whole SPA. */
-  private async switchIdentity(request: Observable<unknown>): Promise<boolean | null> {
+  /** Ask about open drafts BEFORE anything changes — a cancel afterwards would leave the old page
+   *  talking as the new user — then switch and reload the whole SPA. */
+  private async switchIdentity(apply: () => Promise<void>): Promise<boolean | null> {
     if (!this.unsaved.confirmDiscard()) return null;
     try {
-      await firstValueFrom(request);
+      await apply();
     } catch {
       return false;
     }

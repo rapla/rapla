@@ -75,9 +75,10 @@ class OidcLoginSuccessHandlerTest
         registry.add("rapla.file-datasources.raplafile", () -> dataFile.toAbsolutePath().toString());
         registry.add("rapla.oauth.external.keycloak.enabled", () -> "true");
         registry.add("rapla.oauth.external.keycloak.base-url", () -> "https://kc.example.com");
-        registry.add("rapla.oauth.external.keycloak.realm", () -> "rapla-test");
+        registry.add("rapla.oauth.external.keycloak.realm", () -> "example-realm");
         registry.add("rapla.oauth.external.keycloak.client-id", () -> "rapla-app");
         registry.add("rapla.oauth.web.cookie-secure", () -> "true");
+        registry.add("rapla.auth.remember-me-days", () -> "7");
         // A second provider that must not create accounts — an unknown login fails provisioning.
         registry.add("rapla.oauth.external.strict.enabled", () -> "true");
         registry.add("rapla.oauth.external.strict.type", () -> "keycloak");
@@ -160,7 +161,7 @@ class OidcLoginSuccessHandlerTest
                 now,
                 now.plusSeconds(3600),
                 Map.of(
-                        "iss", "https://kc.example.com/realms/rapla-test",
+                        "iss", "https://kc.example.com/realms/example-realm",
                         "sub", "kc-subject-homer",
                         "preferred_username", "homer",
                         "email", "homer@example.com",
@@ -187,7 +188,7 @@ class OidcLoginSuccessHandlerTest
                 now,
                 now.plusSeconds(3600),
                 Map.of(
-                        "iss", "https://kc.example.com/realms/rapla-test",
+                        "iss", "https://kc.example.com/realms/example-realm",
                         "sub", "kc-subject-homer",
                         "preferred_username", "homer",
                         "email", "homer@example.com",
@@ -198,12 +199,14 @@ class OidcLoginSuccessHandlerTest
                 oidcUser, oidcUser.getAuthorities(), "keycloak");
 
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login/oauth2/code/keycloak");
+        request.setCookies(new Cookie("rapla-remember-choice", "1"));
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         handler.onAuthenticationSuccess(request, response, auth);
 
         Cookie cookie = response.getCookie("access_token");
         assertNotNull(cookie, "access_token cookie must be set by the success handler");
+        assertEquals(3600, cookie.getMaxAge(), "a remembered login keeps the access cookie for its token lifetime");
         assertFalse(cookie.getValue() == null || cookie.getValue().isEmpty(), "cookie value must be a minted JWT");
         assertTrue(cookie.isHttpOnly(), "cookie must be HttpOnly");
         assertTrue(cookie.getSecure(), "cookie must be Secure when rapla.oauth.web.cookie-secure=true");
@@ -219,6 +222,22 @@ class OidcLoginSuccessHandlerTest
         assertEquals("Lax", refreshCookie.getAttribute("SameSite"));
         assertEquals("/api/auth/session", refreshCookie.getPath(),
                 "refresh cookie must be path-scoped so it is not sent on every /api call");
+        assertEquals(7 * 24 * 3600, refreshCookie.getMaxAge(), "refresh cookie lives for rapla.auth.remember-me-days");
+    }
+
+    /** PRD 131 D2 — without the stay-signed-in choice both cookies are browser-session cookies. */
+    @Test
+    void withoutTheChoiceBothCookiesAreSessionCookies() throws Exception
+    {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login/oauth2/code/keycloak");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        handler.onAuthenticationSuccess(request, response, homerOidcAuth());
+
+        assertNotNull(response.getCookie("access_token"));
+        assertNotNull(response.getCookie("refresh_token"));
+        assertEquals(-1, response.getCookie("access_token").getMaxAge(), "no Max-Age without the choice");
+        assertEquals(-1, response.getCookie("refresh_token").getMaxAge(), "no Max-Age without the choice");
     }
 
     /**
@@ -233,7 +252,7 @@ class OidcLoginSuccessHandlerTest
     void nonOidcOauth2UserGetsNoSession() throws Exception
     {
         Map<String, Object> attrs = Map.of(
-                "iss", "https://kc.example.com/realms/rapla-test",
+                "iss", "https://kc.example.com/realms/example-realm",
                 "sub", "kc-subject-homer",
                 "preferred_username", "homer",
                 "email", "homer@example.com",

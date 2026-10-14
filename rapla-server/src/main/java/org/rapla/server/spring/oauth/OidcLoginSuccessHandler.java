@@ -129,11 +129,12 @@ public class OidcLoginSuccessHandler extends SavedRequestAwareAuthenticationSucc
             // UUID) cannot resolve → invalid_grant on the loopback token exchange.
             reAuthenticateAsRaplaUser(user, request, response);
             RefreshSessionService.IssuedTokens tokens = refreshSessionService.issueAndPersist(user);
-            cookies.setAccessTokenCookie(response, tokens.accessToken(), tokens.expiresIn());
+            boolean remember = org.rapla.server.spring.CookieAuthSupport.isRemembered(request);
+            cookies.setAccessTokenCookie(response, tokens.accessToken(), tokens.expiresIn(), remember);
             // PRD 072 Phase 2 — also set the path-scoped refresh_token cookie so
             // the browser can do the reactive-401 refresh against /api/auth/session/refresh.
             cookies.setRefreshTokenCookie(response, tokens.refreshToken(),
-                    RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS);
+                    refreshSessionService.refreshTokenTtlSeconds(), remember);
         }
         catch (RaplaException | JOSEException e)
         {

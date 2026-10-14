@@ -4,6 +4,51 @@ const { defineConfig } = require('eslint/config');
 const tseslint = require('typescript-eslint');
 const angular = require('angular-eslint');
 
+// PRD 131 D12: every /api request must carry X-Rapla-Act-As (actAsInterceptor on HttpClient), every
+// opened /api URL the actAs parameter (auth/open-document.ts). Raw browser networking bypasses both.
+const apiBypassMessage =
+  'Bypasses X-Rapla-Act-As (PRD 131) — use HttpClient; opening a document goes through openDocument() in auth/open-document.ts.';
+const openProperty = {
+  object: 'window',
+  property: 'open',
+  message: apiBypassMessage,
+};
+const restrictedProperties = [
+  {
+    object: 'crypto',
+    property: 'randomUUID',
+    message: 'Secure-context only — use typedId()/uuidV4() from event/event-draft.ts.',
+  },
+  {
+    object: 'crypto',
+    property: 'subtle',
+    message: 'Secure-context only — undefined over http://<ip>; needs a fallback helper.',
+  },
+  {
+    object: 'navigator',
+    property: 'clipboard',
+    message: 'Secure-context only — use copyText() from common/copy-text.ts.',
+  },
+  {
+    object: 'navigator',
+    property: 'share',
+    message: 'Secure-context only — undefined over http://<ip>; needs a fallback helper.',
+  },
+  {
+    object: 'navigator',
+    property: 'serviceWorker',
+    message: 'Secure-context only — undefined over http://<ip>.',
+  },
+  {
+    object: 'navigator',
+    property: 'geolocation',
+    message: 'Secure-context only — undefined over http://<ip>.',
+  },
+  { object: 'navigator', property: 'sendBeacon', message: apiBypassMessage },
+  { object: 'window', property: 'fetch', message: apiBypassMessage },
+  { object: 'globalThis', property: 'fetch', message: apiBypassMessage },
+];
+
 module.exports = defineConfig([
   {
     ignores: ['dist/**'],
@@ -21,38 +66,13 @@ module.exports = defineConfig([
       // Secure-context-only browser APIs are undefined over plain http://<ip> (customer
       // intranet, 2026-09-30: every "Neu" dialog and the copy chips died). Go through the helpers that
       // carry a fallback; add a helper before allowing a new API here.
-      'no-restricted-properties': [
+      'no-restricted-properties': ['error', ...restrictedProperties, openProperty],
+      'no-restricted-globals': [
         'error',
-        {
-          object: 'crypto',
-          property: 'randomUUID',
-          message: 'Secure-context only — use typedId()/uuidV4() from event/event-draft.ts.',
-        },
-        {
-          object: 'crypto',
-          property: 'subtle',
-          message: 'Secure-context only — undefined over http://<ip>; needs a fallback helper.',
-        },
-        {
-          object: 'navigator',
-          property: 'clipboard',
-          message: 'Secure-context only — use copyText() from common/copy-text.ts.',
-        },
-        {
-          object: 'navigator',
-          property: 'share',
-          message: 'Secure-context only — undefined over http://<ip>; needs a fallback helper.',
-        },
-        {
-          object: 'navigator',
-          property: 'serviceWorker',
-          message: 'Secure-context only — undefined over http://<ip>.',
-        },
-        {
-          object: 'navigator',
-          property: 'geolocation',
-          message: 'Secure-context only — undefined over http://<ip>.',
-        },
+        ...['fetch', 'XMLHttpRequest', 'EventSource', 'WebSocket'].map((name) => ({
+          name,
+          message: apiBypassMessage,
+        })),
       ],
       // The rule above only sees a bare object name; catch the qualified forms too.
       'no-restricted-syntax': [
@@ -65,7 +85,8 @@ module.exports = defineConfig([
         {
           selector:
             "MemberExpression[object.type='MemberExpression'][object.property.name='navigator'][property.name=/^(clipboard|share|serviceWorker|geolocation)$/]",
-          message: 'Secure-context only — undefined over http://<ip>; use or add a fallback helper.',
+          message:
+            'Secure-context only — undefined over http://<ip>; use or add a fallback helper.',
         },
       ],
       '@angular-eslint/directive-selector': [
@@ -85,6 +106,10 @@ module.exports = defineConfig([
         },
       ],
     },
+  },
+  {
+    files: ['src/app/auth/open-document.ts'],
+    rules: { 'no-restricted-properties': ['error', ...restrictedProperties] },
   },
   {
     files: ['**/*.html'],

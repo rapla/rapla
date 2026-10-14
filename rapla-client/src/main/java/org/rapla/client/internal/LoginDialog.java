@@ -30,11 +30,13 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+import javax.swing.event.HyperlinkEvent;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Graphics;
@@ -72,7 +74,8 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 	JButton						loginBtn			= new JButton();
 	JButton						exitBtn				= new JButton();
 	JButton						abortBtn			= new JButton();
-	JLabel						statusLabel			= new JLabel();
+	JEditorPane					statusPane			= new JEditorPane();
+	private Runnable			reopenLink;
 	RaplaResources				i18n;
 	ImageObserver				observer;
 	Image						image;
@@ -145,6 +148,12 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		abortBtn.setAction(action);
 	}
 
+	/** Invoked when the user clicks the link in the waiting message (reopens the browser); null = no-op. */
+	public void setReopenLink(Runnable action)
+	{
+		reopenLink = action;
+	}
+
 	/**
 	 * Populates the sign-in method chooser (PRD 029 Phase 4). Index 0 is the
 	 * local username/password method; the remaining entries are browser-based
@@ -163,15 +172,12 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		methodChooser.setVisible(methodChooserVisible);
 	}
 
-	/** Re-layout after a mode switch; grow the window if the content needs more height (logo stays whole). */
+	/** Re-layout after a mode switch; fit the window height to the content (logo stays whole). */
 	private void fitToContent()
 	{
 		revalidate();
 		java.awt.Dimension pref = getPreferredSize();
-		if (pref.height > getHeight() || pref.width > getWidth())
-		{
-			setSize(Math.max(pref.width, getWidth()), Math.max(pref.height, getHeight()));
-		}
+		setSize(Math.max(pref.width, getWidth()), pref.height);
 		repaint();
 	}
 
@@ -207,6 +213,20 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		passwordLabel.setEnabled(enabled);
 	}
 
+	private static final int STATUS_WIDTH = 340;
+
+	private TableLayout tableLayout;
+
+	private void setFormRowsCollapsed(boolean collapsed)
+	{
+		double h = collapsed ? 0 : TableLayout.PREFERRED;
+		double gap = collapsed ? 0 : 5;
+		for (int r = 1; r <= 7; r++)
+		{
+			tableLayout.setRow(r, r % 2 == 0 ? h : gap);
+		}
+	}
+
 	private static GridLayout buttonGrid(int columns)
 	{
 		GridLayout g = new GridLayout(1, columns);
@@ -225,19 +245,26 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 	/** Replaces the status text only (e.g. "load" after the browser login), keeping buttons and fields. */
 	public void setStatus(String message)
 	{
-		statusLabel.setText("<html><body style='width:280px;padding:8px;'>" + message + "</body></html>");
+		statusPane.setText("<html><body>" + message + "</body></html>");
+		// size the pane to its content at the fixed width, so the text is never clipped
+		statusPane.setSize(new java.awt.Dimension(STATUS_WIDTH, Short.MAX_VALUE));
+		statusPane.setPreferredSize(new java.awt.Dimension(STATUS_WIDTH, statusPane.getPreferredSize().height));
 	}
+
+	private boolean browserLoginInProgress;
 
 	public void setBrowserLoginInProgress(String message)
 	{
+		browserLoginInProgress = true;
 		setStatus(message);
-		statusLabel.setVisible(true);
+		statusPane.setVisible(true);
 		username.setVisible(false);
 		password.setVisible(false);
 		usernameLabel.setVisible(false);
 		passwordLabel.setVisible(false);
 		methodLabel.setVisible(false);
 		methodChooser.setVisible(false);
+		setFormRowsCollapsed(true);
 		// Button row becomes Exit (disabled) + Abort. Abort cancels the
 		// browser-login wait and returns to the credential dialog, where Exit
 		// is enabled again (PRD 126: Exit mid-wait only interrupted the worker).
@@ -249,11 +276,20 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		fitToContent();
 	}
 
+	/** A notice under the credential rows (e.g. a timed-out browser sign-in); the next mode switch replaces it. */
+	public void showNotice(String message)
+	{
+		setStatus(message);
+		statusPane.setVisible(true);
+		fitToContent();
+	}
+
 	/** Restore the dialog to its normal state (e.g. when OAuth fails or is
 	 *  aborted and we want the user to type credentials). */
 	public void clearBrowserLoginInProgress()
 	{
-		statusLabel.setVisible(false);
+		browserLoginInProgress = false;
+		statusPane.setVisible(false);
 		username.setVisible(true);
 		password.setVisible(true);
 		usernameLabel.setVisible(true);
@@ -261,6 +297,7 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		loginBtn.setVisible(true);
 		methodLabel.setVisible(methodChooserVisible);
 		methodChooser.setVisible(methodChooserVisible);
+		setFormRowsCollapsed(false);
 		buttonPanel.removeAll();
 		buttonPanel.setLayout(buttonGrid(2));
 		exitBtn.setEnabled(true);
@@ -319,12 +356,13 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 
 		container.add(lowerpanel, BorderLayout.SOUTH);
 		lowerpanel.setLayout(new BorderLayout());
+		lowerpanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 		lowerpanel.add(userandpassword, BorderLayout.NORTH);
 		double pre = TableLayout.PREFERRED;
 		double fill = TableLayout.FILL;
 		// Rows: 0 language, 2 sign-in method, 4 username, 6 password.
 		double[][] sizes = { { pre, 10, fill }, { pre, 5, pre, 5, pre, 5, pre, 5 } };
-		TableLayout tableLayout = new TableLayout(sizes);
+		tableLayout = new TableLayout(sizes);
 		userandpassword.setLayout(tableLayout);
 		userandpassword.add(chooseLanguageLabel,"0,0");
 		userandpassword.add(languageSelector, "2,0");
@@ -334,10 +372,21 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		userandpassword.add(passwordLabel, "0,6");
 		userandpassword.add(username, "2,4");
 		userandpassword.add(password, "2,6");
-		// statusLabel occupies the same horizontal slot as the username/password rows
-		// but spans both columns; only shown in "browser login in progress" mode.
-		userandpassword.add(statusLabel, "0,4,2,6");
-		statusLabel.setVisible(false);
+		// statusPane sits below the language row; only shown in "browser login in progress" mode.
+		statusPane.setContentType("text/html");
+		statusPane.setEditable(false);
+		statusPane.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+		statusPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+		statusPane.setFont(usernameLabel.getFont());
+		statusPane.setBackground(lowerpanel.getBackground());
+		statusPane.addHyperlinkListener(e -> {
+			if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED && reopenLink != null)
+			{
+				reopenLink.run();
+			}
+		});
+		statusPane.setVisible(false);
+		lowerpanel.add(statusPane, BorderLayout.CENTER);
 		methodLabel.setVisible(false);
 		methodChooser.setVisible(false);
 		username.setColumns(14);
@@ -456,6 +505,11 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		usernameLabel.setText(getI18n().getString("username") + ":");
 		passwordLabel.setText(getI18n().getString("password") + ":");
 		setTitle(getI18n().getString("logindialog.title"));
+		if (browserLoginInProgress)
+		{
+			setStatus(getI18n().getString("login.oauth.waiting"));
+			fitToContent();
+		}
 		repaint();
 	}
 

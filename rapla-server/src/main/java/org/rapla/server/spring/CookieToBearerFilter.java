@@ -38,6 +38,9 @@ import java.util.Enumeration;
  */
 public class CookieToBearerFilter extends OncePerRequestFilter
 {
+    /** Request attribute set when the credential is the promoted cookie ({@link ActAsFilter} requires the act-as header then). */
+    public static final String COOKIE_CREDENTIAL = CookieToBearerFilter.class.getName() + ".COOKIE_CREDENTIAL";
+
     private final JwtDecoder decoder;
     private final CookieAuthSupport cookies;
 
@@ -64,6 +67,7 @@ public class CookieToBearerFilter extends OncePerRequestFilter
             {
                 if (verifies(cookieToken))
                 {
+                    request.setAttribute(COOKIE_CREDENTIAL, Boolean.TRUE);
                     chain.doFilter(new BearerHeaderRequestWrapper(request, cookieToken), response);
                     return;
                 }

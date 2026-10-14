@@ -59,7 +59,7 @@ public final class CspPolicyBuilder
                 "base-uri 'self'",
                 "frame-ancestors 'none'",
                 "frame-src 'none'",
-                "form-action 'self'");
+                "form-action " + String.join(" ", connect));
     }
 
     /**

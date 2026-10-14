@@ -29,8 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 /**
  * The "stay signed in on this device" tick is a per-browser preference: it must survive
- * the logout that deliberately kills the remember-me cookie, so the login page comes back
- * with the box in the state the user last chose.
+ * a logout, so the login page comes back with the box in the state the user last chose.
  */
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
 @AutoConfigureMockMvc
@@ -71,11 +70,11 @@ class RememberMeChoiceTest
         Cookie choice = login.getResponse().getCookie("rapla-remember-choice");
         assertNotNull(choice, "login must record the remember-me choice");
         assertEquals("1", choice.getValue());
-        assertTrue(choice.getMaxAge() > 30 * 24 * 3600, "choice must outlive the remember-me cookie");
+        assertTrue(choice.getMaxAge() > 30 * 24 * 3600, "choice must outlive the refresh cookie");
 
         String html = mockMvc.perform(get("/login").cookie(choice))
                 .andReturn().getResponse().getContentAsString();
-        assertTrue(html.contains("name=\"remember-me\" value=\"on\" checked"),
+        assertTrue(html.contains("value=\"on\" checked"),
                 "checkbox must render checked, was: " + snippet(html));
     }
 
@@ -92,7 +91,7 @@ class RememberMeChoiceTest
                 "unticked login must not set the choice cookie, was: " + login.getResponse().getHeaders("Set-Cookie"));
 
         String html = mockMvc.perform(get("/login")).andReturn().getResponse().getContentAsString();
-        assertFalse(html.contains("checked"), "checkbox must render unchecked, was: " + snippet(html));
+        assertFalse(html.contains("value=\"on\" checked"), "\"on\" must not be preselected, was: " + snippet(html));
     }
 
     /** PRD 118 D8-12 — unticking later deletes the earlier choice (same name and path, Max-Age 0). */

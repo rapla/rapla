@@ -17,6 +17,7 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatDatepickerIntl } from '@angular/material/datepicker';
 
 import { routes } from './app.routes';
+import { actAsInterceptor } from './auth/act-as';
 import { authInterceptor } from './auth/auth.interceptor';
 import { buildCheckInterceptor } from './shell/build-check';
 import { AuthService } from './auth/auth.service';
@@ -56,7 +57,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withXhr(),
       withXsrfConfiguration({ cookieName: 'XSRF-TOKEN', headerName: 'X-XSRF-TOKEN' }),
-      withInterceptors([buildCheckInterceptor, authInterceptor]),
+      withInterceptors([buildCheckInterceptor, actAsInterceptor, authInterceptor]),
     ),
     // Load the current identity once at startup from GET /api/auth/me (the SPA's
     // source of login state — replaces the old client-side JWT decode). On a

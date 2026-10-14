@@ -15,6 +15,7 @@ package org.rapla.entities;
 public interface CategoryAnnotations{
     String KEY_NAME_COLOR="color";
     String CAN_ADMIN_PARENT="can_admin_parent";
+    String IMPERSONATED_BY="impersonated_by";
 }
 
 

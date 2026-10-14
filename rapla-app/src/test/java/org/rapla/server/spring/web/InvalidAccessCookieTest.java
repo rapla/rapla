@@ -99,7 +99,7 @@ class InvalidAccessCookieTest extends IsolatedDefaultDatasetTest
     @Test
     void aValidCookieStillAuthorizesTheApi() throws Exception
     {
-        int status = mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", validToken())))
+        int status = mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", validToken())).header("X-Rapla-Act-As", "self"))
                 .andReturn().getResponse().getStatus();
         assertEquals(200, status);
     }
@@ -122,7 +122,7 @@ class InvalidAccessCookieTest extends IsolatedDefaultDatasetTest
         String last = access.get(access.size() - 1);
         String value = last.substring("access_token=".length(), last.indexOf(';'));
         assertTrue(!value.isEmpty() && !last.contains("Max-Age=0"), last);
-        int me = mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", value))).andReturn().getResponse().getStatus();
+        int me = mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", value)).header("X-Rapla-Act-As", "self")).andReturn().getResponse().getStatus();
         assertEquals(200, me);
     }
 

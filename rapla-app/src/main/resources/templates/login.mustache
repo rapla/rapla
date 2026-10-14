@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="{{lang}}">
+<head>
+  <meta charset="utf-8">
+  <title>{{title}}</title>
+  <style>
+    :root { --accent: #27ae60; --accent-hover: #1e8e4f; --select: #0061a3; --select-bg: #e9f1ff; }
+    body { font-family: system-ui, sans-serif; background: #f4f4f4; margin: 0; padding: 0; display: flex; min-height: 100vh; align-items: center; justify-content: center; }
+    .card { box-sizing: border-box; width: 100%; max-width: 27rem; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); min-width: 320px; position: relative; text-align: left; }
+    h1 { margin: 0 0 1rem; font-size: 1.4rem; color: #333; }
+    label { display: block; margin: 0.7rem 0 0.25rem; color: #555; font-size: 0.88rem; }
+    input[type=text], input[type=password] { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; box-sizing: border-box; }
+    button, summary.direct { display: block; box-sizing: border-box; width: 100%; margin: 1.1rem 0 0; padding: 0.6rem; background: var(--accent); color: #fff; border: 0; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 1rem; }
+    button:hover, summary.direct:hover, summary.direct:focus-visible { background: var(--accent-hover); }
+    button:disabled { background: #888; cursor: default; }
+    .note { color: #888; font-size: 0.8rem; margin-top: 1rem; }
+    .demo-banner { background: #fff4ce; color: #5c4400; border-radius: 4px; padding: 0.4rem 0.6rem; font-size: 0.85rem; margin: 0 0 1rem; }
+    .sub { margin: -0.5rem 0 1.2rem; font-size: 0.85rem; color: #666; line-height: 1.35; }
+    .group { border: 1px solid #dfe3e8; border-radius: 8px; padding: 1rem 1rem 1.2rem; }
+    .gsep { border: 0; border-top: 1px solid #e6e8eb; margin: 1.1rem -1rem 0; }
+    .ask { display: block; margin: 0 0 0.4rem; color: #444; font-size: 0.9rem; }
+    .sr { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .choice { display: flex; border: 1px solid #b8c4d0; border-radius: 6px; overflow: hidden; background: #fff; }
+    .choice label { flex: 1; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0.45rem 0.3rem; text-align: center; font-size: 0.9rem; color: #555; white-space: nowrap; cursor: pointer; }
+    .choice label + label { border-left: 1px solid #b8c4d0; }
+    #rm-off:checked ~ .choice label[for=rm-off], #rm-on:checked ~ .choice label[for=rm-on] { background: var(--select-bg); color: #00497c; font-weight: 600; box-shadow: inset 0 0 0 1px var(--select); }
+    #rm-off:focus-visible ~ .choice label[for=rm-off], #rm-on:focus-visible ~ .choice label[for=rm-on] { outline: 2px solid var(--select); outline-offset: 2px; }
+    .dtext { display: none; margin: 0.4rem 0 0; font-size: 0.82rem; color: #777; line-height: 1.35; }
+    #rm-off:checked ~ .t-off, #rm-on:checked ~ .t-on { display: block; }
+    .stitle { margin: 1rem 0 0.5rem; font-size: 0.75rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+    .sso { margin-top: 0.5rem; font: inherit; font-size: 1rem; }
+    .default-submit { position: absolute; left: -9999px; width: 1px; height: 1px; margin: 0; padding: 0; border: 0; overflow: hidden; }
+    .divider { display: flex; align-items: center; gap: 0.6rem; color: #999; font-size: 0.8rem; margin: 1.3rem 0 0; }
+    .divider::before, .divider::after { content: ""; flex: 1; border-top: 1px solid #e6e8eb; }
+    .divider + .stitle { margin-top: 0.9rem; }
+    summary.direct { list-style: none; text-align: center; margin-top: 0.5rem; }
+    summary.direct::-webkit-details-marker { display: none; }
+    details[open] > summary.direct { display: none; }
+    .head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0 0 1rem; }
+    .head h1 { margin: 0; }
+    .langrow select { padding: 0.2rem 0.3rem; border: 1px solid #ddd; border-radius: 4px; color: #777; font-size: 0.8rem; background: #fff; }
+  </style>
+{{#patchCss}}
+  <style id="patch-login-css">{{{patchCss}}}</style>
+{{/patchCss}}
+</head>
+<body>
+  <div class="logo"></div>
+  <div class="card">
+    <div class="head">
+    <h1>{{title}}</h1>
+    <div class="langrow"><select id="lang" aria-label="{{languageLabel}}">
+{{#languages}}
+<option value="{{value}}"{{#selected}} selected{{/selected}}>{{label}}</option>
+{{/languages}}
+</select></div>
+    </div>
+    {{#demoBanner}}<p class="demo-banner">{{demoBanner}}</p>{{/demoBanner}}
+    {{#bannerText}}<p style="color:{{bannerColor}};">{{bannerText}}</p>{{/bannerText}}
+{{#form}}
+<form method="post" action="/login">
+{{#csrfName}}
+<input type="hidden" name="{{csrfName}}" value="{{csrfValue}}">
+{{/csrfName}}
+{{#defaultSubmit}}
+<button type="submit" class="default-submit" tabindex="-1" aria-hidden="true"></button>
+{{/defaultSubmit}}
+{{#swing}}
+<p class="sub">{{swingHint}}</p>
+{{/swing}}
+<div class="group" role="group" aria-labelledby="ask">
+<span class="ask" id="ask">{{ask}}</span>
+<input class="sr" type="radio" id="rm-off" name="remember-me" value="off"{{#offChecked}} checked{{/offChecked}}>
+<input class="sr" type="radio" id="rm-on" name="remember-me" value="on"{{#onChecked}} checked{{/onChecked}}>
+<div class="choice">
+  <label for="rm-off">{{sessionLabel}}</label>
+  <label for="rm-on">{{daysLabel}}</label>
+</div>
+<p class="dtext t-off">{{textOff}}</p>
+<p class="dtext t-on">{{textOn}}</p>
+<hr class="gsep">
+{{#sso}}
+<p class="stitle">{{ssoTitle}}</p>
+{{#ssoButtons}}
+<button type="submit" class="sso" formnovalidate formaction="{{formaction}}">{{label}}</button>
+{{/ssoButtons}}
+{{/sso}}
+{{#password}}
+{{#divider}}
+<div class="divider">{{dividerText}}</div>
+{{/divider}}
+<p class="stitle">{{serverTitle}}</p>
+{{#divider}}
+<details{{#directOpen}} open{{/directOpen}}>
+<summary class="direct">{{directLabel}}</summary>
+{{/divider}}
+<label for="u">{{usernameLabel}}</label>
+<input id="u" type="text" name="username" autofocus required>
+<label for="p">{{passwordLabel}}</label>
+<input id="p" type="password" name="password">
+<button type="submit" id="btn" data-busy="{{busyText}}">{{loginLabel}}</button>
+{{#divider}}
+</details>
+{{/divider}}
+{{/password}}
+</div>
+</form>
+{{#password}}
+{{#devNote}}
+<p class="note">Dev default: <code>admin</code> with empty password.</p>
+{{/devNote}}
+{{#demoNote}}
+<p class="note">Demo login: <code>admin</code>, no password &mdash; data resets nightly.</p>
+{{/demoNote}}
+{{/password}}
+{{/form}}
+  </div>
+  <script>
+    var f = document.querySelector('form');
+    if (f) {
+      f.addEventListener('submit', function (e) {
+        if (e.submitter && e.submitter.formAction.indexOf('/oauth2/authorization/') >= 0) { return; }
+        var b = document.getElementById('btn');
+        if (b) { b.disabled = true; b.textContent = b.dataset.busy; }
+      });
+    }
+    var d = document.querySelector('details');
+    if (d) { d.addEventListener('toggle', function () { if (d.open) document.getElementById('u').focus(); }); }
+    var s = document.getElementById('lang');
+    if (s) {
+      s.addEventListener('change', function () {
+        location.href = '/login?lang=' + encodeURIComponent(this.value);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -102,7 +102,7 @@ class OAuthConfigControllerKeycloakTest
                 .andExpect(jsonPath("$.providers[1].endSessionUrl").value(
                         "http://localhost:8080/realms/rapla/protocol/openid-connect/logout"))
                 .andExpect(jsonPath("$.providers[1].webPickerVisible").value(true))
-                .andExpect(jsonPath("$.providers[1].displayName").value("Sign in with Keycloak"))
+                .andExpect(jsonPath("$.providers[1].displayName").value("Sign in with Single Sign-On"))
                 .andExpect(jsonPath("$.providers[1].icon").value("keycloak"));
     }
 

@@ -9,21 +9,15 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.PermissionController;
-import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.UserMe;
 import org.rapla.storage.dbrm.UserSummary;
 import org.rapla.storage.dbrm.UsersService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 /**
  * PRD 051 — admin-scope user listing for the SPA's "Switch to user"
@@ -31,10 +25,10 @@ import java.util.Map;
  * per AGENTS.md §12 (no email, no group list, no preferences).
  *
  * <p>Server-side filter: iterate {@code facade.getUsers()}, keep
- * those passing {@link PermissionController#canAdminUser(User, User)}
- * against the calling user. Includes the caller themselves
- * (self-impersonation is a no-op but harmless and the dropdown stays
- * uniform).
+ * those passing {@link PermissionController#canImpersonate(User, User)}
+ * against the real actor (PRD 131 D10). Includes the caller themselves
+ * when he is an admin or group admin (self-impersonation is a no-op but
+ * harmless and the dropdown stays uniform).
  *
  * <p>An empty response is the "caller has no admin authority" signal
  * the SPA toolbar uses to decide whether to make the username chip
@@ -58,17 +52,17 @@ public class UsersController implements UsersService
     @Override
     public List<UserSummary> list() throws RaplaException
     {
-        // 401 if anonymous. The candidate list must reflect the REAL actor's admin
-        // authority: when the caller is impersonating, checkAndGetUser returns the
+        // 401 if anonymous. The candidate list must reflect the REAL actor's right to
+        // switch: when the caller is impersonating, checkAndGetUser returns the
         // effective (impersonated) user, whose scope is usually narrower/empty — so
-        // resolve the original admin from the token's act.sub claim instead, exactly
-        // as the impersonation switch authorizes against the real admin.
+        // resolve the original user from the token's act.sub claim instead, exactly
+        // as the impersonation switch authorizes against the real actor.
         session.checkAndGetUser(request);
-        User caller = resolveRealActor();
+        User caller = ImpersonationActor.realActor(session, facade, request);
         List<UserSummary> result = new ArrayList<>();
         for (User candidate : facade.getUsers())
         {
-            if (PermissionController.canAdminUser(caller, candidate))
+            if (PermissionController.canImpersonate(caller, candidate))
             {
                 result.add(new UserSummary(candidate.getUsername(), nonNullName(candidate)));
             }
@@ -84,52 +78,6 @@ public class UsersController implements UsersService
     {
         User caller = session.checkAndGetUser(request);
         return new UserMe(caller.getId(), caller.getUsername(), nonNullName(caller));
-    }
-
-    /**
-     * The real actor: the original admin ({@code act.sub} on the current token)
-     * when impersonating, otherwise the effective authenticated user. Mirrors
-     * {@code AuthCookieController.resolveRealActor} so the candidate list and the
-     * impersonation-switch authorization use the same identity.
-     */
-    private User resolveRealActor() throws RaplaException
-    {
-        String adminSub = actorSub(currentJwt());
-        if (adminSub != null)
-        {
-            User admin = facade.getOperator().tryResolve(adminSub, User.class);
-            if (admin == null)
-            {
-                throw new RaplaSecurityException("impersonation actor not found");
-            }
-            return admin;
-        }
-        return session.checkAndGetUser(request);
-    }
-
-    private static String actorSub(Jwt jwt)
-    {
-        if (jwt == null)
-        {
-            return null;
-        }
-        Object act = jwt.getClaims().get("act");
-        if (act instanceof Map<?, ?> actMap)
-        {
-            Object sub = actMap.get("sub");
-            return sub != null ? sub.toString() : null;
-        }
-        return null;
-    }
-
-    private static Jwt currentJwt()
-    {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth instanceof JwtAuthenticationToken jwtAuth)
-        {
-            return jwtAuth.getToken();
-        }
-        return null;
     }
 
     private static String nonNullName(User u)

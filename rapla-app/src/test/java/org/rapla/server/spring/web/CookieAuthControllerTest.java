@@ -25,6 +25,7 @@ import java.nio.file.StandardCopyOption;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -85,7 +86,7 @@ class CookieAuthControllerTest
         // /api/auth/me requires a valid credential; cookie-only (no Bearer).
         // userId is the caller's opaque user id — the SPA needs it for owner-scoped
         // ("my events") queries (PRD 078 §Scope).
-        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", access)))
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", access)).header("X-Rapla-Act-As", "self"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("homer"))
                 .andExpect(jsonPath("$.userId").isNotEmpty());
@@ -97,7 +98,7 @@ class CookieAuthControllerTest
         String access = login("homer", "duffs").accessToken();
 
         // Same minted token, both presentations authorize identically.
-        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", access)))
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", access)).header("X-Rapla-Act-As", "self"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("homer"));
         mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + access))
@@ -126,7 +127,7 @@ class CookieAuthControllerTest
         // access cookie — same typ-rejection as the Bearer path.
         String refresh = login("homer", "duffs").refreshToken();
 
-        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", refresh)))
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", refresh)).header("X-Rapla-Act-As", "self"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -175,6 +176,8 @@ class CookieAuthControllerTest
         assertTrue(refresh.isHttpOnly());
         assertEquals("Lax", access.getAttribute("SameSite"));
         assertEquals("Lax", refresh.getAttribute("SameSite"));
+        assertEquals(-1, access.getMaxAge(), "no stay-signed-in choice: a browser-session cookie");
+        assertEquals(-1, refresh.getMaxAge(), "no stay-signed-in choice: a browser-session cookie");
         // cookie-secure unset follows the scheme: plain http → not Secure (a browser drops it on http://<ip>).
         assertFalse(access.getSecure(), "access cookie must not be Secure over http");
         assertFalse(refresh.getSecure(), "refresh cookie must not be Secure over http");
@@ -183,7 +186,7 @@ class CookieAuthControllerTest
         assertEquals("/", access.getPath());
 
         // And the access cookie authorizes /api.
-        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", access.getValue())))
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", access.getValue())).header("X-Rapla-Act-As", "self"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("homer"));
     }
@@ -210,9 +213,26 @@ class CookieAuthControllerTest
                 "fresh access_token must be a signed JWT");
 
         // And the fresh access token authorizes /api.
-        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", fresh.getValue())))
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", fresh.getValue())).header("X-Rapla-Act-As", "self"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("homer"));
+    }
+
+    /** PRD 131 D2 — the refreshed access cookie follows the stay-signed-in choice the login recorded. */
+    @Test
+    void refreshKeepsTheAccessCookiePersistentOnlyWhenRemembered() throws Exception
+    {
+        String refresh = login("homer", "duffs").refreshToken();
+
+        Cookie remembered = mockMvc.perform(post("/api/auth/session/refresh")
+                        .cookie(new Cookie("refresh_token", refresh), new Cookie("rapla-remember-choice", "1")))
+                .andExpect(status().isOk()).andReturn().getResponse().getCookie("access_token");
+        assertEquals(3600, remembered.getMaxAge());
+
+        Cookie session = mockMvc.perform(post("/api/auth/session/refresh")
+                        .cookie(new Cookie("refresh_token", refresh)))
+                .andExpect(status().isOk()).andReturn().getResponse().getCookie("access_token");
+        assertEquals(-1, session.getMaxAge(), "no choice, no Max-Age");
     }
 
     @Test
@@ -241,7 +261,7 @@ class CookieAuthControllerTest
 
         // monty can ONLY see his own identity — never homer's, regardless of
         // any request shaping. There is no parameter to request another user.
-        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", monty)))
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", monty)).header("X-Rapla-Act-As", "self"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("monty"))
                 .andExpect(jsonPath("$.impersonating").value(false))
@@ -253,41 +273,75 @@ class CookieAuthControllerTest
     // ---------------------------------------------------------------------
 
     @Test
-    void impersonateSwitchSetsTargetCookieForAdmin() throws Exception
+    void impersonateSwitchAuthorizesAndReturnsTheTargetButSetsNoCookie() throws Exception
     {
         String adminAccess = login("homer", "duffs").accessToken();
+        String montyId = userIdOf("monty");
 
         MvcResult switched = mockMvc.perform(post("/api/auth/impersonate/switch")
                         .with(csrf())
-                        .cookie(new Cookie("access_token", adminAccess))
+                        .cookie(new Cookie("access_token", adminAccess)).header("X-Rapla-Act-As", "self")
                         .param("target_username", "monty"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(montyId))
+                .andExpect(jsonPath("$.username").value("monty"))
                 .andReturn();
+        assertNull(switched.getResponse().getCookie("access_token"), "the actor's cookie never changes (PRD 131 D7)");
 
-        Cookie impCookie = switched.getResponse().getCookie("access_token");
-        assertNotNull(impCookie, "switch must set an impersonation access_token cookie");
-
-        // The new cookie now identifies monty (effective subject) but /me reports
-        // the impersonation state with homer as the actor.
-        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", impCookie.getValue())))
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", adminAccess)).header("X-Rapla-Act-As", montyId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("monty"))
                 .andExpect(jsonPath("$.impersonating").value(true))
                 .andExpect(jsonPath("$.actor").value("homer"))
                 .andExpect(jsonPath("$.target").value("monty"));
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", adminAccess)).header("X-Rapla-Act-As", "self"))
+                .andExpect(jsonPath("$.username").value("homer"))
+                .andExpect(jsonPath("$.impersonating").value(false));
+    }
+
+    private String userIdOf(String username) throws Exception
+    {
+        String access = login(username, username.equals("homer") ? "duffs" : "burns").accessToken();
+        return tools.jackson.databind.json.JsonMapper.builder().build().readTree(mockMvc.perform(get("/api/auth/me")
+                        .cookie(new Cookie("access_token", access)).header("X-Rapla-Act-As", "self"))
+                .andReturn().getResponse().getContentAsString()).get("userId").asString();
     }
 
     @Test
-    void impersonateSwitchRequiresCanAdminUser() throws Exception
+    void impersonateSwitchRequiresCanImpersonate() throws Exception
     {
         // monty (group admin) cannot impersonate homer (global admin) → 403.
         String groupAdmin = login("monty", "burns").accessToken();
 
         mockMvc.perform(post("/api/auth/impersonate/switch")
                         .with(csrf())
-                        .cookie(new Cookie("access_token", groupAdmin))
+                        .cookie(new Cookie("access_token", groupAdmin)).header("X-Rapla-Act-As", "self")
                         .param("target_username", "homer"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void impersonateSwitchUnknownTargetAnswersExactlyLikeANotPermittedOne() throws Exception
+    {
+        // PRD 131 D10 / AGENTS.md section 12: no 404 vs 403 oracle for users outside the scope.
+        String groupAdmin = login("monty", "burns").accessToken();
+
+        MvcResult unknown = mockMvc.perform(post("/api/auth/impersonate/switch")
+                        .with(csrf())
+                        .cookie(new Cookie("access_token", groupAdmin)).header("X-Rapla-Act-As", "self")
+                        .param("target_username", "does-not-exist"))
+                .andExpect(status().isForbidden())
+                .andReturn();
+        MvcResult notPermitted = mockMvc.perform(post("/api/auth/impersonate/switch")
+                        .with(csrf())
+                        .cookie(new Cookie("access_token", groupAdmin)).header("X-Rapla-Act-As", "self")
+                        .param("target_username", "homer"))
+                .andExpect(status().isForbidden())
+                .andReturn();
+
+        assertEquals(unknown.getResponse().getContentAsString(), notPermitted.getResponse().getContentAsString());
+        assertEquals(new java.util.TreeSet<>(unknown.getResponse().getHeaderNames()),
+                new java.util.TreeSet<>(notPermitted.getResponse().getHeaderNames()));
     }
 
     @Test
@@ -299,70 +353,40 @@ class CookieAuthControllerTest
     }
 
     @Test
-    void impersonateEndRestoresAdminCookie() throws Exception
+    void impersonateEndSetsNoCookieAndNeedsAnImpersonatingTab() throws Exception
     {
         String adminAccess = login("homer", "duffs").accessToken();
+        String montyId = userIdOf("monty");
 
-        // Switch into monty.
-        MvcResult switched = mockMvc.perform(post("/api/auth/impersonate/switch")
-                        .with(csrf())
-                        .cookie(new Cookie("access_token", adminAccess))
-                        .param("target_username", "monty"))
-                .andExpect(status().isOk())
-                .andReturn();
-        Cookie impCookie = switched.getResponse().getCookie("access_token");
-        assertNotNull(impCookie);
-
-        // End impersonation — must re-establish a NON-impersonating admin cookie.
-        // Review B1: ONLY the impersonation access cookie is present (a real browser
-        // does NOT send the refresh_token cookie to /api/auth/impersonate/end — it is
-        // Path=/api/auth/session). The admin is restored from the token's act.sub claim.
         MvcResult ended = mockMvc.perform(post("/api/auth/impersonate/end")
                         .with(csrf())
-                        .cookie(new Cookie("access_token", impCookie.getValue())))
+                        .cookie(new Cookie("access_token", adminAccess)).header("X-Rapla-Act-As", montyId))
                 .andExpect(status().isOk())
                 .andReturn();
+        assertNull(ended.getResponse().getCookie("access_token"), "end re-mints nothing: the tab drops its act-as");
 
-        Cookie restored = ended.getResponse().getCookie("access_token");
-        assertNotNull(restored, "end must set a fresh admin access_token cookie");
-
-        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", restored.getValue())))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("homer"))
-                .andExpect(jsonPath("$.impersonating").value(false));
+        mockMvc.perform(post("/api/auth/impersonate/end")
+                        .with(csrf())
+                        .cookie(new Cookie("access_token", adminAccess)).header("X-Rapla-Act-As", "self"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     void switchWhileImpersonatingKeepsRealAdminAsActor() throws Exception
     {
-        // Review B2: a chained switch (already impersonating, switch again WITHOUT
-        // calling /end) must evaluate canAdminUser + audit + the new act-claim
-        // against the REAL admin (homer), not the impersonated effective user —
-        // otherwise the admin is laundered out of the chain and the admin check is
-        // run against the impersonated user's permissions.
+        // Review B2 / PRD 131 D10: a chained switch (this tab already acts as monty) is checked, audited and
+        // named against the REAL actor (homer, the unchanged cookie), not the effective user.
         String adminAccess = login("homer", "duffs").accessToken();
+        String montyId = userIdOf("monty");
 
-        MvcResult switch1 = mockMvc.perform(post("/api/auth/impersonate/switch")
+        mockMvc.perform(post("/api/auth/impersonate/switch")
                         .with(csrf())
-                        .cookie(new Cookie("access_token", adminAccess))
+                        .cookie(new Cookie("access_token", adminAccess)).header("X-Rapla-Act-As", montyId)
                         .param("target_username", "monty"))
                 .andExpect(status().isOk())
-                .andReturn();
-        Cookie imp1 = switch1.getResponse().getCookie("access_token");
-        assertNotNull(imp1);
+                .andExpect(jsonPath("$.username").value("monty"));
 
-        // Switch AGAIN while the cookie is the monty-impersonation token.
-        MvcResult switch2 = mockMvc.perform(post("/api/auth/impersonate/switch")
-                        .with(csrf())
-                        .cookie(new Cookie("access_token", imp1.getValue()))
-                        .param("target_username", "monty"))
-                .andExpect(status().isOk())
-                .andReturn();
-        Cookie imp2 = switch2.getResponse().getCookie("access_token");
-        assertNotNull(imp2);
-
-        // The real admin (homer) must remain the actor — NOT the impersonated monty.
-        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", imp2.getValue())))
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", adminAccess)).header("X-Rapla-Act-As", montyId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.actor").value("homer"));
     }
@@ -395,7 +419,7 @@ class CookieAuthControllerTest
         assertEquals("/api/auth/session", refresh.getPath());
 
         // And the cookie authorizes /api as the logged-in user.
-        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", access.getValue())))
+        mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", access.getValue())).header("X-Rapla-Act-As", "self"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("homer"));
     }
@@ -417,7 +441,7 @@ class CookieAuthControllerTest
 
         MvcResult result = mockMvc.perform(post("/api/auth/session/logout")
                         .with(csrf())
-                        .cookie(new Cookie("access_token", access)))
+                        .cookie(new Cookie("access_token", access)).header("X-Rapla-Act-As", "self"))
                 .andExpect(status().isNoContent())
                 .andReturn();
 
@@ -484,7 +508,7 @@ class CookieAuthControllerTest
         // token in play, which is a test-harness artifact, not browser behaviour.
         String access = login("homer", "duffs").accessToken();
 
-        MvcResult get = mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", access)))
+        MvcResult get = mockMvc.perform(get("/api/auth/me").cookie(new Cookie("access_token", access)).header("X-Rapla-Act-As", "self"))
                 .andExpect(status().isOk())
                 .andReturn();
         Cookie xsrf = get.getResponse().getCookie("XSRF-TOKEN");
@@ -501,7 +525,7 @@ class CookieAuthControllerTest
         // token must be rejected.
         String access = login("homer", "duffs").accessToken();
         mockMvc.perform(post("/api/graphql")
-                        .cookie(new Cookie("access_token", access))
+                        .cookie(new Cookie("access_token", access)).header("X-Rapla-Act-As", "self")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"query\":\"{ __typename }\"}"))
                 .andExpect(status().isForbidden());
@@ -528,7 +552,7 @@ class CookieAuthControllerTest
         String access = login("homer", "duffs").accessToken();
 
         mockMvc.perform(post("/api/auth/impersonate/switch")
-                        .cookie(new Cookie("access_token", access))
+                        .cookie(new Cookie("access_token", access)).header("X-Rapla-Act-As", "self")
                         .param("target_username", "monty"))
                 .andExpect(status().isForbidden());
     }
@@ -572,7 +596,7 @@ class CookieAuthControllerTest
         String access = login("homer", "duffs").accessToken();
 
         mockMvc.perform(post("/login")
-                        .cookie(new Cookie("access_token", access))
+                        .cookie(new Cookie("access_token", access)).header("X-Rapla-Act-As", "self")
                         .param("username", "homer")
                         .param("password", "duffs"))
                 .andExpect(status().isForbidden());
@@ -620,7 +644,7 @@ class CookieAuthControllerTest
 
         mockMvc.perform(post("/api/auth/impersonate/switch")
                         .with(csrf())
-                        .cookie(new Cookie("access_token", apiKey))
+                        .cookie(new Cookie("access_token", apiKey)).header("X-Rapla-Act-As", "self")
                         .param("target_username", "homer"))
                 .andExpect(status().isForbidden());
     }

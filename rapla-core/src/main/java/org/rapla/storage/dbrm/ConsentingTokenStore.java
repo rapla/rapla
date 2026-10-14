@@ -1,47 +1,53 @@
 package org.rapla.storage.dbrm;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * PRD 126 Phase 2: the refresh token is written to the backend only with the
- * user's consent. Until the user decides, the latest token is held in memory;
- * {@link #setConsent(boolean)} then writes it (true) or clears the backend
- * (false). A stored {@link #KEY_REMEMBER} preference ("yes"/"no") answers
- * without asking; a token already on disk from before this feature counts
- * as consent. Never throws (same contract as {@link TokenStore}).
+ * The refresh token is written to the backend only with consent: the server's stay-signed-in decision of the
+ * login (PRD 131 R4, was the PRD 126 dialog). Until a decision is set, the latest token is held in memory;
+ * {@link #setConsent(boolean)} then writes it (true) or keeps this login's tokens in memory (false); a stored entry
+ * is never touched by a login without stay-signed-in (PRD 131 OQ10), only a logout clears it. A token already in
+ * the backend counts as standing consent, so rotations keep flowing after a silent restart. Never throws (same
+ * contract as {@link TokenStore}).
  */
 public final class ConsentingTokenStore implements TokenStore
 {
     private final TokenStore delegate;
     private final String backend;
     private volatile Boolean consent;
+    private boolean standingResolved;
     private volatile String pending;
 
     public ConsentingTokenStore(TokenStore delegate, String backend)
     {
         this.delegate = delegate;
         this.backend = backend;
-        String stored = delegate.readPref(KEY_REMEMBER).orElse("");
-        if ("yes".equals(stored)) consent = Boolean.TRUE;
-        else if ("no".equals(stored)) consent = Boolean.FALSE;
-        else if (delegate.read().isPresent())
-        {
-            // Installed before this feature: the token was stored without asking — keep that standing.
-            consent = Boolean.TRUE;
-            delegate.tryWritePref(KEY_REMEMBER, "yes");
-        }
     }
 
-    /** Name of the backend for the user-facing result ("jnlp", "file", "none"). */
+    /** The standing answer from the backend, resolved at first use (the startup {@link #read()}, before
+     *  any clear): the backend knows the server, hence its token key, only after construction. */
+    private synchronized Boolean consent()
+    {
+        if (!standingResolved)
+        {
+            standingResolved = true;
+            if (consent == null && delegate.read().isPresent())
+            {
+                consent = Boolean.TRUE;
+            }
+        }
+        return consent;
+    }
+
+    /** Name of the backend for the user-facing result ("file", "none"). */
     public String backend() { return backend; }
 
-    /** True when the user has not decided yet for this machine. */
-    public boolean needsDecision() { return consent == null; }
+    /** Whether the user chose to stay signed in (or a stored token stands for it): the backend is expected to hold the token. */
+    public boolean remembers() { return Boolean.TRUE.equals(consent()); }
 
     /** Applies the decision for this session; returns whether the token is now readable from the backend. */
     public boolean setConsent(boolean yes)
@@ -50,52 +56,40 @@ public final class ConsentingTokenStore implements TokenStore
         if (!yes)
         {
             pending = null;
-            delegate.tryClear();
             return false;
         }
         String token = pending;
         if (token == null) return delegate.read().isPresent();
         delegate.tryWrite(token);
         pending = null;
-        return delegate.read().map(token::equals).orElse(false);
+        return delegate.failure().isEmpty() && delegate.read().map(token::equals).orElse(false);
     }
 
-    /** Persists the decision as the answer for future starts ("don't ask again"). */
-    public void rememberDecision(boolean yes) { delegate.tryWritePref(KEY_REMEMBER, yes ? "yes" : "no"); }
-
-    /** Logout: ask again at the next interactive login. */
-    public void forgetDecision()
-    {
-        consent = null;
-        pending = null;
-        delegate.tryWritePref(KEY_REMEMBER, "");
-    }
-
-    @Override public Optional<String> read() { return delegate.read(); }
+    @Override public Optional<String> read() { consent(); return delegate.read(); }
 
     @Override public void tryWrite(String token)
     {
-        Boolean c = consent;
+        Boolean c = consent();
         if (c == null) pending = token;
         else if (c) delegate.tryWrite(token);
     }
 
-    @Override public void tryClear() { pending = null; delegate.tryClear(); }
+    @Override public void tryClear() { consent(); pending = null; delegate.tryClear(); }
     @Override public Optional<String> readPref(String key) { return delegate.readPref(key); }
     @Override public void tryWritePref(String key, String value) { delegate.tryWritePref(key, value); }
+    @Override public Optional<Failure> failure() { return delegate.failure(); }
 
-    private static final Pattern EXP = Pattern.compile("\"exp\"\\s*:\\s*(\\d+)");
+    private static final Pattern SUB = Pattern.compile("\"sub\"\\s*:\\s*\"([^\"]*)\"");
 
-    /** The {@code exp} claim of a JWT as an instant, or empty when absent or unreadable. */
-    public static Optional<Instant> expiryOf(String jwt)
+    /** The {@code sub} claim of a JWT, or empty when absent or unreadable. */
+    public static Optional<String> subjectOf(String jwt)
     {
         try
         {
             String[] parts = jwt.split("\\.");
             if (parts.length < 2) return Optional.empty();
-            String json = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
-            Matcher m = EXP.matcher(json);
-            return m.find() ? Optional.of(Instant.ofEpochSecond(Long.parseLong(m.group(1)))) : Optional.empty();
+            Matcher m = SUB.matcher(new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8));
+            return m.find() ? Optional.of(m.group(1)) : Optional.empty();
         }
         catch (RuntimeException e)
         {
