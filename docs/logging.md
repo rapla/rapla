@@ -75,6 +75,34 @@ export SERVER_TOMCAT_ACCESSLOG_PATTERN=common             # NCSA Common, no refe
 export SERVER_TOMCAT_ACCESSLOG_MAX_DAYS=14
 ```
 
+### Add appenders or loggers without replacing the config
+
+The bundled `logback-spring.xml` includes `config/logback-local.xml` (relative to the
+working directory, next to `config/application.yml`) when it exists. The file has an
+`<included>` root, may define appenders and loggers and use the bundled variables
+(`${FILE_LOG_PATTERN}`, `${LOG_MAX_HISTORY}`, …). Example — the `rapla.404` lines into
+their own file instead of `rapla.log` and stdout:
+
+```xml
+<included>
+  <appender name="FILE_404" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>logs/rapla-404.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <fileNamePattern>logs/rapla-404.log.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+      <maxFileSize>${LOG_MAX_FILE_SIZE}</maxFileSize>
+      <maxHistory>${LOG_MAX_HISTORY}</maxHistory>
+      <totalSizeCap>${LOG_TOTAL_SIZE_CAP}</totalSizeCap>
+    </rollingPolicy>
+    <encoder><pattern>${FILE_LOG_PATTERN}</pattern></encoder>
+  </appender>
+  <logger name="rapla.404" additivity="false">
+    <appender-ref ref="FILE_404"/>
+  </logger>
+</included>
+```
+
+Read at startup only (the bundled config sits in the jar, so `scan` is inert).
+
 ### Full-replace the logback config
 
 For unusual needs (JSON for ELK, syslog, custom appenders):

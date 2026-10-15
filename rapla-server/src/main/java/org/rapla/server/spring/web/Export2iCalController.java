@@ -203,7 +203,7 @@ public class Export2iCalController
         }
         catch (RaplaException e)
         {
-            NOT_FOUND_LOG.error("The Calendarmodel {} could not be read for the user {} due to {}", filename, user, e.getMessage());
+            ICAL_LOG.error("The Calendarmodel {} could not be read for the user {} due to {}", filename, user, e.getMessage());
             return null;
         }
         catch (NullPointerException e)

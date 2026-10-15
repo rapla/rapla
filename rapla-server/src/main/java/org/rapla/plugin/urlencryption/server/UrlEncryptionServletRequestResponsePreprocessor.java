@@ -21,6 +21,7 @@ import java.net.URLDecoder;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 import java.time.LocalDateTime;
 /**
@@ -102,9 +103,10 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
     static boolean isCalendarExportPath(HttpServletRequest request) {
         String uri = request.getRequestURI();
         if (uri == null) return false;
-        String path = uri.toLowerCase();
-        return path.contains("/calendar") || path.contains("/ical");
+        return EXPORT_PATH.matcher(uri.toLowerCase()).matches();
     }
+
+    private static final Pattern EXPORT_PATH = Pattern.compile(".*/rapla/(internal_)?(calendar(\\.csv)?|ical)");
 
     public boolean isCalendarExportCalledIllegally(HttpServletRequest request) throws RaplaException {
     	 String username = request.getParameter("user");

@@ -108,6 +108,7 @@ class CalendarExportEscapingTest
         export(homer, "xssweek", "week", xss, normal);
         export(homer, "xssday", "day_resource", xss, normal);
         export(homer, "xsstimeslot", "day_timeslot", xss, normal);
+        export(homer, "noviewplugin", "no-such-view", normal);
         seeded = true;
     }
 
@@ -203,6 +204,32 @@ class CalendarExportEscapingTest
         finally
         {
             notFoundLog.detachAppender(appender);
+        }
+    }
+
+    @Test
+    void serverErrorIsLoggedInTheNormalLogNotInRapla404() throws Exception
+    {
+        Logger notFoundLog = (Logger) LoggerFactory.getLogger("rapla.404");
+        Logger pageLog = (Logger) LoggerFactory.getLogger(CalendarPageController.class);
+        ListAppender<ILoggingEvent> notFound = new ListAppender<>();
+        ListAppender<ILoggingEvent> page = new ListAppender<>();
+        notFound.start();
+        page.start();
+        notFoundLog.addAppender(notFound);
+        pageLog.addAppender(page);
+        try
+        {
+            var response = mockMvc.perform(get("/rapla/calendar?user=homer&file=noviewplugin")).andReturn().getResponse();
+            assertEquals(500, response.getStatus());
+            assertTrue(notFound.list.isEmpty(), () -> notFound.list.get(0).getFormattedMessage());
+            assertTrue(page.list.get(0).getFormattedMessage().startsWith("page error 500 - No view available for exportfile 'noviewplugin'"),
+                    page.list.get(0).getFormattedMessage());
+        }
+        finally
+        {
+            notFoundLog.detachAppender(notFound);
+            pageLog.detachAppender(page);
         }
     }
 

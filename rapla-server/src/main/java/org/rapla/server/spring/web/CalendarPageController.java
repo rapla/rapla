@@ -67,6 +67,7 @@ import java.util.function.Supplier;
 @ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.autoexport", matchIfMissing = true)
 public class CalendarPageController
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CalendarPageController.class);
     private static final Logger NOT_FOUND_LOG = LoggerFactory.getLogger("rapla.404");
 
     private final Map<String, Supplier<HTMLViewPage>> factoryMap;
@@ -343,7 +344,7 @@ public class CalendarPageController
         catch (Exception ex)
         {
             // A6: log the cause server-side; don't leak the stack trace into the response.
-            NOT_FOUND_LOG.warn("error rendering calendar menu", ex);
+            LOGGER.warn("error rendering calendar menu", ex);
             throw new ServletException(ex);
         }
         finally
@@ -377,7 +378,7 @@ public class CalendarPageController
     private void writeStacktrace(HttpServletResponse response, Exception ex)
     {
         // A6: never dump the stack trace to the response — log it, return a generic body.
-        SafePageError.write(response, 500, "Internal error generating the calendar view.", NOT_FOUND_LOG, ex);
+        SafePageError.write(response, 500, "Internal error generating the calendar view.", LOGGER, ex);
     }
 
     private void write404(HttpServletRequest request, HttpServletResponse response, String reason, String message)
@@ -387,7 +388,7 @@ public class CalendarPageController
 
     private void writeError(HttpServletResponse response, String message)
     {
-        SafePageError.write(response, 500, message, NOT_FOUND_LOG, null);
+        SafePageError.write(response, 500, message, LOGGER, null);
     }
 
     private class TitleComparator implements Comparator<String>

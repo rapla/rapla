@@ -123,4 +123,10 @@
     </root>
   </springProfile>
 
+  <!-- Deployment-local additions without replacing this file: an <included>
+       fragment at config/logback-local.xml (relative to the CWD, like the log
+       paths) may add appenders and loggers and use the variables above.
+       Absent file = nothing happens. -->
+  <include optional="true" file="config/logback-local.xml"/>
+
 </configuration>

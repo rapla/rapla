@@ -41,6 +41,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class EncryptedCalendarGateTest
 {
     private static final String FILE = "secretcal";
+    /** Rapla 2 decrypted the key on all of these; the internal_ variants are embedded by Moodle servers. */
+    private static final String[] EXPORT_PATHS = { "/rapla/calendar", "/rapla/calendar.csv", "/rapla/internal_calendar",
+            "/rapla/internal_calendar.csv", "/rapla/ical", "/rapla/internal_ical" };
 
     @TempDir
     static Path tempDir;
@@ -94,7 +97,7 @@ class EncryptedCalendarGateTest
     void plainParametersAreRefusedOnEveryExportPath() throws Exception
     {
         publishEncrypted();
-        for (String path : new String[] { "/rapla/calendar", "/rapla/calendar.csv", "/rapla/ical" })
+        for (String path : EXPORT_PATHS)
         {
             // Tomcat maps the DispatcherServlet to "/": servletPath is the full path, pathInfo null.
             mockMvc.perform(get(path).servletPath(path).param("user", "homer").param("file", FILE))
@@ -108,8 +111,10 @@ class EncryptedCalendarGateTest
         publishEncrypted();
         String homer = OAuthTestSupport.loginAs(mockMvc, "homer", "duffs");
         String key = mintKey(homer, "user=homer&file=" + FILE);
-        mockMvc.perform(get("/rapla/calendar").param("key", key)).andExpect(status().isOk());
-        mockMvc.perform(get("/rapla/ical").param("key", key)).andExpect(status().isOk());
+        for (String path : EXPORT_PATHS)
+        {
+            mockMvc.perform(get(path).param("key", key)).andExpect(status().isOk());
+        }
     }
 
     @Test
