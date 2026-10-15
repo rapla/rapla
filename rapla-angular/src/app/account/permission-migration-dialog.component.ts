@@ -48,15 +48,15 @@ import { TPipe, t } from '../i18n/i18n.service';
           {{ 'account_migration_done' | t }}
         </p>
       } @else {
-        @for (f of findings(); track f.resourceId) {
+        @for (f of findings(); track f.allocatableId) {
           <div class="finding">
             <mat-checkbox
-              [disabled]="busyId() === f.resourceId"
+              [disabled]="busyId() === f.allocatableId"
               (change)="resolve(f)"
               [matTooltip]="'account_migration_resolve_tooltip' | t"
             ></mat-checkbox>
             <div class="fmeta">
-              <div class="fname">{{ f.resourceName }}</div>
+              <div class="fname">{{ f.allocatableName }}</div>
               <ul class="who">
                 @for (e of f.escalations; track e.principalName + e.additiveLevel) {
                   <li>
@@ -174,9 +174,9 @@ export class PermissionMigrationDialogComponent implements OnInit {
   }
 
   resolve(f: PermissionMigrationFinding): void {
-    this.busyId.set(f.resourceId);
+    this.busyId.set(f.allocatableId);
     this.errorMessage.set(null);
-    this.api.resolve(f.resourceId).subscribe({
+    this.api.resolve(f.allocatableId).subscribe({
       next: (remaining) => {
         this.findings.set(remaining);
         this.busyId.set(null);

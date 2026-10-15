@@ -14,8 +14,8 @@ describe('PermissionMigrationService', () => {
 
   const sample: PermissionMigrationFinding[] = [
     {
-      resourceId: 'a1',
-      resourceName: 'Room A',
+      allocatableId: 'a1',
+      allocatableName: 'Room A',
       escalations: [
         {
           principalType: 'USER',

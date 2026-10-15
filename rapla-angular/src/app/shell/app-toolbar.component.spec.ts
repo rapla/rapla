@@ -155,8 +155,8 @@ describe('AppToolbarComponent', () => {
   // shown only to a global admin AND only when the worklist is non-empty.
   const ADMIN: Identity = { ...LOGGED_IN, admin: true };
   const FINDING: PermissionMigrationFinding = {
-    resourceId: 'a1',
-    resourceName: 'Room A',
+    allocatableId: 'a1',
+    allocatableName: 'Room A',
     escalations: [],
   };
 

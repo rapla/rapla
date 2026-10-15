@@ -19,9 +19,10 @@ export interface PrincipalEscalation {
   explanation: string;
 }
 
+// Wire names of the REST DTO org.rapla.rest.dto.PermissionMigrationFinding (PRD 116 renamed only the GraphQL wire).
 export interface PermissionMigrationFinding {
-  resourceId: string;
-  resourceName: string;
+  allocatableId: string;
+  allocatableName: string;
   escalations: PrincipalEscalation[];
 }
 
@@ -34,9 +35,9 @@ export class PermissionMigrationService {
     return this.http.get<PermissionMigrationFinding[]>(`${this.base}/findings`);
   }
 
-  resolve(resourceId: string): Observable<PermissionMigrationFinding[]> {
+  resolve(allocatableId: string): Observable<PermissionMigrationFinding[]> {
     return this.http.post<PermissionMigrationFinding[]>(
-      `${this.base}/${encodeURIComponent(resourceId)}/resolve`,
+      `${this.base}/${encodeURIComponent(allocatableId)}/resolve`,
       null,
     );
   }
