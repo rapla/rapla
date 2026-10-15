@@ -17,7 +17,6 @@ import { GraphqlService } from '../graphql/graphql.service';
 import { MatDialog } from '@angular/material/dialog';
 import { UndoToastService } from '../actions/undo-toast.service';
 import { FilterStore } from '../state/filter-store';
-import { ImportWorklistService } from '../import/import-worklist.service';
 import { signal as ngSignal } from '@angular/core';
 import { t } from '../i18n/i18n.service';
 

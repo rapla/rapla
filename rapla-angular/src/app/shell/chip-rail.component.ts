@@ -15,7 +15,14 @@ import { ImportSyncButtonComponent } from '../import/import-sync-button.componen
  */
 @Component({
   selector: 'app-chip-rail',
-  imports: [NgTemplateOutlet, TPipe, MatChipsModule, MatIconModule, MatButtonModule, ImportSyncButtonComponent],
+  imports: [
+    NgTemplateOutlet,
+    TPipe,
+    MatChipsModule,
+    MatIconModule,
+    MatButtonModule,
+    ImportSyncButtonComponent,
+  ],
   template: `
     <div class="rail" [class.is-empty]="store.isEmpty()">
       <span class="rlabel">{{ 'shell_filter_label' | t }}</span>

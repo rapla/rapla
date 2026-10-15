@@ -20,7 +20,13 @@ describe('ImportSyncButtonComponent', () => {
   const kurs = (id: string, parentIds: string[] = []) =>
     ({ id, label: id, parentIds }) as ResourceItem;
   const linkedOne = [
-    { id: 'r1', name: 'Mathe', externalId: 'v:1', firstDate: '2026-10-12T08:00:00', resourceIds: ['k1'] },
+    {
+      id: 'r1',
+      name: 'Mathe',
+      externalId: 'v:1',
+      firstDate: '2026-10-12T08:00:00',
+      resourceIds: ['k1'],
+    },
   ];
 
   function setup(over: Record<string, unknown> = {}, resources: ResourceItem[] = []) {
@@ -84,7 +90,10 @@ describe('ImportSyncButtonComponent', () => {
   });
 
   it('is active for a Kurs chip and counts linked from the reservations', () => {
-    const store = setup({ linked: signal(linkedOne), worklist: signal({ groups: [], items: [] }) }, [kurs('k1')]);
+    const store = setup(
+      { linked: signal(linkedOne), worklist: signal({ groups: [], items: [] }) },
+      [kurs('k1')],
+    );
     store.add({ id: 'k1', kind: 'resource', label: 'STG-WIB25B' });
     const el = render();
     expect((el.querySelector('button') as HTMLButtonElement).disabled).toBe(false);
@@ -105,7 +114,9 @@ describe('ImportSyncButtonComponent', () => {
     store.add({ id: 'group', kind: 'resource', label: 'Gruppe' });
     (render().querySelector('button') as HTMLButtonElement).click();
     expect(open).toHaveBeenCalledTimes(1);
-    const data = (open.mock.calls[0] as unknown[])[1] as { data: { groupIds: string[]; semester: string } };
+    const data = (open.mock.calls[0] as unknown[])[1] as {
+      data: { groupIds: string[]; semester: string };
+    };
     expect([...data.data.groupIds].sort()).toEqual(['k1', 'k2']);
     expect(data.data.semester).toBe('WiSe 2026/27');
   });

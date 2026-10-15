@@ -24,7 +24,11 @@ describe('StagedDetailsButtonComponent', () => {
           provide: ImportWorklistService,
           useValue: {
             stagedEventDetails: () =>
-              of({ sourceItemId: 'v:1', changedSince: null, fields: [{ key: 'NAME', value: 'Mathe' }] }),
+              of({
+                sourceItemId: 'v:1',
+                changedSince: null,
+                fields: [{ key: 'NAME', value: 'Mathe' }],
+              }),
           },
         },
       ],

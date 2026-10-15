@@ -350,7 +350,9 @@ export class ImportWorklistService {
   /** WP23x C4 — the item's source record; null when unknown, not visible or on error. */
   stagedEventDetails(sourceItemId: string): Observable<StagedEventDetails | null> {
     return this.gql
-      .query<{ stagedEventDetails: StagedEventDetails | null }>(
+      .query<{
+        stagedEventDetails: StagedEventDetails | null;
+      }>(
         `query ($id: ID!) { stagedEventDetails(sourceItemId: $id) { sourceItemId changedSince fields { key value } } }`,
         { id: sourceItemId },
       )
@@ -363,7 +365,9 @@ export class ImportWorklistService {
   /** dhbwrapla PRD 004 § H5a — ranked template suggestions (exact | parent | generic), best first. */
   templateSuggestions(groupIds: string[], kind: 'v' | 'p'): Observable<TemplateSuggestion[]> {
     return this.gql
-      .query<{ externalEventTemplateSuggestions: TemplateSuggestion[] }>(
+      .query<{
+        externalEventTemplateSuggestions: TemplateSuggestion[];
+      }>(
         `query ($ids: [ID!]!, $kind: String!) { externalEventTemplateSuggestions(groupIds: $ids, kind: $kind) { id name reason } }`,
         { ids: groupIds, kind },
       )
@@ -377,13 +381,18 @@ export class ImportWorklistService {
    *  Plain true/false like bindStagedEvent (§12). */
   applyStagedChanges(sourceItemId: string): Observable<'applied' | 'refused' | 'error'> {
     return this.gql
-      .mutate<{ applyStagedChanges: boolean }>(
-        `mutation ($item: ID!) { applyStagedChanges(sourceItemId: $item) }`,
-        { item: sourceItemId },
-      )
+      .mutate<{
+        applyStagedChanges: boolean;
+      }>(`mutation ($item: ID!) { applyStagedChanges(sourceItemId: $item) }`, {
+        item: sourceItemId,
+      })
       .pipe(
         map((result) =>
-          result.kind !== 'ok' ? 'error' : result.data.applyStagedChanges === true ? 'applied' : 'refused',
+          result.kind !== 'ok'
+            ? 'error'
+            : result.data.applyStagedChanges === true
+              ? 'applied'
+              : 'refused',
         ),
         catchError(() => of('error' as const)),
         tap((outcome) => {
@@ -396,10 +405,11 @@ export class ImportWorklistService {
   /** @returns rows cleared, or null on a technical error (review round 18 M3). */
   dismissStagedChanges(sourceItemIds: string[]): Observable<number | null> {
     return this.gql
-      .mutate<{ dismissStagedChanges: number }>(
-        `mutation ($ids: [ID!]!) { dismissStagedChanges(sourceItemIds: $ids) }`,
-        { ids: sourceItemIds },
-      )
+      .mutate<{
+        dismissStagedChanges: number;
+      }>(`mutation ($ids: [ID!]!) { dismissStagedChanges(sourceItemIds: $ids) }`, {
+        ids: sourceItemIds,
+      })
       .pipe(
         map((result) => (result.kind === 'ok' ? result.data.dismissStagedChanges : null)),
         catchError(() => of(null)),

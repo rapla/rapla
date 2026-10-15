@@ -1,4 +1,14 @@
-import { Component, DestroyRef, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
 import {
   MAT_DIALOG_DATA,
   MatDialog,
@@ -51,7 +61,6 @@ export interface ImportSyncDialogData {
   /** Kurs id → display name, from the chips (fallback while the worklist is not loaded). */
   groupNames?: Record<string, string>;
 }
-
 
 /**
  * PRD 104 v3 — the "Dualis-Sync" dialog: ONE entry point for every per-Kurs
@@ -110,7 +119,10 @@ export interface ImportSyncDialogData {
       <!-- H5a: Kurs multi-filter, from the chips' Kurse -->
       <mat-chip-listbox class="kurs-filter" multiple [attr.aria-label]="'import_kurs_filter' | t">
         @for (g of courseGroups(); track g.id) {
-          <mat-chip-option [selected]="!kursOff().has(g.id)" (selectionChange)="setKurs(g.id, $event.selected)">
+          <mat-chip-option
+            [selected]="!kursOff().has(g.id)"
+            (selectionChange)="setKurs(g.id, $event.selected)"
+          >
             {{ g.name }}
           </mat-chip-option>
         }
@@ -118,7 +130,6 @@ export interface ImportSyncDialogData {
     }
 
     <mat-dialog-content>
-
       <div class="select-all">
         <!-- same toggle and texts as the resource search ("alle wählen" / "Auswahl aufheben") -->
         <button type="button" class="listall" (click)="allChecked() ? selectNone() : selectAll()">
@@ -145,7 +156,7 @@ export interface ImportSyncDialogData {
             class="tpl-chip group-chip"
             [disabled]="selectedIn('v').length === 0"
             [matMenuTriggerFor]="tplMenu"
-                  (menuOpened)="focusMenuSearch()"
+            (menuOpened)="focusMenuSearch()"
             (click)="menuTarget.set({ group: 'v' })"
           >
             {{ groupChipLabel('v') }} ▾
@@ -175,7 +186,7 @@ export interface ImportSyncDialogData {
             class="tpl-chip group-chip"
             [disabled]="selectedIn('p').length === 0"
             [matMenuTriggerFor]="tplMenu"
-                  (menuOpened)="focusMenuSearch()"
+            (menuOpened)="focusMenuSearch()"
             (click)="menuTarget.set({ group: 'p' })"
           >
             {{ groupChipLabel('p') }} ▾
@@ -243,7 +254,7 @@ export interface ImportSyncDialogData {
       </div>
 
       <mat-menu #tplMenu="matMenu" (closed)="menuQuery.set('')">
-        <div class="menu-search" (click)="$event.stopPropagation()">
+        <div class="menu-search" role="presentation" (click)="$event.stopPropagation()">
           <input
             #menuSearch
             [placeholder]="'import_template_search' | t"
@@ -257,7 +268,9 @@ export interface ImportSyncDialogData {
             🔗 {{ 'import_bind_existing' | t }}
           </button>
           @if (rowTemplate().has(item.sourceId)) {
-            <button mat-menu-item (click)="resetRow(item)">↺ {{ 'import_template_back_to_auto' | t }}</button>
+            <button mat-menu-item (click)="resetRow(item)">
+              ↺ {{ 'import_template_back_to_auto' | t }}
+            </button>
           }
         }
         @if (!menuQuery()) {
@@ -277,7 +290,6 @@ export interface ImportSyncDialogData {
           <div class="menu-more">{{ 'import_more_templates' | t: menuTemplates().more }}</div>
         }
       </mat-menu>
-
 
       <ng-template #openRow let-item>
         <div class="row2" [class.off]="!checked().has(item.sourceId)">
@@ -772,14 +784,18 @@ export class ImportSyncDialogComponent {
       from(items)
         .pipe(
           mergeMap(
-            (i) => this.service.bindCandidates(i.sourceId, w.from, w.to).pipe(map((c) => [i.sourceId, c] as const)),
+            (i) =>
+              this.service
+                .bindCandidates(i.sourceId, w.from, w.to)
+                .pipe(map((c) => [i.sourceId, c] as const)),
             20,
           ),
           takeUntilDestroyed(this.destroyRef),
         )
         .subscribe(([id, c]) => {
           // a reply for an older window must not land in the new one
-          if (this.candidateWindowKey === key) this.candidates.update((all) => ({ ...all, [id]: c }));
+          if (this.candidateWindowKey === key)
+            this.candidates.update((all) => ({ ...all, [id]: c }));
         });
     });
   });
@@ -833,7 +849,9 @@ export class ImportSyncDialogComponent {
     for (const i of this.service.worklist()?.items ?? []) {
       if (i.semester && i.groupIds.some((g) => groups.has(g))) set.add(i.semester);
     }
-    return [...set].filter((s) => semesterIndex(s) >= 0).sort((a, b) => semesterIndex(a) - semesterIndex(b));
+    return [...set]
+      .filter((s) => semesterIndex(s) >= 0)
+      .sort((a, b) => semesterIndex(a) - semesterIndex(b));
   });
 
   canStep(delta: number): boolean {
@@ -861,10 +879,17 @@ export class ImportSyncDialogComponent {
 
   /** H5a Kurs multi-filter: Kurse switched off in the header. */
   readonly kursOff = signal<Set<string>>(new Set());
-  private readonly activeGroupIds = computed(() => this.data.groupIds.filter((g) => !this.kursOff().has(g)));
+  private readonly activeGroupIds = computed(() =>
+    this.data.groupIds.filter((g) => !this.kursOff().has(g)),
+  );
   readonly courseGroups = computed(() => {
-    const names = new Map((this.service.worklist()?.groups ?? []).map((g) => [g.id, g.name] as const));
-    return this.data.groupIds.map((id) => ({ id, name: names.get(id) ?? this.data.groupNames?.[id] ?? id }));
+    const names = new Map(
+      (this.service.worklist()?.groups ?? []).map((g) => [g.id, g.name] as const),
+    );
+    return this.data.groupIds.map((id) => ({
+      id,
+      name: names.get(id) ?? this.data.groupNames?.[id] ?? id,
+    }));
   });
   setKurs(id: string, selected: boolean): void {
     const next = new Set(this.kursOff());
@@ -903,9 +928,13 @@ export class ImportSyncDialogComponent {
   readonly exams = computed(() => this.openItems().filter((i) => i.kind === 'p'));
 
   /** Verknüpft = stamped reservations (durable source), NOT Halde rows. */
-  readonly linkedItems = computed(() => linkedOfGroups(this.service.linked(), this.activeGroupIds()));
+  readonly linkedItems = computed(() =>
+    linkedOfGroups(this.service.linked(), this.activeGroupIds()),
+  );
   readonly changedLinked = computed(() => this.linkedItems().filter((e) => !!this.changedOf(e.id)));
-  readonly unchangedLinked = computed(() => this.linkedItems().filter((e) => !this.changedOf(e.id)));
+  readonly unchangedLinked = computed(() =>
+    this.linkedItems().filter((e) => !this.changedOf(e.id)),
+  );
 
   /** H5a per-row template: a manual pick per item; otherwise the type default
    *  (the header field's choice or the server's auto template). */
@@ -1033,7 +1062,8 @@ export class ImportSyncDialogComponent {
   /** "n von m bereit": checked items that have a template. */
   readonly readyCount = computed(() => {
     const ids = this.checked();
-    return this.openItems().filter((i) => ids.has(i.sourceId) && this.templateFor(i) !== null).length;
+    return this.openItems().filter((i) => ids.has(i.sourceId) && this.templateFor(i) !== null)
+      .length;
   });
 
   /** H3a "Übernehmen": confirm (names + overwrite warning), then applyStagedChanges. */
@@ -1090,10 +1120,8 @@ export class ImportSyncDialogComponent {
     ),
   );
 
-
   /** Server-resolved defaults per type (naming rules live in the deployment, PRD 104 v3). */
   private readonly autoTemplates = signal<DefaultTemplates>({});
-
 
   readonly checked = signal<Set<string>>(new Set());
 
@@ -1154,9 +1182,6 @@ export class ImportSyncDialogComponent {
       height: '90vh',
     });
   }
-
-
-
 
   toggle(sourceId: string): void {
     const next = new Set(this.checked());

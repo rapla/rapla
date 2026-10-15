@@ -107,7 +107,11 @@ describe('ImportWorklistService staging mutations', () => {
   });
 
   it('stagedEventDetails: the record, or null on error / not visible (WP23x C4)', async () => {
-    const record = { sourceItemId: 'v:1', changedSince: null, fields: [{ key: 'NAME', value: 'Mathe' }] };
+    const record = {
+      sourceItemId: 'v:1',
+      changedSince: null,
+      fields: [{ key: 'NAME', value: 'Mathe' }],
+    };
     gql.query.mockReturnValueOnce(of({ data: { stagedEventDetails: record } }));
     expect(await outcome(svc.stagedEventDetails('v:1'))).toEqual(record);
     gql.query.mockReturnValueOnce(of({ data: { stagedEventDetails: null } }));

@@ -5,6 +5,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
+import { copyText } from '../common/copy-text';
 import { TPipe, t as tr } from '../i18n/i18n.service';
 import { ChangedFieldsComponent } from './changed-fields.component';
 import { ImportWorklistService, type StagedEventDetails } from './import-worklist.service';
@@ -15,7 +16,7 @@ import { ImportWorklistService, type StagedEventDetails } from './import-worklis
   selector: 'app-staged-details',
   imports: [TPipe, ChangedFieldsComponent, MatProgressSpinnerModule, MatIconModule],
   template: `
-    <div class="details" (click)="$event.stopPropagation()">
+    <div class="details" role="presentation" (click)="$event.stopPropagation()">
       @if (details(); as d) {
         <table>
           @for (f of d.fields; track f.key) {
@@ -97,7 +98,7 @@ export class StagedDetailsComponent {
   readonly sourceItemId = input.required<string>();
 
   copy(text: string): void {
-    void navigator.clipboard?.writeText(text);
+    void copyText(text);
     this.snackBar.open(tr('import_copied', text), undefined, { duration: 1500 });
   }
   readonly changedSince = input<string | null>(null);
@@ -118,10 +119,15 @@ export class StagedDetailsComponent {
 @Component({
   selector: 'app-staged-details-sheet',
   imports: [StagedDetailsComponent],
-  template: `<app-staged-details [sourceItemId]="data.sourceItemId" [changedSince]="data.changedSince" />`,
+  template: `<app-staged-details
+    [sourceItemId]="data.sourceItemId"
+    [changedSince]="data.changedSince"
+  />`,
 })
 export class StagedDetailsSheetComponent {
-  readonly data = inject<{ sourceItemId: string; changedSince: string | null }>(MAT_BOTTOM_SHEET_DATA);
+  readonly data = inject<{ sourceItemId: string; changedSince: string | null }>(
+    MAT_BOTTOM_SHEET_DATA,
+  );
 }
 
 /** The Dualis number as a link to the details — a popover on desktop, a bottom sheet below
@@ -130,10 +136,20 @@ export class StagedDetailsSheetComponent {
   selector: 'app-staged-details-button',
   imports: [MatMenuModule, TPipe, StagedDetailsComponent],
   template: `
-    <button type="button" class="info info-desktop" [title]="'import_details' | t" [matMenuTriggerFor]="menu">
+    <button
+      type="button"
+      class="info info-desktop"
+      [title]="'import_details' | t"
+      [matMenuTriggerFor]="menu"
+    >
       {{ label() }}
     </button>
-    <button type="button" class="info info-mobile" [title]="'import_details' | t" (click)="openSheet()">
+    <button
+      type="button"
+      class="info info-mobile"
+      [title]="'import_details' | t"
+      (click)="openSheet()"
+    >
       {{ label() }}
     </button>
     <mat-menu #menu="matMenu" class="staged-details-menu">

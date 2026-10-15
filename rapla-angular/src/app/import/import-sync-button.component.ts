@@ -8,7 +8,10 @@ import { FilterStore } from '../state/filter-store';
 import { ResourceSelectionStore } from '../state/resource-selection-store';
 import { ViewStateStore } from '../state/view-state-store';
 import { currentSemester, openItemsOfGroups, windowSemesterDate } from './import-models';
-import { ImportSyncDialogComponent, type ImportSyncDialogData } from './import-sync-dialog.component';
+import {
+  ImportSyncDialogComponent,
+  type ImportSyncDialogData,
+} from './import-sync-dialog.component';
 import { effectiveCourseIds, MAX_SYNC_COURSES, syncScope } from './import-sync-scope';
 import { ImportWorklistService } from './import-worklist.service';
 
@@ -75,8 +78,12 @@ export class ImportSyncButtonComponent {
   protected readonly maxCourses = MAX_SYNC_COURSES;
 
   protected readonly available = computed(() => this.worklist.sourceName() !== '');
-  protected readonly source = computed(() => this.worklist.sourceName() || tr('import_default_source'));
-  private readonly chips = computed(() => this.filter.entries().filter((c) => c.kind === 'resource'));
+  protected readonly source = computed(
+    () => this.worklist.sourceName() || tr('import_default_source'),
+  );
+  private readonly chips = computed(() =>
+    this.filter.entries().filter((c) => c.kind === 'resource'),
+  );
   private readonly courseIds = computed(() =>
     effectiveCourseIds(
       this.chips().map((c) => c.id),
@@ -108,7 +115,8 @@ export class ImportSyncButtonComponent {
     return `${linked}/${linked + this.openCount()}`;
   });
   protected readonly done = computed(
-    () => !this.worklist.loadFailed() && this.openCount() === 0 && this.worklist.linked().length > 0,
+    () =>
+      !this.worklist.loadFailed() && this.openCount() === 0 && this.worklist.linked().length > 0,
   );
 
   protected openSync(): void {

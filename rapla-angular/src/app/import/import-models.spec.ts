@@ -165,4 +165,3 @@ describe('semesterIndex', () => {
     expect(semesterIndex('kaputt')).toBe(-1);
   });
 });
-

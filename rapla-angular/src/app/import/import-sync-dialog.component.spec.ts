@@ -31,7 +31,12 @@ describe('ImportSyncDialogComponent', () => {
     boundReservationId: null,
     fullName: null,
   });
-  const items = [item('v:1', 'v'), item('v:2', 'v'), item('p:1', 'p'), { ...item('v:3', 'v'), semester: 'SoSe 2027' }];
+  const items = [
+    item('v:1', 'v'),
+    item('v:2', 'v'),
+    item('p:1', 'p'),
+    { ...item('v:3', 'v'), semester: 'SoSe 2027' },
+  ];
   const bindCandidates = vi.fn(() => of([]));
 
   function create() {
@@ -43,7 +48,12 @@ describe('ImportSyncDialogComponent', () => {
         provideAnimationsAsync(),
         {
           provide: MAT_DIALOG_DATA,
-          useValue: { groupIds: ['k1'], groupLabel: 'STG-WIB25B', semester: 'WiSe 2026/27', defaultStart: '2026-10-12T08:00:00' },
+          useValue: {
+            groupIds: ['k1'],
+            groupLabel: 'STG-WIB25B',
+            semester: 'WiSe 2026/27',
+            defaultStart: '2026-10-12T08:00:00',
+          },
         },
         { provide: MatDialogRef, useValue: { close: vi.fn() } },
         { provide: MatDialog, useValue: { open: vi.fn() } },
@@ -60,7 +70,9 @@ describe('ImportSyncDialogComponent', () => {
         {
           provide: NewEventOptionsService,
           useValue: {
-            templates: signal(Array.from({ length: 60 }, (_, i) => ({ id: `t${i}`, name: `Vorlage ${i}` }))),
+            templates: signal(
+              Array.from({ length: 60 }, (_, i) => ({ id: `t${i}`, name: `Vorlage ${i}` })),
+            ),
             ensureLoaded: () => of(null),
           },
         },
@@ -73,7 +85,8 @@ describe('ImportSyncDialogComponent', () => {
             loadFailed: signal(false),
             windowRange: signal(null),
             ensureLoaded: () => of(null),
-            defaultTemplates: () => of({ lectureTemplateId: 'lv', lectureTemplateName: 'LV-Vorlage' }),
+            defaultTemplates: () =>
+              of({ lectureTemplateId: 'lv', lectureTemplateName: 'LV-Vorlage' }),
             templateSuggestions: () => of([]),
             bindCandidates,
           },
@@ -104,7 +117,19 @@ describe('ImportSyncDialogComponent', () => {
     expect(c.menuTemplates().shown.length).toBe(50);
     expect(c.menuTemplates().more).toBe(10);
     c.menuQuery.set('vorlage 5');
-    expect(c.menuTemplates().shown.map((t) => t.id)).toEqual(['t5', 't50', 't51', 't52', 't53', 't54', 't55', 't56', 't57', 't58', 't59']);
+    expect(c.menuTemplates().shown.map((t) => t.id)).toEqual([
+      't5',
+      't50',
+      't51',
+      't52',
+      't53',
+      't54',
+      't55',
+      't56',
+      't57',
+      't58',
+      't59',
+    ]);
   });
 
   it('asks for candidates again after a semester step (M1)', async () => {
