@@ -66,7 +66,7 @@ class DemoApiAllowlistTest extends IsolatedDefaultDatasetTest
             "POST /api/storage/change/name", "GET /api/storage/profile/capabilities");
 
     static final Set<String> CLOSED = Set.of(
-            "GET /api/__test/throw-new-version", "GET /api/_smoketest/echo/{name}", "GET /api/_smoketest/greet", "GET /api/_smoketest/ping",
+            "GET /api/__test/bad-argument", "GET /api/__test/throw-new-version", "GET /api/_smoketest/echo/{name}", "GET /api/_smoketest/greet", "GET /api/_smoketest/ping",
             "POST /api/_smoketest/upper",
             "GET /api/admin/panels", "GET /api/admin/panels/{id}", "POST /api/admin/panels/{id}/action/{actionId}", "POST /api/admin/panels/{id}/save",
             "GET /api/admin/permission-migration/findings", "POST /api/admin/permission-migration/{allocatableId}/resolve",
