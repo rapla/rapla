@@ -50,7 +50,7 @@ class RaplaJNLPControllerTest
         i18n = mock(RaplaResources.class);
         when(i18n.getString("rapla.title")).thenReturn("Rapla");
 
-        controller = new RaplaJNLPController(facade, i18n, "");
+        controller = new RaplaJNLPController(facade, i18n, "", "");
 
         request = mock(HttpServletRequest.class);
         when(request.getScheme()).thenReturn("http");
@@ -150,7 +150,7 @@ class RaplaJNLPControllerTest
     @Test
     void configuredBaseUrlOnTheRequestHostIsTheCodebase() throws Exception
     {
-        new RaplaJNLPController(facade, i18n, "https://localhost").generateJnlp(request, response);
+        new RaplaJNLPController(facade, i18n, "https://localhost", "").generateJnlp(request, response);
         assertEquals("https://localhost/", codebaseOf(body.toString()));
     }
 
@@ -158,7 +158,7 @@ class RaplaJNLPControllerTest
     @Test
     void configuredBaseUrlOnAnotherHostIsIgnored() throws Exception
     {
-        new RaplaJNLPController(facade, i18n, "https://keycloak.example.com").generateJnlp(request, response);
+        new RaplaJNLPController(facade, i18n, "https://keycloak.example.com", "").generateJnlp(request, response);
         assertEquals("http://localhost:8051/", codebaseOf(body.toString()));
     }
 
@@ -189,6 +189,31 @@ class RaplaJNLPControllerTest
         assertTrue(jnlp.contains("<title>R&lt;&amp;&quot;x</title>"), jnlp);
         assertTrue(jnlp.contains("<menu submenu=\"R&lt;&amp;&quot;x\"/>"), jnlp);
         assertFalse(jnlp.contains("R<&"), jnlp);
+    }
+
+    /** The client jars are Java 17 bytecode (rapla-bom release 17); an older JVM would fail with UnsupportedClassVersionError. */
+    @Test
+    void j2seRequiresJava17OrNewer() throws Exception
+    {
+        controller.generateJnlp(request, response);
+        String jnlp = body.toString();
+        assertTrue(jnlp.contains("<j2se version=\"17+\""), jnlp);
+        assertFalse(jnlp.contains("1.8+"), jnlp);
+    }
+
+    @Test
+    void configuredVersionTravelsToTheClientAsAJnlpProperty() throws Exception
+    {
+        new RaplaJNLPController(facade, i18n, "", "3.0 <DHBW>").generateJnlp(request, response);
+        String jnlp = body.toString();
+        assertTrue(jnlp.contains("<property name=\"jnlp.rapla.version\" value=\"3.0 &lt;DHBW&gt;\"/>"), jnlp);
+    }
+
+    @Test
+    void noVersionPropertyWithoutAConfiguredVersion() throws Exception
+    {
+        controller.generateJnlp(request, response);
+        assertFalse(body.toString().contains("jnlp.rapla.version"), body.toString());
     }
 
     /** The XML declares UTF-8, so the body must be UTF-8 too — the charset has to be set before getWriter(). */

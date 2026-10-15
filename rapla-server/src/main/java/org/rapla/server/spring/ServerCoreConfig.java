@@ -24,6 +24,7 @@ import javax.sql.DataSource;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
@@ -80,9 +81,11 @@ public class ServerCoreConfig
     }
 
     @Bean
-    public RaplaSystemInfo raplaSystemInfo(BundleManager bundleManager)
+    public RaplaSystemInfo raplaSystemInfo(BundleManager bundleManager, @Value("${rapla.version:}") String version)
     {
-        return new RaplaSystemInfo(bundleManager);
+        RaplaSystemInfo systemInfo = new RaplaSystemInfo(bundleManager);
+        systemInfo.setVersion(version);
+        return systemInfo;
     }
 
     @Bean

@@ -12,6 +12,7 @@ import java.util.Locale;
 public class RaplaSystemInfo extends AbstractBundle
 {
     public static final String BUNDLENAME = "org.rapla.RaplaSystemInfo";
+    private String version;
     @Autowired
     public RaplaSystemInfo(BundleManager bundleManager)
     {
@@ -35,9 +36,15 @@ public class RaplaSystemInfo extends AbstractBundle
         return super.format(key, obj);
     }
 
+    public void setVersion(String version)
+    {
+        this.version = version;
+    }
+
     // custom format for info text
     public String infoText(String javaversion) {
         String signed = "";
-        return format("info.text",signed,javaversion );
+        String shown = version == null || version.isBlank() ? getString("rapla.version") : version;
+        return format("info.text",signed,javaversion, shown);
     }
 }

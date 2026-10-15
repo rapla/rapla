@@ -53,22 +53,25 @@ public class RaplaJNLPController
     private final RaplaFacade facade;
     private final RaplaResources i18n;
     private final String publicBaseUrl;
+    private final String version;
 
     public RaplaJNLPController(RaplaFacade facade, RaplaResources i18n,
-            @Value("${rapla.oauth.public-base-url:}") String publicBaseUrl)
+            @Value("${rapla.oauth.public-base-url:}") String publicBaseUrl,
+            @Value("${rapla.version:}") String version)
     {
         this.facade = facade;
         this.i18n = i18n;
         this.publicBaseUrl = publicBaseUrl == null ? "" : publicBaseUrl.trim();
+        this.version = version == null ? "" : version.trim();
     }
 
-    @GetMapping("/raplaclient")
+    @GetMapping({ "/raplaclient", "/rapla/raplaclient" })
     public void raplaclient(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         generateJnlp(request, response);
     }
 
-    @GetMapping("/raplaclient.jnlp")
+    @GetMapping({ "/raplaclient.jnlp", "/rapla/raplaclient.jnlp" })
     public void raplaclientJnlp(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         generateJnlp(request, response);
@@ -137,11 +140,11 @@ public class RaplaJNLPController
         out.println("<resources>");
         if (vmXmsSize != null && vmXmsSize > 0)
         {
-            out.println("  <j2se version=\"1.8+ \" java-vm-args=\"-Xms" + vmXmsSize + "m\"/>");
+            out.println("  <j2se version=\"17+\" java-vm-args=\"-Xms" + vmXmsSize + "m\"/>");
         }
         else
         {
-            out.println("  <j2se version=\"1.8+\"/>");
+            out.println("  <j2se version=\"17+\"/>");
         }
 
         // rapla.download.url is not emitted: the client resolves its server URL against the Web Start codebase (PH3).
@@ -152,6 +155,10 @@ public class RaplaJNLPController
             String usernameProperty = "jnlp.org.rapla.startupUser";
             String safeUsername = URLEncoder.encode(passedUsername, "UTF-8");
             out.println("  <property name=\"" + usernameProperty + "\" value=\"" + safeUsername + "\"/>");
+        }
+        if (!version.isEmpty())
+        {
+            out.println("  <property name=\"jnlp.rapla.version\" value=\"" + XMLWriter.encode(version) + "\"/>");
         }
         out.println(getLibsJNLP(request.getServletContext(), webstartRoot));
         out.println("</resources>");

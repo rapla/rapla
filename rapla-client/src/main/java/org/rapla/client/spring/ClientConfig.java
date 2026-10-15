@@ -51,7 +51,9 @@ public class ClientConfig
     @Bean
     public RaplaSystemInfo raplaSystemInfo(BundleManager bundleManager)
     {
-        return new RaplaSystemInfo(bundleManager);
+        RaplaSystemInfo systemInfo = new RaplaSystemInfo(bundleManager);
+        systemInfo.setVersion(System.getProperty("jnlp.rapla.version"));
+        return systemInfo;
     }
 
     @Bean

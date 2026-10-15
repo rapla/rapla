@@ -68,6 +68,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.client.internal.admin.client.AdminUserTask;
+import org.rapla.client.internal.BrowserLauncher;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.dbrm.RestartServer;
@@ -84,6 +85,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 import java.awt.Component;
@@ -94,6 +96,7 @@ import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.Set;
@@ -508,6 +511,20 @@ public class RaplaMenuBar extends RaplaGUIComponent
             {
                     HTMLView infoText = new HTMLView();
                     infoText.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+                    infoText.addHyperlinkListener(link -> {
+                        if (link.getEventType() != HyperlinkEvent.EventType.ACTIVATED || link.getURL() == null)
+                        {
+                            return;
+                        }
+                        try
+                        {
+                            BrowserLauncher.open(link.getURL().toURI());
+                        }
+                        catch (IOException | URISyntaxException ex)
+                        {
+                            LOGGER.warn("could not open {}: {}", link.getURL(), ex.getMessage());
+                        }
+                    });
                     String javaversion;
                     try
                     {
