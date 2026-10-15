@@ -2,6 +2,7 @@ package org.rapla.plugin.urlencryption.server;
 
 import org.rapla.entities.User;
 import org.rapla.facade.CalendarNotFoundExeption;
+import org.rapla.server.spring.web.SafePageError;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
@@ -82,7 +83,7 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
             final EncryptedHttpServletRequest servletRequest = new EncryptedHttpServletRequest(request, urlEncryptor);
             return servletRequest;
         } catch (Exception ex) {
-            LOGGER.error(ex.getMessage());
+            LOGGER.warn("{} [key undecryptable; {}]", ex.getMessage(), SafePageError.describe(request));
             return null;
         }
     }

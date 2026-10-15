@@ -1,6 +1,8 @@
 package org.rapla.server.spring.web;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -63,6 +65,38 @@ public final class SafePageError
                 logger.warn("failed writing error response", io);
             }
         }
+    }
+
+    /**
+     * Which link a "not found" log line is about: path, encrypted or plain, and the decoded lookup parameters.
+     * Never the key itself — an encrypted link is a capability, so only its length.
+     */
+    public static String describe(HttpServletRequest request)
+    {
+        StringBuilder description = new StringBuilder("path=").append(logSafe(request.getRequestURI()));
+        String key = request.getParameter(UrlEncryption.ENCRYPTED_PARAMETER_NAME);
+        description.append(key == null ? ", plain link" : ", encrypted link (key " + key.length() + " chars)");
+        for (String name : new String[] { "user", "file", "allocatable_id" })
+        {
+            String value = request.getParameter(name);
+            if (value != null)
+            {
+                description.append(", ").append(name).append('=').append(logSafe(value));
+            }
+        }
+        return description.toString();
+    }
+
+    /** 404 whose log line names the reason and the request ({@link #describe}); the body stays the message alone. */
+    public static void notFound(HttpServletRequest request, HttpServletResponse response, String message, String reason, Logger logger)
+    {
+        logger.warn("page error 404 - {} [{}; {}]", message, reason, describe(request));
+        write(response, 404, message, null, null);
+    }
+
+    private static String logSafe(String value)
+    {
+        return value == null ? "" : value.replaceAll("\\p{Cntrl}", "_");
     }
 
     /**

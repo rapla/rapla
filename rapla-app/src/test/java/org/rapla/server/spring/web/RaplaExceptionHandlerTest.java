@@ -10,6 +10,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.slf4j.LoggerFactory;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -30,13 +32,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 class RaplaExceptionHandlerTest
 {
+    private static final MockHttpServletRequest API = new MockHttpServletRequest("GET", "/api/test");
     private final RaplaExceptionHandler handler = new RaplaExceptionHandler();
 
     @Test
     void securityException_mapsTo401()
     {
         ResponseEntity<Map<String, Object>> response = handler.handleSecurity(
-                new RaplaSecurityException("bad credentials"));
+                new RaplaSecurityException("bad credentials"), API, new MockHttpServletResponse());
         assertEquals(HttpStatus.UNAUTHORIZED.value(), response.getStatusCode().value());
         assertBodyShape(response.getBody(), 401, "Unauthorized", "bad credentials");
     }
@@ -45,7 +48,7 @@ class RaplaExceptionHandlerTest
     void entityNotFoundException_mapsTo404()
     {
         ResponseEntity<Map<String, Object>> response = handler.handleNotFound(
-                new EntityNotFoundException("no such resource: ghost"));
+                new EntityNotFoundException("no such resource: ghost"), API, new MockHttpServletResponse());
         assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatusCode().value());
         assertBodyShape(response.getBody(), 404, "Not Found", "no such resource: ghost");
     }
@@ -54,7 +57,7 @@ class RaplaExceptionHandlerTest
     void missingRequestParameter_mapsTo400()
     {
         ResponseEntity<Map<String, Object>> response = handler.handleBadRequest(
-                new MissingServletRequestParameterException("userId", "String"));
+                new MissingServletRequestParameterException("userId", "String"), API, new MockHttpServletResponse());
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
 
@@ -62,7 +65,7 @@ class RaplaExceptionHandlerTest
     void illegalArgumentException_mapsTo400()
     {
         ResponseEntity<Map<String, Object>> response = handler.handleBadRequest(
-                new IllegalArgumentException("count must be positive"));
+                new IllegalArgumentException("count must be positive"), API, new MockHttpServletResponse());
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
         assertBodyShape(response.getBody(), 400, "Bad Request", "count must be positive");
     }
@@ -71,7 +74,7 @@ class RaplaExceptionHandlerTest
     void assertionError_mapsTo400()
     {
         ResponseEntity<Map<String, Object>> response = handler.handleBadRequest(
-                new AssertionError("Assertion failed"));
+                new AssertionError("Assertion failed"), API, new MockHttpServletResponse());
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
 
@@ -81,7 +84,7 @@ class RaplaExceptionHandlerTest
         // PRD 026 §B2 — concurrent-modification must be distinguishable from
         // the 500 catch-all so the SPA can drive its refresh-and-retry flow.
         ResponseEntity<Map<String, Object>> response = handler.handleNewVersion(
-                new RaplaNewVersionException("Reservation 'My Event' was modified by another user"));
+                new RaplaNewVersionException("Reservation 'My Event' was modified by another user"), API, new MockHttpServletResponse());
         assertEquals(HttpStatus.CONFLICT.value(), response.getStatusCode().value());
         assertBodyShape(response.getBody(), 409, "Conflict",
                 "Reservation 'My Event' was modified by another user");
@@ -91,7 +94,7 @@ class RaplaExceptionHandlerTest
     void genericRaplaException_mapsTo500()
     {
         ResponseEntity<Map<String, Object>> response = handler.handleRapla(
-                new RaplaException("operator unavailable"));
+                new RaplaException("operator unavailable"), API, new MockHttpServletResponse());
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatusCode().value());
         assertBodyShape(response.getBody(), 500, "Internal Server Error", "operator unavailable");
     }
@@ -109,7 +112,7 @@ class RaplaExceptionHandlerTest
         try
         {
             handler.handleRapla(new RaplaException("Failed to create reservations from Dualis import",
-                    new IllegalStateException("underlying cause")));
+                    new IllegalStateException("underlying cause")), API, new MockHttpServletResponse());
         }
         finally
         {
@@ -131,9 +134,9 @@ class RaplaExceptionHandlerTest
         logbackLogger.addAppender(appender);
         try
         {
-            handler.handleSecurity(new RaplaSecurityException("forbidden"));
-            handler.handleNotFound(new EntityNotFoundException("ghost"));
-            handler.handleBadRequest(new IllegalArgumentException("bad"));
+            handler.handleSecurity(new RaplaSecurityException("forbidden"), API, new MockHttpServletResponse());
+            handler.handleNotFound(new EntityNotFoundException("ghost"), API, new MockHttpServletResponse());
+            handler.handleBadRequest(new IllegalArgumentException("bad"), API, new MockHttpServletResponse());
         }
         finally
         {
@@ -147,7 +150,7 @@ class RaplaExceptionHandlerTest
     void nullMessage_fallsBackToReasonPhrase()
     {
         ResponseEntity<Map<String, Object>> response = handler.handleNotFound(
-                new EntityNotFoundException(null));
+                new EntityNotFoundException(null), API, new MockHttpServletResponse());
         assertEquals("Not Found", response.getBody().get("message"));
     }
 

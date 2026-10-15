@@ -1,7 +1,13 @@
 package org.rapla.server.spring.web;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -65,6 +71,41 @@ class SafePageErrorTest
         when(response.isCommitted()).thenReturn(true);
         assertDoesNotThrow(() -> SafePageError.write(response, 500, "x", null, null));
         verify(response, never()).setStatus(anyInt());
+    }
+
+    @Test
+    void describeNamesPathLinkKindAndLookupParametersButNeverTheKey()
+    {
+        MockHttpServletRequest plain = new MockHttpServletRequest("GET", "/rapla/calendar");
+        plain.setParameter("user", "homer");
+        plain.setParameter("file", "week\r\nforged");
+        plain.setParameter("allocatable_id", "r1");
+        assertEquals("path=/rapla/calendar, plain link, user=homer, file=week__forged, allocatable_id=r1", SafePageError.describe(plain));
+
+        MockHttpServletRequest encrypted = new MockHttpServletRequest("GET", "/rapla/ical");
+        encrypted.setParameter("key", "c2VjcmV0LWNhcGFiaWxpdHk");
+        encrypted.setParameter("salt", "s4lt");
+        assertEquals("path=/rapla/ical, encrypted link (key 23 chars)", SafePageError.describe(encrypted));
+    }
+
+    @Test
+    void notFoundLogsReasonAndRequestButAnswersOnlyTheMessage() throws Exception
+    {
+        Logger logger = (Logger) LoggerFactory.getLogger("rapla.404.test");
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/rapla/calendar");
+        request.setParameter("user", "homer");
+        request.setParameter("file", "week");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        SafePageError.notFound(request, response, "404 Calendar not found for u1", "calendar not found", logger);
+
+        assertEquals("page error 404 - 404 Calendar not found for u1 [calendar not found; path=/rapla/calendar, plain link, user=homer, file=week]",
+                appender.list.get(0).getFormattedMessage());
+        assertEquals(404, response.getStatus());
+        assertEquals("404 Calendar not found for u1", response.getContentAsString());
     }
 
     @Test

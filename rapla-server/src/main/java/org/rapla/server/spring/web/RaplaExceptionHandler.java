@@ -6,7 +6,12 @@ import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.InvalidMediaTypeException;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -53,21 +58,21 @@ public class RaplaExceptionHandler
      * becomes load-bearing for a real client decision.
      */
     @ExceptionHandler(RaplaSecurityException.class)
-    public ResponseEntity<Map<String, Object>> handleSecurity(RaplaSecurityException ex)
+    public ResponseEntity<Map<String, Object>> handleSecurity(RaplaSecurityException ex, HttpServletRequest request, HttpServletResponse response)
     {
-        return body(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        return body(HttpStatus.UNAUTHORIZED, ex.getMessage(), request, response);
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFound(EntityNotFoundException ex)
+    public ResponseEntity<Map<String, Object>> handleNotFound(EntityNotFoundException ex, HttpServletRequest request, HttpServletResponse response)
     {
-        return body(HttpStatus.NOT_FOUND, ex.getMessage());
+        return body(HttpStatus.NOT_FOUND, ex.getMessage(), request, response);
     }
 
     @ExceptionHandler({ MissingServletRequestParameterException.class, IllegalArgumentException.class, AssertionError.class })
-    public ResponseEntity<Map<String, Object>> handleBadRequest(Throwable ex)
+    public ResponseEntity<Map<String, Object>> handleBadRequest(Throwable ex, HttpServletRequest request, HttpServletResponse response)
     {
-        return body(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return body(HttpStatus.BAD_REQUEST, ex.getMessage(), request, response);
     }
 
     /**
@@ -81,26 +86,61 @@ public class RaplaExceptionHandler
      * If-Match. The semantic match is "conflict with current state of the resource".
      */
     @ExceptionHandler(RaplaNewVersionException.class)
-    public ResponseEntity<Map<String, Object>> handleNewVersion(RaplaNewVersionException ex)
+    public ResponseEntity<Map<String, Object>> handleNewVersion(RaplaNewVersionException ex, HttpServletRequest request, HttpServletResponse response)
     {
-        return body(HttpStatus.CONFLICT, ex.getMessage());
+        return body(HttpStatus.CONFLICT, ex.getMessage(), request, response);
     }
 
     @ExceptionHandler(RaplaException.class)
-    public ResponseEntity<Map<String, Object>> handleRapla(RaplaException ex)
+    public ResponseEntity<Map<String, Object>> handleRapla(RaplaException ex, HttpServletRequest request, HttpServletResponse response)
     {
         // 500 = unexpected server fault. Log the full exception (and its cause) so the
         // failure is diagnosable server-side — the client only receives the wrapper message.
         LOGGER.error("Unhandled server fault mapped to 500: {}", ex.getMessage(), ex);
-        return body(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+        return body(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request, response);
     }
 
-    private static ResponseEntity<Map<String, Object>> body(HttpStatus status, String message)
+    /**
+     * A page request (answer already started, a text content type, or a browser preferring HTML) gets a
+     * plain-text status line — a Map body is not writable there. Everything else, and /api always, keeps JSON.
+     */
+    private static ResponseEntity<Map<String, Object>> body(HttpStatus status, String message, HttpServletRequest request, HttpServletResponse response)
     {
+        if (!request.getRequestURI().startsWith(request.getContextPath() + "/api/") && pageLike(request, response))
+        {
+            SafePageError.write(response, status.value(), status.value() + " " + status.getReasonPhrase(), null, null);
+            return null;
+        }
         return ResponseEntity.status(status).body(Map.of(
                 "status", status.value(),
                 "error", status.getReasonPhrase(),
                 "message", message != null ? message : status.getReasonPhrase()
         ));
+    }
+
+    private static boolean pageLike(HttpServletRequest request, HttpServletResponse response)
+    {
+        String contentType = response.getContentType();
+        return response.isCommitted() || (contentType != null && contentType.startsWith("text/"))
+                || quality(request, MediaType.TEXT_HTML) > quality(request, MediaType.APPLICATION_JSON);
+    }
+
+    private static double quality(HttpServletRequest request, MediaType wanted)
+    {
+        double best = 0;
+        try
+        {
+            for (MediaType accepted : MediaType.parseMediaTypes(request.getHeader(HttpHeaders.ACCEPT)))
+            {
+                if (accepted.includes(wanted))
+                {
+                    best = Math.max(best, accepted.getQualityValue());
+                }
+            }
+        }
+        catch (InvalidMediaTypeException ignored)
+        {
+        }
+        return best;
     }
 }

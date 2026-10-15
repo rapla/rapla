@@ -3,6 +3,10 @@ package org.rapla.plugin.urlencryption.server;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -25,16 +29,47 @@ class EncryptedHttpServletRequestUriTest
     /** Hand-rolled double: skip real AES so the test needs no key store / facade. */
     private static class FixedDecryptor extends UrlEncryptor
     {
+        private final String plain;
+
         FixedDecryptor()
         {
+            this("a=1");
+        }
+
+        FixedDecryptor(String plain)
+        {
             super(null, null, null);
+            this.plain = plain;
         }
 
         @Override
         public synchronized String decrypt(String encrypted, String salt)
         {
-            return "a=1";
+            return plain;
         }
+    }
+
+    /**
+     * Regression 2026-10-15 (www1 prod): {@code Export2iCalController} binds {@code file} via
+     * {@code @RequestParam}, which Spring resolves through {@code getParameterValues()}. The wrapper
+     * decoded only in {@code getParameter()}, so encrypted iCal links to calendars whose name has
+     * spaces or brackets 404ed with the still URL-encoded name.
+     */
+    @Test
+    void parameterValuesAndMapAreDecodedLikeGetParameter() throws Exception
+    {
+        String name = "Kurs 1.Semester (WiSe26/27)";
+        MockHttpServletRequest original = new MockHttpServletRequest("GET", "/rapla/ical");
+        original.setParameter("key", "blob");
+        original.setParameter("salt", "123");
+
+        EncryptedHttpServletRequest wrapped = new EncryptedHttpServletRequest(original,
+                new FixedDecryptor("user=homer&file=" + URLEncoder.encode(name, StandardCharsets.UTF_8)));
+
+        assertEquals(name, wrapped.getParameter("file"));
+        assertArrayEquals(new String[] { name }, wrapped.getParameterValues("file"));
+        assertArrayEquals(new String[] { name }, wrapped.getParameterMap().get("file"));
+        assertEquals("homer", wrapped.getParameterValues("user")[0]);
     }
 
     @Test

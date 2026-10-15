@@ -1,5 +1,8 @@
 package org.rapla.server.spring.web;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,6 +28,7 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -32,6 +36,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -166,6 +172,38 @@ class CalendarExportEscapingTest
         String body = page("/rapla/calendar", "file=xssday&" + WEEK);
         contains(body, "<nobr>" + XSS_ESCAPED + "</nobr>");
         contains(body, "<nobr>" + NORMAL + "</nobr>");
+    }
+
+    // === garbled request parameters ===========================================
+
+    @Test
+    void garbledPagesParameterBehavesLikeAnAbsentOne() throws Exception
+    {
+        String query = "?user=homer&file=xssweek&" + WEEK + "&next=%3E%3E";
+        var response = mockMvc.perform(get("/rapla/calendar" + query + "&pages=1/images/favicon.ico")).andReturn().getResponse();
+        assertEquals(200, response.getStatus());
+        assertEquals(page("/rapla/calendar", query.substring(1)), response.getContentAsString());
+    }
+
+    @Test
+    void unknownCalendarIsLoggedWithPathLinkKindAndLookupParameters() throws Exception
+    {
+        Logger notFoundLog = (Logger) LoggerFactory.getLogger("rapla.404");
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        notFoundLog.addAppender(appender);
+        try
+        {
+            var response = mockMvc.perform(get("/rapla/calendar?user=homer&file=nosuchcalendar")).andReturn().getResponse();
+            assertEquals(404, response.getStatus());
+            String line = appender.list.get(0).getFormattedMessage();
+            assertTrue(line.endsWith("[calendar not found; path=/rapla/calendar, plain link, user=homer, file=nosuchcalendar]"), line);
+            assertFalse(response.getContentAsString().contains("path="), response.getContentAsString());
+        }
+        finally
+        {
+            notFoundLog.detachAppender(appender);
+        }
     }
 
     // === compact day (timeslot) column headers ================================

@@ -246,9 +246,9 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		    String allocatable_id  = request.getParameter("allocatable_id");
             final String pageRequestParam = request.getParameter("pages");
             int selectedPageCount;
-            if (pageRequestParam != null) {
+            try {
                selectedPageCount = Integer.parseInt(pageRequestParam);
-            } else {
+            } catch (NumberFormatException absentOrGarbled) {
                 final String pages = model.getOption(CalendarModel.PAGES);
                 selectedPageCount = pages != null ? Integer.parseInt(pages) : 1;
             }

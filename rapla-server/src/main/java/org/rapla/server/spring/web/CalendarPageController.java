@@ -151,8 +151,7 @@ public class CalendarPageController
             catch (EntityNotFoundException ex)
             {
                 String message = "404 Calendar not available. User not found ";
-                write404(response, message);
-                NOT_FOUND_LOG.warn("404 Username not found ");
+                write404(request, response, "user unknown", message);
                 return;
             }
             try
@@ -163,14 +162,14 @@ public class CalendarPageController
             catch (CalendarNotFoundExeption ex)
             {
                 String message = "404 Calendar not found for " + user.getId();
-                write404(response, message);
+                write404(request, response, "calendar not found", message);
                 return;
             }
             final Object isSet = model.getOption(AutoExportPlugin.HTML_EXPORT);
             if (isSet == null || isSet.equals("false"))
             {
                 String message = "404 Calendar not published for " + user.getId();
-                write404(response, message);
+                write404(request, response, "calendar not published", message);
                 return;
             }
             String allocatableId = request.getParameter("allocatable_id");
@@ -197,7 +196,7 @@ public class CalendarPageController
                 else
                 {
                     String message = "404 Ressource with id '" + allocatableId + "' not found for calendar " + user.getId() + "/" + filename;
-                    write404(response, message);
+                    write404(request, response, "resource not in calendar", message);
                     return;
                 }
             }
@@ -219,7 +218,7 @@ public class CalendarPageController
                         Throwable cause = ex.getCause();
                         if (cause instanceof ParseDateException)
                         {
-                            write404(response, cause.getMessage() + " in calendar " + user + "/" + filename);
+                            write404(request, response, "unparsable date", cause.getMessage() + " in calendar " + user + "/" + filename);
                         }
                         else
                         {
@@ -229,7 +228,7 @@ public class CalendarPageController
                 }
                 else
                 {
-                    write404(response,
+                    write404(request, response, "view without html support",
                             "No view available for calendar " + user + "/" + filename + ". Rapla has currently no html support for the view with the id '"
                                     + viewId + "'.");
                 }
@@ -242,7 +241,6 @@ public class CalendarPageController
         catch (Exception ex)
         {
             writeStacktrace(response, ex);
-            throw new ServletException(ex);
         }
         finally
         {
@@ -382,9 +380,9 @@ public class CalendarPageController
         SafePageError.write(response, 500, "Internal error generating the calendar view.", NOT_FOUND_LOG, ex);
     }
 
-    private void write404(HttpServletResponse response, String message)
+    private void write404(HttpServletRequest request, HttpServletResponse response, String reason, String message)
     {
-        SafePageError.write(response, 404, message, NOT_FOUND_LOG, null);
+        SafePageError.notFound(request, response, message, reason, NOT_FOUND_LOG);
     }
 
     private void writeError(HttpServletResponse response, String message)

@@ -137,7 +137,7 @@ public class Export2iCalController
             }
             catch (EntityNotFoundException ex)
             {
-                SafePageError.write(response, 404, message, NOT_FOUND_LOG, null);
+                SafePageError.notFound(request, response, message, "user unknown", NOT_FOUND_LOG);
                 return;
             }
             final Preferences preferences = facade.getPreferences(user);
@@ -145,7 +145,7 @@ public class Export2iCalController
 
             if (calModel == null)
             {
-                SafePageError.write(response, 404, message, NOT_FOUND_LOG, null);
+                SafePageError.notFound(request, response, message, "calendar not found", NOT_FOUND_LOG);
                 return;
             }
 
@@ -154,7 +154,7 @@ public class Export2iCalController
 
             if (isSet == null || isSet.equals("false"))
             {
-                SafePageError.write(response, 404, message, NOT_FOUND_LOG, null);
+                SafePageError.notFound(request, response, message, "calendar not published", NOT_FOUND_LOG);
                 return;
             }
 

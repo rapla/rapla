@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -58,18 +59,8 @@ public class EncryptedHttpServletRequest extends HttpServletRequestWrapper
 	@Override
 	public String getParameter(String name)
 	{
-		String[] s = this.getParameterMap().get(name);
-		if(s != null && s.length >= 1) {
-			String valueUnEncoded = s[0];
-			String value = null;
-			try {
-				value = URLDecoder.decode(valueUnEncoded, encoding);
-			} catch (UnsupportedEncodingException e) {
-				throw new RuntimeException(e);
-			}
-			return value;
-		}
-		return null;
+		String[] s = getParameterValues(name);
+		return s != null && s.length >= 1 ? s[0] : null;
 	}
 	
 	public String getOriginalParameter(String name)
@@ -80,13 +71,18 @@ public class EncryptedHttpServletRequest extends HttpServletRequestWrapper
 	@Override
 	public Map<String, String[]> getParameterMap()
 	{
-		return this.parameters;
+		Map<String, String[]> decoded = new TreeMap<>();
+		for (String name : parameters.keySet())
+		{
+			decoded.put(name, getParameterValues(name));
+		}
+		return decoded;
 	}
-	
+
 	@Override
 	public Enumeration<String> getParameterNames()
 	{
-		return Collections.enumeration(getParameterMap().keySet());
+		return Collections.enumeration(parameters.keySet());
 	}
 
 	@Override public StringBuffer getRequestURL()
@@ -121,9 +117,20 @@ public class EncryptedHttpServletRequest extends HttpServletRequestWrapper
 		return super.getRequestURI();
 	}
 
+	/** Decoded like {@link #getParameter}: Spring binds {@code @RequestParam} through this method. */
 	@Override
 	public String[] getParameterValues(String name)
 	{
-		return this.getParameterMap().get(name);
+		String[] raw = parameters.get(name);
+		if (raw == null)
+		{
+			return null;
+		}
+		String[] decoded = new String[raw.length];
+		for (int i = 0; i < raw.length; i++)
+		{
+			decoded[i] = URLDecoder.decode(raw[i], StandardCharsets.UTF_8);
+		}
+		return decoded;
 	}
 }
