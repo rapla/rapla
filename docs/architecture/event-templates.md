@@ -18,8 +18,10 @@ instantiation semantics, and the SPA "Neu" picker built on top
   annotation `RaplaObjectAnnotations.KEY_TEMPLATE` (= `"template"`) holding the template
   allocatable's id. Multi-reservation templates are normal (the dhbw "_Semestervorlage …"
   entries hold whole semester weeks).
-- Deployments reach ~1500 templates; Swing renders them as a balanced alphabetic menu tree
-  (`BalancedHierarchicalMenu`, rapla-core, max 25/node, range labels like "Aa … Ab – Ak").
+- Deployments reach ~1500–2800 templates. Swing shows up to 25 as a flat context-menu list
+  (`BalancedHierarchicalMenu`); above 25, one menu entry opens `TemplateSearchPanel` — all
+  templates in one sorted scroll list with the SPA search rule
+  ([PRD 104 § Phase 7](../prd/104-spa-template-picker.md#phase-7--swing-search-dialog-above-one-menus-worth-2026-10-14)).
 
 ## Permissions
 

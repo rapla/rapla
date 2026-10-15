@@ -15,6 +15,7 @@ package org.rapla.plugin.tempatewizard.client;
 import org.rapla.scheduler.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
@@ -39,6 +40,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.rapla.plugin.tempatewizard.TemplatePlugin;
+import org.rapla.plugin.tempatewizard.client.swing.TemplateSearchPanel;
 import org.rapla.storage.PermissionController;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -69,6 +71,7 @@ import java.util.stream.Collectors;
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateWizard.class);
     final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<>("org.rapla.plugin.templatewizard.enabled");
+    private static final int MAX_MENU_ENTRIES = 25;
     boolean templateNamesValid = false;
     List<Allocatable> templateNames;
     private final CalendarModel model;
@@ -180,6 +183,12 @@ import java.util.stream.Collectors;
             IdentifiableMenuEntry item = menuItemFactory.createMenuItem(singleTemplateName, i18n.getIcon("icon.new"), action);
             element = item.getComponent();
         }
+        else if (templateNames.size() > MAX_MENU_ENTRIES)
+        {
+            Consumer<PopupContext> action = enabled ? (popupContext) -> showSearch(templateNames, popupContext) : null;
+            IdentifiableMenuEntry item = menuItemFactory.createMenuItem(getMultipleTemplateName() + "…", i18n.getIcon("icon.new"), action);
+            element = item.getComponent();
+        }
         else
         {
             final String multipleTemplateName = getMultipleTemplateName();
@@ -201,10 +210,27 @@ import java.util.stream.Collectors;
         return element;
     }
 
+    private void showSearch(List<Allocatable> templates, PopupContext popupContext)
+    {
+        Locale locale = getLocale();
+        DialogInterface[] dialog = new DialogInterface[1];
+        TemplateSearchPanel<Allocatable> panel = new TemplateSearchPanel<>(templates, t -> t.getName(locale), locale, i18n.getString("search"),
+                selected -> { if (dialog[0] != null) dialog[0].getAction(0).setEnabled(selected != null); },
+                () -> dialog[0].getAction(0).execute());
+        dialog[0] = dialogUiFactory.createContentDialog(popupContext, panel, new String[] { i18n.getString("new"), i18n.getString("cancel") });
+        dialog[0].setTitle(getMultipleTemplateName());
+        dialog[0].getAction(0).setEnabled(panel.selected() != null);
+        dialog[0].start(true).thenAccept(choice -> {
+            Allocatable template = panel.selected();
+            if (choice == 0 && template != null) createWithTemplate(template);
+        });
+        panel.focusFilter();
+    }
+
     private void addTemplates(List<Allocatable> templateNames, MenuInterface container) {
         Locale locale1 = raplaLocale.getLocale();
         Function<Allocatable,String> namer = t -> t.getName(locale1);
-        BalancedHierarchicalMenu.MenuNode<Allocatable> root = BalancedHierarchicalMenu.build(templateNames, namer,locale1,25);
+        BalancedHierarchicalMenu.MenuNode<Allocatable> root = BalancedHierarchicalMenu.build(templateNames, namer,locale1,MAX_MENU_ENTRIES);
         StringWriter out = new StringWriter();
         PrintWriter writer = new PrintWriter(out);
         BalancedHierarchicalMenu.print(writer,root);

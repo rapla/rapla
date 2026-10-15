@@ -454,6 +454,7 @@ field was removed 2026-09-13).
   deferred); the import-side multi-reservation consumer is in scope via
   [§ Templates as import blueprints](#templates-as-import-blueprints-external-event-import) / Phase 6.
 - Swing adoption of the server-computed paths.
+  (The Swing search dialog above 25 templates is in scope — Phase 7 / D11.)
 - Server-side recents for templates (PRD 089 extension; picker v1 uses localStorage).
 - Template management UI in the SPA (create/edit/delete templates stays Swing).
 
@@ -517,6 +518,14 @@ field was removed 2026-09-13).
       first-copy truncation).
 - [ ] Unmatched-items warn dialog ("Back" / "Create anyway", OQ3); n:1 assignment with per-item
       copies + count badge (OQ4).
+
+### Phase 7 — Swing: search dialog above one menu's worth (2026-10-14)
+- [x] `TemplateWizard`: ≤ 25 templates keep the flat context-menu list; > 25 show ONE entry
+      "Neue Veranstaltungen mit Vorlage…" that opens `TemplateSearchPanel` (all templates in one
+      collator-sorted scroll list, search field = SPA rule: AND over terms, case-insensitive).
+      Inherited by `ExternalEventImportWizard`. Test: `TemplateSearchPanelTest` (tier 1).
+- [x] Live check in the Swing client against a store with > 25 templates — passed 2026-10-14
+      (maintainer, JNLP client against a deployment with several thousand templates).
 
 ## Tests
 
@@ -607,3 +616,8 @@ template), fuzzy name match as secondary suggestion, user confirms/overrides in 
 table before create. Matching lives in the generic externaleventimport layer. Rejected:
 silent heuristic-only matching (invisible mis-assignments), key-only matching (maintenance
 burden, fails on templates without the attribute).
+
+**D11 — Swing: search dialog instead of the menu tree above 25 templates** (2026-10-14, user
+decision). Trigger: a deployment with ~2800 templates reported a mis-sorted `BalancedHierarchicalMenu`
+tree (`splitRootIfNeeded` re-sorts groups by their abbreviated labels). Same reasoning as D1:
+a dialog scrolls, a menu doesn't. ≤ 25 templates stay a flat menu (no extra click).
