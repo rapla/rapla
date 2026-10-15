@@ -80,8 +80,7 @@ public class ArtifactPatchLoader
             return report;
         }
         for (Path file : files) if (file.toString().endsWith(".graphql")) apply(file, report);
-        // login.mustache is the /login page override (LoginPageController), not a stored document
-        for (Path file : files) if (file.toString().endsWith(".mustache") && !file.getFileName().toString().equals("login.mustache")) apply(file, report);
+        for (Path file : files) if (file.toString().endsWith(".mustache")) apply(file, report);
         return report;
     }
 

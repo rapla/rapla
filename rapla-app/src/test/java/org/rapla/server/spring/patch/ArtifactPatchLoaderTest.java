@@ -67,6 +67,9 @@ class ArtifactPatchLoaderTest
         Files.writeString(patchDir.resolve("PatchDoc.mustache"), DOC);
         Files.writeString(patchDir.resolve("no-head.mustache"), "<p>ignored</p>");
         Files.writeString(patchDir.resolve("login.mustache"), "<html>{{title}}</html>");
+        Path pages = Files.createDirectories(patchDir.resolve("rapla"));
+        Files.writeString(pages.resolve("index.mustache"), "<html>{{title}}</html>");
+        Files.writeString(pages.resolve("status.mustache"), "<html>{{{info}}}</html>");
     }
 
     @DynamicPropertySource
@@ -97,7 +100,8 @@ class ArtifactPatchLoaderTest
         assertEquals(List.of(), second.created(), second.toString());
         assertEquals(List.of(), second.updated(), second.toString());
         assertEquals(List.of("PatchView", "PatchDoc"), second.skipped(), second.toString());
-        assertEquals(List.of("no-head.mustache"), second.ignored(), second.toString());
+        // no name is special at the top level; the namespace folders (rapla/ page templates) are never read
+        assertEquals(List.of("login.mustache", "no-head.mustache"), second.ignored(), second.toString());
         assertEquals(view.getLastChanged(), artifacts.find(StoredArtifact.KIND_VIEW, "PatchView").orElseThrow().getLastChanged());
     }
 

@@ -147,12 +147,14 @@ public class SecurityConfig
                     // per-resolver §12 gating remains the second layer.
                     auth.requestMatchers("/api/graphql").authenticated();
                     auth.requestMatchers("/api/auth/**", "/", "/index", "/server", "/static/**", "/*.html", "/*.css",
-                            "/favicon.ico", "/images/**","/webclient/**", "/app/**",
+                            "/favicon.ico", "/images/**","/webclient/**", "/app/**", "/patch/**",
                             "/api/logger/**", "/api/ical/timezones/**",
                             "/rapla/calendar", "/rapla/calendar.csv",
                             "/rapla/internal_calendar", "/rapla/internal_calendar.csv",
                             "/rapla/ical", "/rapla/internal_ical",
                             "/raplaclient", "/raplaclient.jnlp",
+                            // Rapla 2 at the root context published these; desktop launchers and bookmarks keep them.
+                            "/rapla/raplaclient", "/rapla/raplaclient.jnlp", "/rapla/index",
                             "/api/v3/api-docs/**", "/v3/api-docs/**",
                             // GraphQL SDL (GraphQlSchemaController; Spring's printer is off)
                             // — the SDL pendant to the public /v3/api-docs above. API

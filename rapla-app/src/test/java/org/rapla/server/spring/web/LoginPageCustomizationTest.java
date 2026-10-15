@@ -42,14 +42,14 @@ class LoginPageCustomizationTest
             assertNotNull(in, "testdefault.xml must be on the classpath");
             Files.copy(in, dataFile, StandardCopyOption.REPLACE_EXISTING);
         }
-        patchDir = Files.createDirectories(tempDir.resolve("patch"));
+        patchDir = Files.createDirectories(tempDir.resolve("patch").resolve("rapla"));
     }
 
     @DynamicPropertySource
     static void registerProps(DynamicPropertyRegistry registry)
     {
         registry.add("rapla.file-datasources.raplafile", () -> dataFile.toAbsolutePath().toString());
-        registry.add("rapla.patch-dir", () -> patchDir.toAbsolutePath().toString());
+        registry.add("rapla.patch-dir", () -> patchDir.getParent().toAbsolutePath().toString());
         registry.add("rapla.oauth.external.kctest.enabled", () -> "true");
         registry.add("rapla.oauth.external.kctest.type", () -> "keycloak");
         registry.add("rapla.oauth.external.kctest.base-url", () -> "https://kc.example.com");

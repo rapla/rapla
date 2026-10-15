@@ -1,7 +1,5 @@
 package org.rapla.server.spring;
 
-import com.samskivert.mustache.Mustache;
-import com.samskivert.mustache.Template;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,7 +19,6 @@ import org.rapla.storage.SyncStorageOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
@@ -32,24 +29,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.rapla.server.spring.oauth.OidcLoginSuccessHandler;
-import org.springframework.web.util.HtmlUtils;
+import org.rapla.server.spring.web.PatchablePage;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
-import java.util.function.Function;
 
 /**
  * Replaces Spring Security's DefaultLoginPageGeneratingFilter with the ONE
@@ -85,17 +73,8 @@ public class LoginPageController
     /** Explicit language choice from the login page's chooser (per-browser). */
     static final String LANG_COOKIE = org.rapla.server.spring.web.RequestLanguage.COOKIE;
 
-    private static final String TEMPLATE = "templates/login.mustache";
-
-    /** Same conventions as DocumentRenderer; escaping is HtmlUtils (named entities), as the page always rendered. */
-    private static final Mustache.Compiler COMPILER = Mustache.compiler().escapeHTML(true).withEscaper(HtmlUtils::htmlEscape)
-            .nullValue("").defaultValue("");
-
-    private volatile Template template;
-
     /** PRD 131 round 2 — deployment styling and template from the patch directory (PRD 112), re-read when changed. */
-    private final PatchFile<String> patchCss;
-    private final PatchFile<Template> patchTemplate;
+    private final PatchablePage page;
 
     private final ExternalProvidersProperties externalProviders;
     private final boolean passwordLoginEnabled;
@@ -118,9 +97,7 @@ public class LoginPageController
                               RaplaOauthRedirectProperties redirectProps,
                               RaplaServerProperties serverProperties)
     {
-        Path patchDir = Path.of(serverProperties.getPatchDir());
-        this.patchCss = new PatchFile<>(patchDir.resolve("login.css"), css -> css);
-        this.patchTemplate = new PatchFile<>(patchDir.resolve("login.mustache"), COMPILER::compile);
+        this.page = new PatchablePage("templates/login.mustache", Path.of(serverProperties.getPatchDir()), "login.mustache", "login.css");
         this.callbackPaths = redirectProps.getSameOriginCallbackPaths();
         requestCache.setMatchingRequestParameterName(null);
         this.requestLanguage = requestLanguage;
@@ -263,27 +240,7 @@ public class LoginPageController
         // RequestResolver forwards this whitelisted param. Ordinary logins omit it →
         // silent SSO preserved.
         addForm(model, request, logout != null, error != null, locale);
-        model.put("patchCss", patchCss.get());
-        Template patched = patchTemplate.get();
-        return (patched != null ? patched : template()).execute(model);
-    }
-
-    private Template template()
-    {
-        Template t = template;
-        if (t == null)
-        {
-            try (Reader reader = new InputStreamReader(new ClassPathResource(TEMPLATE).getInputStream(), StandardCharsets.UTF_8))
-            {
-                t = COMPILER.compile(reader);
-            }
-            catch (IOException e)
-            {
-                throw new UncheckedIOException(e);
-            }
-            template = t;
-        }
-        return t;
+        return page.render(model);
     }
 
     /** Language chooser — every shipped bundle language, labeled with its autonym. */
@@ -397,46 +354,6 @@ public class LoginPageController
         {
             LOGGER.debug("No {} for provider {} in {}: {}", suffix, p.id(), bundle, e.getMessage());
             return null;
-        }
-    }
-
-    /** A file in the patch directory, parsed again whenever its modification time changes; null while it is absent or broken. */
-    private static final class PatchFile<T>
-    {
-        private record Loaded<T>(FileTime modified, T value) {}
-
-        private final Path path;
-        private final Function<String, T> parse;
-        private volatile Loaded<T> loaded;
-
-        PatchFile(Path path, Function<String, T> parse)
-        {
-            this.path = path;
-            this.parse = parse;
-        }
-
-        T get()
-        {
-            try
-            {
-                FileTime modified = Files.getLastModifiedTime(path);
-                Loaded<T> current = loaded;
-                if (current == null || !current.modified().equals(modified))
-                {
-                    current = new Loaded<>(modified, parse.apply(Files.readString(path)));
-                    loaded = current;
-                }
-                return current.value();
-            }
-            catch (NoSuchFileException e)
-            {
-                return null;
-            }
-            catch (IOException | RuntimeException e)
-            {
-                LOGGER.warn("Ignoring {}: {}", path, e.toString());
-                return null;
-            }
         }
     }
 

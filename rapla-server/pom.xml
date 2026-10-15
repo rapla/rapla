@@ -74,6 +74,11 @@
             <artifactId>jakarta.servlet-api</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- Start, status and login page templates (PatchablePage); version from the Spring Boot BOM -->
+        <dependency>
+            <groupId>com.samskivert</groupId>
+            <artifactId>jmustache</artifactId>
+        </dependency>
         <!-- HTTP client (used by EWSConnector after RESTeasy removal) -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>

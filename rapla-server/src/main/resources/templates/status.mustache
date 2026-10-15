@@ -1,0 +1,14 @@
+<html>
+<head>
+  <link REL="stylesheet" href="{{cssUrl}}" type="text/css">
+  <title>Rapla Server status</title>
+{{#patchCss}}
+  <style id="patch-index-css">{{{patchCss}}}</style>
+{{/patchCss}}
+</head>
+<body>
+  <div class="logo"></div>
+  <p>Server running </p>{{{info}}}
+  <hr>
+</body>
+</html>

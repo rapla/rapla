@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <link REL="stylesheet" href="{{cssUrl}}" type="text/css">
+    <link REL="shortcut icon" type="image/x-icon" href="{{faviconUrl}}">
+    <title>{{title}}</title>
+{{#patchCss}}
+    <style id="patch-index-css">{{{patchCss}}}</style>
+{{/patchCss}}
+  </head>
+  <body>
+    <div class="logo"></div>
+    <h3>{{title}}</h3>
+{{#menu}}
+    <div class="menuEntry">{{{html}}}</div>
+{{/menu}}
+    {{{info}}}
+  </body>
+</html>

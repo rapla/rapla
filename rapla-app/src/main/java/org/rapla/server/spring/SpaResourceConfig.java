@@ -3,6 +3,7 @@ package org.rapla.server.spring;
 import java.io.IOException;
 import java.time.Duration;
 
+import org.rapla.server.spring.web.PatchablePage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
@@ -33,13 +34,17 @@ public class SpaResourceConfig implements WebMvcConfigurer
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry)
     {
-        // PRD 133: a deployment's data/patch/favicon.ico and spa.css replace the built-in ones. Only
-        // these exact names are reachable — the patch directory also holds stored views and documents.
+        // PRD 133 D1: the patch directory's top level holds stored views and documents and is never
+        // served; its namespace folders serve only these file types. rapla/ feeds the fixed URLs.
+        String core = "file:" + patchDir + "/" + PatchablePage.CORE_NAMESPACE + "/";
         registry.addResourceHandler("/{file:favicon\\.ico}", "/app/{file:favicon\\.ico}", "/images/{file:favicon\\.ico}")
-                .addResourceLocations("file:" + patchDir + "/", "classpath:/static/images/")
+                .addResourceLocations(core, "classpath:/static/images/")
                 .setCacheControl(CacheControl.noCache());
         registry.addResourceHandler("/app/{file:spa\\.css}")
-                .addResourceLocations("file:" + patchDir + "/", "file:" + devDir, "classpath:/static/app/")
+                .addResourceLocations(core, "file:" + devDir, "classpath:/static/app/")
+                .setCacheControl(CacheControl.noCache());
+        registry.addResourceHandler("/patch/{ns:[a-z0-9_-]+}/{file:[\\w.-]+\\.(?:css|svg|png|jpg|ico|woff2)}")
+                .addResourceLocations("file:" + patchDir + "/")
                 .setCacheControl(CacheControl.noCache());
         registry.addResourceHandler("/app/" + HASHED_FILE)
                 .addResourceLocations("file:" + devDir, "classpath:/static/app/")

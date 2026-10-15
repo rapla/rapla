@@ -182,11 +182,11 @@ PRD 049 removed `jakarta.ws.rs-api` from rapla entirely. `ApiPrefixArchitectureT
 
 | FQCN | URL | Why exempt |
 |---|---|---|
-| `IndexPageController` | `/`, `/index` | Chooser landing page |
+| `IndexPageController` | `/`, `/index`, `/rapla/index` | Chooser landing page; `/rapla/index` is the Rapla 2 root-context bookmark |
 | `LoginPageController` | `/login` | Spring form-login convention |
 | `CalendarPageController` | `/rapla/calendar(.csv)?`, `/rapla/internal_calendar(.csv)?` | 🔒 External iCal subscribers depend on these literal URLs |
 | `Export2iCalController` | `/rapla/ical`, `/rapla/internal_ical` | 🔒 Outlook/Google/Apple subscribe here — must not move |
-| `RaplaJNLPController` | `/raplaclient.jnlp`, `/webclient/**` | Java Web Start launcher manifest |
+| `RaplaJNLPController` | `/raplaclient(.jnlp)`, `/rapla/raplaclient(.jnlp)`, `/webclient/**` | Java Web Start launcher manifest; the `/rapla/` forms are the Rapla 2 root-context URLs of existing desktop launchers, served directly (no redirect) |
 | `StatusPageController` | `/server` | Server-status HTML page |
 | `StaticOpenApiController` | `/api/v3/api-docs/**` | Meta endpoint — describes the API rather than being part of it (PRD 041); active only when SpringDoc (test-scope) is absent |
 

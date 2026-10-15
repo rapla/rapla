@@ -142,6 +142,12 @@ so any host in those networks may set `X-Forwarded-*`; if that is too wide, set
 The auth cookies' `Secure` flag follows the request scheme; behind a TLS-terminating
 proxy, pass `X-Forwarded-Proto` through or set `rapla.oauth.web.cookie-secure=true`.
 
+The start page (`/`) links the web app; `rapla.services.0_spa: false` hides that link, and the
+app stays reachable at `/app/`.
+
+`rapla.version` replaces the version shown in the Swing info dialog and on the status page
+(default: the built-in version); Web Start clients receive it through the JNLP.
+
 Authentication (OAuth2, external IdPs, API keys) is covered in
 [`authentication.md`](authentication.md).
 
@@ -221,27 +227,44 @@ rapla:
 
 ### Patch directory — stored views and documents from files (PRD 112)
 
-`data/patch/` (property `rapla.patch-dir`, relative to the working directory) holds
-self-describing artefact files that Rapla applies to its artifact store at **every start**:
+`data/patch/` holds deployment files that customise Rapla without a rebuild. Its location is the
+property `rapla.patch-dir` (default `data/patch`); a relative path resolves against the server
+process's working directory, not the JAR's location (Docker: `/opt/rapla`), so an absolute path
+is safer — set it like any Spring Boot property (`application.yml`, `--rapla.patch-dir=…`,
+`RAPLA_PATCH_DIR`). A missing directory or file is no error: Rapla silently uses its built-ins.
+No file in it overwrites a file on disk; each is used in place of, or on top of, a built-in.
+Layout (PRD 133 D1):
 
-- `<Name>.mustache` with a `{{! rapla-document … }}` head → stored document `<Name>`
-  (head keys: `view` (required), `public`, `updated`, optional `groups`, `window`,
-  `defaultVariables`);
+- the top level holds the stored views and documents below and is never served over HTTP;
+- `<rapla.patch-dir>/rapla/` holds the files the core reads by fixed name — the page files
+  below; with `rapla.patch-dir: /srv/rapla/patch` that is `/srv/rapla/patch/rapla/login.css`
+  etc.;
+- every namespace folder `<rapla.patch-dir>/<ns>/` (lower-case letters, digits, `_`, `-`; e.g.
+  `local/` for the deployment's own logo or font) is served as `/patch/<ns>/<file>` without a
+  login, but only `.css`, `.svg`, `.png`, `.jpg`, `.ico` and `.woff2` — a template or view in it
+  is never reachable. Deeper folders are not read.
+
+Self-describing artefact files at the top level are applied to the artifact store at **every start**:
+
+- `<Name>.mustache` with a `{{! rapla-document … }}` head → stored document `<Name>` (the file
+  name is the document name, so it must be a GraphQL identifier — no `-`; head keys: `view`
+  (required), `public`, `updated`, optional `groups`, `window`, `defaultVariables`);
 - `<Name>.graphql` with leading `# rapla-view` / `# key: value` lines → stored view named
-  after the query's operation name (head keys: `public`, `updated`, optional `groups`,
-  `defaultVariables`).
+  after the query's operation name, whatever the file is called (head keys: `public`,
+  `updated`, optional `groups`, `defaultVariables`).
 
 Rule per file: create when the artefact is missing; overwrite when the head's `updated`
 (ISO-8601, bare local time read as UTC, offset/`Z` honoured) is newer than the stored
 artefact's last change; otherwise leave it alone — so an admin's later edit in the template
-editor survives until a re-delivery bumps `updated`. Views are applied before documents. A
+editor survives until a re-delivery bumps `updated`. Never date `updated` in the future: until
+that time has passed, every start overwrites the artefact again. Views are applied before documents. A
 file without a recognised head is ignored (WARN), a file that fails the editor's validation is
 skipped (ERROR); the server starts either way. The files may be deleted after the first start —
 the store keeps the artefacts. Disable with `rapla.services.org.rapla.plugin.patch: false`.
 Dynamic-type annotations (e.g. `documents=` on an event type) are **not** patched — set them in
 the type editor.
 
-Two files in the same directory restyle the `/login` page instead (PRD 131); they are read on
+Two files in `rapla/` restyle the `/login` page instead (PRD 131); they are read on
 the next request after a change (modification time), no restart:
 
 - `login.css` — inlined as `<style id="patch-login-css">` after the built-in style. The built-in
@@ -257,14 +280,35 @@ the next request after a change (modification time), no restart:
   `busyText`, `loginLabel`, `devNote`, `demoNote`, `patchCss`. Form field names (`username`,
   `password`, `remember-me`, the CSRF field) and the SSO `formaction` targets must stay as they
   are. A template that fails to compile is ignored with a WARN and the built-in one is used.
+  The copy does not follow later changes of the built-in template — merge them by hand after an
+  upgrade — and `login.css` only applies if it keeps the `{{#patchCss}}` block. For colours and
+  a logo, `login.css` alone is the safer choice.
 
-`login.mustache` is not treated as a stored document by the start-up patch run.
+Three files in `rapla/` restyle the start page (`/`, `/index`) and the status page (`/server`) the same way,
+read on the next request after a change:
 
-Two more files brand the SPA and the browser tab (PRD 133); they are served on every request,
+- `index.css` — inlined on both pages as `<style id="patch-index-css">`, so a logo is written
+  once; an empty `<div class="logo"></div>` sits first in `body` of both for a background-image
+  logo. Without the file both pages look as before.
+- `index.mustache` — replaces the start page template
+  (`rapla-server/.../templates/index.mustache`). Model: `title` (the system title), `cssUrl`,
+  `faviconUrl`, `menu` (one `html` per entry — the entry's finished HTML, write `{{{html}}}`;
+  entries switched off with `rapla.services.<key>: false` are missing), `info` (`webinfo.text`,
+  HTML), `patchCss`.
+- `status.mustache` — replaces the status page template
+  (`rapla-server/.../templates/status.mustache`). Model: `cssUrl`, `info` (server and Java
+  version, HTML), `patchCss`.
+
+The `login.mustache` rules apply to both templates: a broken one falls back to the built-in with
+a WARN, a copy does not follow later changes of the built-in, and `index.css` only applies if the
+copy keeps the `{{#patchCss}}` block.
+
+Two more files in `rapla/` brand the SPA and the browser tab (PRD 133); they are served on every request,
 so a page reload shows a change:
 
-- `spa.css` — served as `/app/spa.css`, which the SPA loads after its own styles (without the
-  file: an empty stylesheet). It sets variables on `:root`: `--bar-bg`, `--bar-fg`, `--bar-rule`
+- `spa.css` — served as `/app/spa.css` instead of the SPA build's empty `spa.css`; the SPA's own
+  stylesheets stay. It is linked before them, which is harmless because only this file defines
+  the variables. It sets variables on `:root`: `--bar-bg`, `--bar-fg`, `--bar-rule`
   (the `border-bottom` under the toolbar), `--bar-shadow`, `--search-border`, `--avatar-bg`,
   `--avatar-fg`, for the "New" button `--new-bg`, `--new-fg`, `--new-radius`, `--new-height`,
   `--new-padding-x`, and `--brand-logo: url(…)`, which replaces the "Rapla" word mark with the
@@ -272,7 +316,8 @@ so a page reload shows a change:
 - `favicon.ico` — served as `/favicon.ico` (login page), `/images/favicon.ico` (start page, HTML
   calendars) and `/app/favicon.ico` (SPA); without the file the Rapla icon.
 
-Only these exact names are reachable over HTTP; the other files of the directory are not.
+Apart from these fixed URLs, only the namespace-folder rule above makes a patch file reachable over
+HTTP; the files in `rapla/` are also reachable as `/patch/rapla/<file>` within the allowed types.
 
 ## Docker
 

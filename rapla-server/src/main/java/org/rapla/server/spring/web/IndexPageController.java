@@ -1,10 +1,8 @@
 package org.rapla.server.spring.web;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.rapla.RaplaResources;
-import org.rapla.components.util.Tools;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.AbstractRaplaLocale;
@@ -17,9 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+/** The start page: templates/index.mustache, restyled by the patch directory's index.css or replaced by its index.mustache. */
 @RestController
 public class IndexPageController
 {
@@ -27,6 +31,7 @@ public class IndexPageController
     private final RaplaResources i18n;
     private final RaplaFacade facade;
     private final RaplaServerProperties properties;
+    private final PatchablePage page;
 
     public IndexPageController(Map<String, HtmlMainMenu> entries,
                                 RaplaResources i18n,
@@ -37,48 +42,39 @@ public class IndexPageController
         this.i18n = i18n;
         this.facade = facade;
         this.properties = properties;
+        this.page = new PatchablePage("templates/index.mustache", Path.of(properties.getPatchDir()), "index.mustache", "index.css");
     }
 
-    @GetMapping({ "/", "/index" })
-    public void index(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    @GetMapping({ "/", "/index", "/rapla/index" })
+    public void index(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         if (request.getParameter("page") == null && request.getRequestURI().endsWith("/rapla/index/"))
         {
             response.sendRedirect("../index");
         }
-        response.setContentType("text/html; charset=ISO-8859-1");
-        PrintWriter out = response.getWriter();
-        out.println("<html>");
-        out.println("  <head>");
-        out.println("    " + AbstractHTMLCalendarPage.getCssLine(request, "default.css"));
-        out.println("    " + AbstractHTMLCalendarPage.getFavIconLine(request));
-        out.println("    <title>");
         String title;
         final String defaultTitle = i18n.getString("rapla.title");
         try
         {
-            title = Tools.createXssSafeString(facade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.TITLE, defaultTitle));
+            title = facade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.TITLE, defaultTitle);
         }
         catch (RaplaException e)
         {
             title = defaultTitle;
         }
-        out.println(title);
-        out.println("    </title>");
-        out.println("  </head>");
-        out.println("  <body>");
-        out.println("    <h3>");
-        out.println(title);
-        out.println("    </h3>");
-        generateMenu(request, out);
-        out.println(i18n.getString("webinfo.text"));
-        out.println("  </body>");
-        out.println("</html>");
-        out.close();
+        Map<String, Object> model = new HashMap<>();
+        model.put("cssUrl", AbstractHTMLCalendarPage.getUrl(request, "default.css"));
+        model.put("faviconUrl", AbstractHTMLCalendarPage.getUrl(request, "images/favicon.ico"));
+        model.put("title", title);
+        model.put("menu", menu(request));
+        model.put("info", i18n.getString("webinfo.text"));
+        response.setContentType("text/html; charset=UTF-8");
+        response.getWriter().print(page.render(model));
     }
 
-    private void generateMenu(HttpServletRequest request, PrintWriter out)
+    private List<Map<String, Object>> menu(HttpServletRequest request)
     {
+        List<Map<String, Object>> menu = new ArrayList<>();
         for (Map.Entry<String, HtmlMainMenu> entry : new TreeMap<>(entries).entrySet())
         {
             final String key = entry.getKey();
@@ -87,9 +83,10 @@ public class IndexPageController
             {
                 continue;
             }
-            out.println("<div class=\"menuEntry\">");
-            value.generatePage(request, out);
-            out.println("</div>");
+            StringWriter html = new StringWriter();
+            value.generatePage(request, new PrintWriter(html));
+            menu.add(Map.of("html", html.toString()));
         }
+        return menu;
     }
 }
