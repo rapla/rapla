@@ -364,7 +364,10 @@ ASCII `String.CASE_INSENSITIVE_ORDER`.
 > "NAME:ASC@de,START:DESC", default "START:ASC,END:ASC"; a NAME token carries the request language because
 > names and collator follow it — review LOW 5, 2026-10-06); a cursor replayed under another sort or language →
 > "cursor does not match sort"; malformed → "invalid cursor `after`".
-> Stored custom views that still pass `offset:` fail validation (none known besides the builtin). Lost: random access to page N (not needed for
+> Stored custom views that still pass `offset:` fail validation (none known besides the builtin —
+> *correction 2026-10-07:* a deployment patch view (PRD 112, `data/patch`) still used `offset` and broke
+> that deployment's view on every node; fixed there. Lesson: on schema-breaking changes check deployment patch
+> views too; open: should PRD 112 re-validate patch views at start and log/flag the broken ones?). Lost: random access to page N (not needed for
 > "Weitere laden"); won: constant memory per page, no drift (no duplicate/gap on concurrent
 > insert/delete). CPU per page unchanged — every page still expands every block of the window
 > (block index: [PRD 086](086-appointment-block-index.md)). Builtin `rapla_appointments` declares

@@ -1,6 +1,6 @@
 # PRD index
 
-50 active PRDs in this directory, 73 done under `done/`, 7 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
+51 active PRDs in this directory, 73 done under `done/`, 7 under `wont-fix/`. AGENTS.md §2 and the `prd-management` skill cover the lifecycle (move to `done/` when complete; `git mv` back to reopen).
 
 Each active PRD below carries a generated header (status, locked decisions, dependencies, governed code) plus a keyword line in German and English so that agents and search find it from either language. When a PRD's status or decisions change, update its header here in the same edit (wrap-up checklist).
 
@@ -34,6 +34,12 @@ Reopened PRD describing rapla's API-key security model: scoped data permissions 
 PRD 102 defines how rapla contains its browser session credential (access_token/refresh_token cookies) against untrusted same-origin content, split out of PRD 072. Split-out driven by PRD 097's semi-trusted document templates landing on the main origin. Status: in progress, Phase 1 (enforced non-script CSP on /app) landed 2026-07-10; Phases 2-6 (capability-mint endpoint, refresh-gap fix, untrusted render-path hardening, script-src XSS backstop) open. Core decisions: keep the HttpOnly access_token cookie rather than migrating to memory-only (D1, reverses an earlier plan); untrusted pages get an opaque origin via CSP sandbox + connect-src none (D2, the single load-bearing control); scoped {read} capability tokens reused from PRD 076's API-key scopes for untrusted pages needing data (D3); also specifies the later interactive-document tier (D4-D9): two CSP tiers by component usage, deployment script allowlist not nonce, precompiled custom elements via a component registry, native-form save with a sealed write-capability token, untrusted-author model, opt-in author-JS escape hatch. Governs SecurityConfig, RaplaCspHeaderWriter, ApiKeyScopeContext; implemented jointly with PRD 097 Phase 9.
 
 *Keywords:* CSP, Sandbox, Cookie, Zugriffstoken, access_token, Sicherheit, Same-Origin, Capability-Token, Berechtigung, GraphiQL, Refresh-Token, PRD 072, PRD 076, PRD 097, XSS, Formular speichern, write-capability, opaque origin
+
+### 131-logout-stay-signed-in.md
+
+PRD 131 adds logout and stay-signed-in for the SPA and the Swing client, per-tab impersonation and a redesigned `/login` page. Status: in progress, A–G and I committed 0c6dc43f7 (2026-10-14, not pushed) incl. the login feedback R20/R21; open: two-tab test, LOW residue (L1–L3 + 22c before production), H/OQ9 sid deferred. Core decisions: one server session per user, logout ends it everywhere (D1); stay-signed-in is a per-device storage choice on `/login`, chosen without JavaScript — persistent vs. session cookies, Swing `~/.rapla/tokens.json` owner-only (D2/D2a); impersonation per tab via `X-Rapla-Act-As` + `canImpersonate`, also for non-admin groups via a category annotation, audited once per actor token and target (D10/D12); `/login` is a JMustache template overridable from the patch directory. Governs RefreshSessionService, CookieAuthSupport, RememberChoiceFilter, ActAsFilter, LoginPageController, login.mustache, FileTokenStore/ConsentingTokenStore, RaplaClientServiceImpl, SessionMenu, auth/act-as.ts.
+
+*Keywords:* Logout, Abmelden, angemeldet bleiben, stay signed in, Sitzung, session, Cookie, Refresh-Token, tokens.json, Token-Speicher, Swing, Neu anmelden, Beenden ohne Abmelden, Impersonation, Benutzer wechseln, switch user, act-as, X-Rapla-Act-As, Login-Seite, login page, Mustache, login.css, patch, Keycloak, Single Sign-On
 
 
 ### 128-picker-conflicts-requests-chip-model.md

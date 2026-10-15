@@ -56,6 +56,16 @@ This lives in the SPA's schema-editor forms ([PRD 057](prd/done/057-graphql-dt-m
 those ship). Server-side, the existing [PRD 058](prd/done/058-graphql-key-spec-migration.md) spec check is the only
 gate — same as today.
 
+> **⚠ `saveDynamicType` is a FULL REPLACE of the attribute list — never echo a type to add one
+> attribute.** `DynamicTypeMutationController.applyAttributes` (~:378) removes every existing
+> attribute and re-adds the input list; an input attribute without `id` gets a NEW id
+> (`operator.createIdentifier`). The read side (`type DynamicType` → `attributeNames`) exposes no
+> attribute ids, constraints or defaults. So "read the type, append one attribute by key, save"
+> re-creates every attribute under new ids and orphans all stored classification values of that
+> type. Only safe today: the SPA schema editor (it holds the ids), the Swing type editor, or a
+> store-level edit. Follow-up (open): expose attribute ids on the read side, or match by key on
+> save.
+
 **Why this is fine to defer.** Existing production deploys already have keys
 in mixed conventions; the verbatim emission preserves whatever the
 admin chose. Schema convention deviation is cosmetic and tool-handled

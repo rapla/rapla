@@ -6,6 +6,14 @@
 + §"Rebuild on admin change". **Siblings:** [PRD 055](055-graphql-events-read-api.md) (events read),
 [PRD 056](056-graphql-events-write-api.md) (events mutations), [PRD 061](../061-graphql-dt-mutations-v2.md) (DynamicType mutations v2 — deferred items).
 
+> **⚠ Post-ship warning (2026-10-07):** `saveDynamicType` replaces the whole attribute list
+> (`DynamicTypeMutationController.applyAttributes` ~:378 removes all existing attributes; inputs
+> without `id` get new ids), while the read side exposes no attribute ids. Echoing a type's
+> attributes by key to add one re-creates every attribute and orphans all stored values. Only
+> the SPA schema editor, the Swing type editor or a store-level edit are safe. Details and the
+> open follow-up (ids on the read side, or key matching on save):
+> [docs/graphql.md](../../graphql.md#todo--angular-spa-admin-convention-helper-prd-035-5b-follow-up).
+
 **Triggered by:** the eventual Angular SPA gaining a schema editor for
 DynamicTypes (data-model administration). Server side is unblocked; SPA UI
 is the work that prompts implementation.

@@ -301,7 +301,9 @@ the remaining lifetime, hence the wording "bis zu N Tage". `/login?logout` shows
 "Sie wurden auf allen Geräten abgemeldet."
 
 **Stay signed in is a per-device storage choice**, made once on `/login` for password
-and SSO logins alike: a segmented choice "Nur diese Sitzung" | "Bis zu N Tage"
+and SSO logins alike: a segmented choice, labelled per context (PRD 131 D2a) — browser
+"Anmeldung auf diesem Gerät speichern?" "Nein" | "Ja, bis zu N Tage", Swing "Nur diese
+Sitzung" | "Bis zu N Tage"
 (`<input type="radio" name="remember-me">`, `off`|`on`, no JavaScript, CSS only; the same
 `<form method="post">` carries the SSO buttons and the password fields, so the password
 never reaches a URL). The choice is stored in the HttpOnly cookie `rapla-remember-choice`
@@ -310,12 +312,15 @@ the request parameter) and pre-selects the next visit.
 
 | Choice | SPA cookies | Swing |
 |---|---|---|
-| Nur diese Sitzung | `access_token` and `refresh_token` are session cookies (gone when the browser closes) | token held in memory only |
-| Bis zu N Tage | persistent cookies | token stored in `tokens.json` |
+| off (Nein / Nur diese Sitzung) | `access_token` and `refresh_token` are session cookies (gone on browser restart, unless the browser restores the last session) | token held in memory only |
+| on (Ja / Bis zu N Tage) | persistent cookies | token stored in `tokens.json` |
 
 `CookieAuthSupport.set{Access,Refresh}TokenCookie(…, remembered)` applies the switch at
 every cookie writer (login handlers, `TokenResponseCookieFilter`, refresh, impersonation
-end). The server session itself is the same either way (21 d refresh token).
+end). The server session itself is the same either way (21 d refresh token): cookies are
+shared by all tabs of a browser profile, and a plain Swing exit only drops the stored or
+in-memory token without revoking — only "Abmelden (Logout)" / "Neu anmelden" end the
+server session.
 
 **One lifetime `rapla.auth.remember-me-days`** (default 21) is N: it drives the refresh
 JWT, the refresh cookies and the authorization-server refresh-token expiry. The former
@@ -1815,7 +1820,7 @@ All settable via the matching `RAPLA_OAUTH_EXTERNAL_*` env vars.
 | `rapla.oauth.external.keycloak.hosted-domain` | *(empty)* | Optional email-domain guard. |
 | `rapla.oauth.external.keycloak.auto-provision` | `true` | Create a rapla `User` on first sign-in if no match. A Keycloak realm is already scoped, so on is the expected SSO behaviour. |
 | `rapla.oauth.external.keycloak.display-name` | `Sign in with Single Sign-On` | Picker button label; the section title on `/login` stays `Keycloak` unless a display-name or bundle title is set. |
-| `rapla.oauth.external.<id>.i18n-bundle` | *(empty)* | Any provider: package name of a deployment ResourceBundle (e.g. `org.rapla.plugin.dhbw.DhbwLoginResources`) whose keys `login.<id>.button` and `login.<id>.title` give the `/login` button text and section title per language (PRD 131). A missing bundle or key falls back to `display-name` with the translated "Sign in with" prefix. The discovery endpoint `/api/auth/oauth/config` keeps returning `display-name`. |
+| `rapla.oauth.external.<id>.i18n-bundle` | *(empty)* | Any provider: package name of a deployment ResourceBundle (e.g. `org.rapla.plugin.dhbw.DhbwResources`) whose keys `login.<id>.button` and `login.<id>.title` give the `/login` button text and section title per language (PRD 131). A missing bundle or key falls back to `display-name` with the translated "Sign in with" prefix. The discovery endpoint `/api/auth/oauth/config` keeps returning `display-name`. |
 | `rapla.oauth.external.keycloak.order` | `15` | Sort key in the picker (lower = first). |
 | `rapla.oauth.external.keycloak.web-picker-visible` | `true` | Show on the web picker. |
 | `rapla.oauth.web.picker.mode` | `auto` | `auto` (show when ≥2 visible providers), `always`, or `never`. |
